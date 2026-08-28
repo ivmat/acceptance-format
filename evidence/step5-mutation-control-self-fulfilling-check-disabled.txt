@@ -1,0 +1,24 @@
+$ python3 tools/check_execute.py --selftest
+MUTATION CONTROL: tools/check_execute.py's is_self_fulfilling() word-boundary echo detector
+('return re.search(pat, c) is not None', the SELF-FULFILLING-SUSPECT rule) was disabled by
+forcing it to 'return False', then the identical selftest command was re-run.
+(run at 2026-08-28T14:49:44Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688 + this one-line mutation, reverted immediately after)
+---
+SELFTEST PASS: OK-1 -> EXECUTED-PASS
+SELFTEST PASS: FAIL-1 -> EXECUTED-FAIL
+SELFTEST PASS: MISMATCH-1 -> EXPECT-MISMATCH
+SELFTEST PASS: NOEXPECT-1 -> exit 0 alone is not a pass
+SELFTEST PASS: CHEAT-1 -> `true` cannot produce its own declared output
+SELFTEST PASS: record-binding -> mismatch caught, match silent, absence noted
+SELFTEST FAIL: SELF-1
+SELFTEST PASS: SELF-2 -> a non-echoed expect still runs and passes
+SELFTEST PASS: STDERR-1 -> stderr-only output is a mismatch, and says so
+SELFTEST PASS: STDERR-2 -> an explicitly declared stderr stream matches
+SELFTEST PASS: HASH-1 -> a mismatched record hash is an error, not a note
+SELFTEST PASS: HASH-2 -> an absent record hash is reported, not failed
+SELFTEST PASS: NR-1 -> NOT-RUN is a note by default, an error under --require-run
+SELFTEST PASS: ONLY-0 -> --only with no match is an error, not a green run
+SELFTEST PASS: ONLY-1 -> --only naming a real claim selects exactly that row
+selftest: 15 cases, 1 failed
+---
+exit: 1

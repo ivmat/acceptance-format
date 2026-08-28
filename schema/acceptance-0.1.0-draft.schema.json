@@ -1,0 +1,784 @@
+{
+  "$id": "https://acceptance-format.example/schema/acceptance-0.1.0-draft.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "acceptance/0 manifest \u2014 JSON Schema (draft 2020-12), version 0.1.0-draft. GENERATED FILE: produced by `tools/emit_schema.py`; do not hand-edit \u2014 regenerate it instead (a hand-edit will fail the drift gate on the next `gates/run_all.sh` run). NAMING: this file ships as 'schema/acceptance-0.1.0-draft.schema.json' while spec/core.md is UNSTABLE-UNTIL-FROZEN (spec/format.md 'Stability: acceptance/0 is UNSTABLE-UNTIL-FROZEN'); at freeze it is renamed 'acceptance-0.1.0.schema.json' (the '-draft' suffix dropped, no other change) and a new '-draft' cycle, if any, starts under the next minor version. SHAPE vs SEMANTICS: this schema is shape-normative only \u2014 table/field presence, field types, and closed-vocabulary membership. It is NOT semantics-normative: every constraint spanning more than one field (coherence rules, binding equalities, band reachability, hash recomputation, weight-conditioned requiredness, phrase floors, filesystem checks) is deliberately absent from the structural keywords below and is instead named in `x-semantic-only-rules`, and in the affected field's own `description`. On any disagreement between this schema and spec/core.md or spec/format.md, the spec prose and tools/check_acceptance.py win; this schema has a bug \u2014 regenerate it after fixing tools/emit_schema.py, never hand-edit the JSON. Generated from tools/acceptance_grammar.py and tools/check_acceptance.py's live registries \u2014 every closed vocabulary below is imported, never copied, so this file cannot drift from the validator that actually enforces it. See spec/format.md 'The schema artifact' for the normative statement of this split.",
+  "properties": {
+    "claim": {
+      "description": "[[claim]] entries. OPTIONAL as a key (a manifest may declare zero claims); when present, must be an array of tables ([[claim]] is a TOML array-of-tables).",
+      "items": {
+        "description": "[[claim]] \u2014 (spec clause, code item, evidence, assumptions). Open key set: fields not listed here (e.g. [[claim.assumes]], and the Reserved-hooks slots H1-H8 named in spec/format.md) are neither validated nor rejected by check_acceptance.py in this revision, so this schema asserts nothing about their shape either \u2014 see x-semantic-only-rules 'claim-open-extension-fields'.",
+        "properties": {
+          "band": {
+            "description": "The asserted evidence-species floor, A0..A4 (assurance-bands.md). 'A3.5' is a reserved band the validator warns on (tool not adopted). SEMANTIC: whether the band is actually REACHABLE by this claim's own passing evidence, and whether an oracle-bearing band's control-gate is satisfied, are both cross-field rules \u2014 see x-semantic-only-rules 'band-reachability' / 'band-control-gate'.",
+            "enum": [
+              "A0",
+              "A1",
+              "A2",
+              "A3",
+              "A3.5",
+              "A4"
+            ],
+            "type": "string"
+          },
+          "blocked_by": {
+            "description": "SEMANTIC: REQUIRED when status == 'blocked' (core.md \u00a77.3, P4) \u2014 names what blocks the item; without it an escalation reads as a backlog entry.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "bounds": {
+            "description": "This pattern checks only the leading 'bounded'/'unbounded' TOKEN. SEMANTIC: REQUIRED when grade is one of ['contract', 'probe'] (core.md \u00a75), AND the token alone does not satisfy \u00a75 \u2014 a free-text tail naming the actual limit is also required and is not pattern-checkable (x-semantic-only-rules 'bounds-free-text-tail-required').",
+            "pattern": "^(?:unbounded|bounded)\\b",
+            "type": "string"
+          },
+          "clause": {
+            "description": "The spec clause id this claim is about.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "clause_source": {
+            "description": "OPTIONAL in general. SEMANTIC: REQUIRED when weight == 'weighted' (core.md W2.3, transitional per \u00a78.1); ['none', 'test-name'] are RESERVED to mean unweightable by design and refuse weight outright when present (x-semantic-only-rules 'clause-source-reserved-tokens-unweightable').",
+            "enum": [
+              "doc-comment",
+              "external-standard",
+              "none",
+              "spec-document",
+              "test-name"
+            ],
+            "type": "string"
+          },
+          "covered": {
+            "description": "N/M or 'N of M'. SEMANTIC: REQUIRED when item_kind == 'predicate'; N <= M is a cross-value check this pattern alone cannot express.",
+            "pattern": "^\\s*(\\d+)\\s*(?:/|\\s+[oO][fF]\\s+)\\s*(\\d+)\\s*$",
+            "type": "string"
+          },
+          "doc_ref": {
+            "description": "OPTIONAL. SEMANTIC (warning, not error): SHOULD be present when grade == 'inspection-argued' \u2014 never weight-eligible either way.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "evidence": {
+            "description": ">=1 required when status is evidenced/partial; forbidden (must be empty/absent) when status is gap/parked/blocked (design rule 1 / core.md \u00a77.3) \u2014 a cardinality rule conditioned on the sibling `status` field, semantic-only.",
+            "items": {
+              "description": "[[claim.evidence]] \u2014 an admissible evidence record (evidence-types.md). >=1 required when the enclosing claim's status is evidenced/partial; forbidden when gap/parked/blocked (design rule 1 / core.md \u00a77.3) \u2014 a cross-field cardinality rule on the enclosing claim's `evidence` array, not expressible on this item schema alone.",
+              "properties": {
+                "alpha": {
+                  "description": "RESERVED trust field (format.md design rule 3). Type is intentionally UNCONSTRAINED here \u2014 this node states no type at all: the live validator places no type requirement on this field, only the `calibration` companion above. It emitted `\"type\": \"string\"` until 2026-08-28, which REJECTED the calibrated numeric values the validator accepts; the description and the node now agree."
+                },
+                "axioms": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['list']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "type": "array"
+                },
+                "baseline": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['str-nonempty']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "type": "string"
+                },
+                "beta": {
+                  "description": "RESERVED trust field \u2014 see `alpha`."
+                },
+                "bounds": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['bounds-token']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "pattern": "^(?:unbounded|bounded)\\b",
+                  "type": "string"
+                },
+                "calibration": {
+                  "description": "OPTIONAL. SEMANTIC: REQUIRED (nonempty) whenever any of alpha/beta/lr is present (format.md design rule 3) \u2014 trust numbers without calibration are banned.",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cases": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['int-pos']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "control": {
+                  "description": "[claim.evidence.control] \u2014 OPTIONAL, family-agnostic (assurance-bands.md rule 6 / evidence-types.md 'Control block'). Open key set: the live validator does not reject extra keys here.",
+                  "properties": {
+                    "expectation": {
+                      "description": "What this control was PREDICTED to show, declared before the run.",
+                      "enum": [
+                        "green",
+                        "red",
+                        "sat"
+                      ],
+                      "type": "string"
+                    },
+                    "kind": {
+                      "description": "mutation | ablation | planted-twin (assurance-bands.md rule 6). SEMANTIC: which kinds actually band-lift, and at which band, is a per-band whitelist \u2014 not expressible here (x-semantic-only-rules 'band-control-gate').",
+                      "enum": [
+                        "ablation",
+                        "mutation",
+                        "planted-twin"
+                      ],
+                      "type": "string"
+                    },
+                    "observed": {
+                      "description": "What the run actually showed.",
+                      "enum": [
+                        "green",
+                        "red",
+                        "sat"
+                      ],
+                      "type": "string"
+                    },
+                    "of_claim": {
+                      "description": "SEMANTIC: must equal the `id` of the [[claim]] this evidence record is nested under (assurance-bands.md rule 6) \u2014 an equality binding, not a shape constraint. A value naming no claim anywhere in the file is a separate, additional error (check_dangling_of_claim).",
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "expectation",
+                    "kind",
+                    "observed",
+                    "of_claim"
+                  ],
+                  "type": "object"
+                },
+                "corpus_size": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['int-pos']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "db_version": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['str-nonempty']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "type": "string"
+                },
+                "duration": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['str-nonempty']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "type": "string"
+                },
+                "epistemic_tier": {
+                  "description": "OPTIONAL, closed core vocabulary T1..T5. SEMANTIC: where `method` names a token the shipped FV profile knows, the profile-pinned tier is a CEILING on `epistemic_tier` \u2014 a STRONGER declared tier is an error, a weaker-or-equal one is accepted (evidence-types.md CS-3, ADR-002) \u2014 a cross-field coherence rule, not independently checkable from this field's own enum membership.",
+                  "enum": [
+                    "T1",
+                    "T2",
+                    "T3",
+                    "T4",
+                    "T5"
+                  ],
+                  "type": "string"
+                },
+                "family": {
+                  "description": "bmc | kernel | smt-refinement | dynamic | mechanical | judgment. SEMANTIC: must equal the `family` KIND_REGISTRY[kind] pins \u2014 a cross-field consistency rule, not independently enforceable from `family`'s own enum membership alone (x-semantic-only-rules 'kind-family-consistency').",
+                  "enum": [
+                    "bmc",
+                    "dynamic",
+                    "judgment",
+                    "kernel",
+                    "mechanical",
+                    "smt-refinement"
+                  ],
+                  "type": "string"
+                },
+                "generator": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['str-nonempty']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "type": "string"
+                },
+                "kind": {
+                  "description": "The evidence-kind registry (evidence-types.md). Unlike [subject].kind, an unknown token here is a hard `invalid`, not `indeterminate` \u2014 this enum is genuinely closed in the live validator.",
+                  "enum": [
+                    "dep-audit",
+                    "flux-refinement",
+                    "fuzz",
+                    "human-review",
+                    "kani-harness",
+                    "lean-theorem",
+                    "lint",
+                    "llm-review",
+                    "miri",
+                    "property-test",
+                    "semver-check",
+                    "unit-test"
+                  ],
+                  "type": "string"
+                },
+                "lr": {
+                  "description": "RESERVED trust field \u2014 see `alpha`."
+                },
+                "method": {
+                  "description": "OPTIONAL, profile-defined technique name (evidence-types.md CS-1/CS-2).",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "mutants_caught": {
+                  "description": "OPTIONAL. SEMANTIC: >= 0, and additionally >= 1 whenever this record's own `result` == 'pass' (assurance-bands.md rule 6) \u2014 a cross-field floor, not independently expressible as this field's own `minimum`.",
+                  "type": "integer"
+                },
+                "mutants_total": {
+                  "description": "OPTIONAL. SEMANTIC floor: >= 1.",
+                  "type": "integer"
+                },
+                "record": {
+                  "description": "Pointer to the raw run record. SEMANTIC: must resolve to an existing file under `--strict` (or [subject].record_root, if set) \u2014 a filesystem check, not a shape constraint.",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "record_hash": {
+                  "description": "The evidence-record-domain M11 hash of the `record` file. SEMANTIC: REQUIRED on a WEIGHTED claim's evidence when not illustrative (evidence-types.md P9); when present, the validator recomputes it from `record`'s actual bytes and a mismatch is always an error \u2014 recomputation and the weighted-requiredness are both semantic, not shape.",
+                  "pattern": "^sha-512:[0-9a-f]{128}$",
+                  "type": "string"
+                },
+                "ref": {
+                  "description": "The harness/theorem/test id \u2014 the checkable name.",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "result": {
+                  "description": "pass | fail | unsupported (design rule 5: recorded as-is, never adjudicated).",
+                  "enum": [
+                    "fail",
+                    "pass",
+                    "unsupported"
+                  ],
+                  "type": "string"
+                },
+                "reviewer": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['str-nonempty']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "type": "string"
+                },
+                "semantics": {
+                  "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['str-any', 'str-nonempty']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
+                  "type": "string"
+                },
+                "subject_hash": {
+                  "description": "OPTIONAL. SEMANTIC: when present, must equal [subject].subject_hash exactly (design rule 4a) \u2014 an equality binding, not a shape constraint.",
+                  "pattern": "^sha-512:[0-9a-f]{128}$",
+                  "type": "string"
+                },
+                "tool": {
+                  "description": "Tool identity AT BUILD GRANULARITY (commit, not version).",
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "family",
+                "kind",
+                "record",
+                "ref",
+                "result",
+                "tool"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "grade": {
+            "description": "OPTIONAL structurally. SEMANTIC: REQUIRED when weight == 'weighted' (core.md W2); ['inspection-argued', 'ungraded', 'unspecified'] can never carry weight even when present (x-semantic-only-rules 'grade-required-on-weighted').",
+            "enum": [
+              "contract",
+              "inspection-argued",
+              "mechanical",
+              "not-covered",
+              "out-of-scope",
+              "probe",
+              "test-only",
+              "ungraded",
+              "unspecified"
+            ],
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable, unique within the file, never reused (format.md design rule 6). SEMANTIC: file-wide uniqueness is a cross-claim rule, not a per-field pattern.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "item": {
+            "description": "The code item the claim attaches to.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "item_kind": {
+            "description": "OPTIONAL, defaults to 'item' (core.md \u00a77.2). SEMANTIC: 'predicate' additionally requires `over` and a valid `covered` fraction with numerator <= denominator \u2014 a cross-field requirement, not expressible on this field alone.",
+            "enum": [
+              "item",
+              "predicate"
+            ],
+            "type": "string"
+          },
+          "over": {
+            "description": "SEMANTIC: REQUIRED when item_kind == 'predicate' \u2014 what the predicate ranges over.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "parked_reason": {
+            "description": "SEMANTIC: REQUIRED when status == 'parked'.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "scope_ref": {
+            "description": "A locator: a section marker, an anchor, a document path, or `[spec].axis`. SEMANTIC: REQUIRED when grade == 'out-of-scope' (core.md \u00a71/\u00a77.1); this pattern checks locator SHAPE only \u2014 that the cited location really says out-of-scope is reviewer work.",
+            "pattern": "\u00a7\\s*[0-9]|#[A-Za-z0-9][A-Za-z0-9._-]*|\\[spec\\]\\.axis|\\b[\\w./-]+\\.(?:md|rs|toml|txt|adoc|html|tex)\\b|\\bsection\\s+[0-9]",
+            "type": "string"
+          },
+          "self_verify": {
+            "additionalProperties": false,
+            "description": "[claim.self_verify] \u2014 the consumer-side recipe (core.md \u00a73), distinct from evidence. CLOSED key set: check_acceptance.py errors on any key outside ['command', 'expect', 'expect_stream', 'positive_control', 'precondition', 'watched_fail'] (no legacy producers to tolerate typos from) \u2014 the other of exactly two tables in the format where `additionalProperties: false` is genuine validator behaviour, not a schema-author's guess.",
+            "properties": {
+              "command": {
+                "description": "The consumer-side recipe. SEMANTIC: REQUIRED (nonempty) whenever this claim's `grade` is one of ['contract', 'mechanical', 'not-covered', 'probe', 'test-only'] (core.md \u00a71/\u00a73).",
+                "type": "string"
+              },
+              "expect": {
+                "description": "SEMANTIC: REQUIRED (nonempty) whenever `command` is present \u2014 'what green means' has to be written (core.md \u00a73 rule 2).",
+                "type": "string"
+              },
+              "expect_stream": {
+                "description": "OPTIONAL, defaults to 'stdout' (core.md \u00a78.2): which stream `--execute` matches `expect` against.",
+                "enum": [
+                  "combined",
+                  "stderr",
+                  "stdout"
+                ],
+                "type": "string"
+              },
+              "positive_control": {
+                "description": "SEMANTIC: REQUIRED (nonempty, phrase floor) when grade == 'not-covered' (core.md \u00a74) \u2014 a grep zero is a claim about the pattern, not the code.",
+                "type": "string"
+              },
+              "precondition": {
+                "description": "OPTIONAL freshness/environment guard.",
+                "type": "string"
+              },
+              "watched_fail": {
+                "additionalProperties": false,
+                "description": "[claim.self_verify.watched_fail] \u2014 a structured witness that the recipe CAN report the claim false (core.md \u00a74.1). CLOSED key set: check_acceptance.py errors on any key outside {of_command, perturbed, observed, date} \u2014 this table is one of exactly two in the whole format where `additionalProperties: false` reflects genuine, unconditional validator behaviour.",
+                "properties": {
+                  "date": {
+                    "description": "ISO date (YYYY-MM-DD).",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "type": "string"
+                  },
+                  "observed": {
+                    "description": "SEMANTIC: same phrase floor as `perturbed`.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "of_command": {
+                    "description": "SEMANTIC: must equal this claim's own self_verify.command, whitespace-normalized \u2014 an equality binding across sibling tables, not a shape constraint (core.md \u00a74.1).",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "perturbed": {
+                    "description": "SEMANTIC: must be a PHRASE (>=2 word tokens after stripping a trailing date annotation) \u2014 a single token is not a statement (core.md \u00a74.1).",
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "date",
+                  "observed",
+                  "of_command",
+                  "perturbed"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [],
+            "type": "object"
+          },
+          "statement": {
+            "description": "What is being claimed, in prose.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "description": "evidenced | partial | gap | parked | blocked. SEMANTIC: must COHERE with `grade` (core.md \u00a77.1) and gates the `evidence` array's required cardinality (design rule 1 / \u00a77.3) \u2014 neither is expressible from `status`'s own enum membership alone.",
+            "enum": [
+              "blocked",
+              "evidenced",
+              "gap",
+              "parked",
+              "partial"
+            ],
+            "type": "string"
+          },
+          "weight": {
+            "description": "OPTIONAL, defaults to unweighted (core.md W1). 'weighted' switches on the whole anti-overclaim machinery this schema marks SEMANTIC throughout this claim's fields.",
+            "enum": [
+              "unweighted",
+              "weighted"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "band",
+          "clause",
+          "id",
+          "item",
+          "statement",
+          "status"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "coverage": {
+      "description": "[coverage] \u2014 the omission-detection block.",
+      "properties": {
+        "claims_total": {
+          "description": "SEMANTIC: must equal the number of [[claim]] entries actually present \u2014 a cross-field count, not a type constraint (x-semantic-only-rules 'claims-total-must-match-claim-count').",
+          "type": "integer"
+        },
+        "clauses_total": {
+          "description": "Total clause count in spec@version. SEMANTIC floor: must be >= 1 (enforced by the validator; not encoded as `minimum` here to keep this schema's own numeric floors confined to fields the validator checks unconditionally \u2014 see x-semantic-only-rules).",
+          "type": "integer"
+        },
+        "denominator": {
+          "description": "OPTIONAL, EXPERIMENTAL (CLAIM-CLASSES-AWAITING-WEIGHT.md C1): complete | slice. Validated for shape only even by the live validator.",
+          "enum": [
+            "complete",
+            "slice"
+          ],
+          "type": "string"
+        },
+        "slice_note": {
+          "description": "SEMANTIC: REQUIRED, nonempty, when denominator == 'slice' \u2014 a conditional requirement, not encoded structurally here.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "claims_total",
+        "clauses_total"
+      ],
+      "type": "object"
+    },
+    "format": {
+      "description": "[format] \u2014 self-location (format.md '`[format]` self-location').",
+      "properties": {
+        "generated_at": {
+          "description": "ISO 8601 timestamp; shape only, not parsed as a date by the validator.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "generated_by": {
+          "description": "Generator id + version, or the literal 'hand-authored'.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "id": {
+          "description": "The format id. Exact string; a breaking change bumps the integer (spec/format.md 'Stability').",
+          "enum": [
+            "acceptance/0"
+          ],
+          "type": "string"
+        },
+        "illustrative": {
+          "description": "Defaults to false. true = a teaching example, not a certificate (core.md \u00a70.6, CS-21/22) \u2014 several semantic rules below are not enforced against an illustrative manifest.",
+          "type": "boolean"
+        },
+        "shape": {
+          "description": "single-file vs bundle (spec/format.md '`shape`'). SEMANTIC: 'bundle' makes the WHOLE manifest `indeterminate`, not just this field, until bundle validation ships \u2014 not expressible as a shape constraint (x-semantic-only-rules 'shape-bundle-indeterminate').",
+          "enum": [
+            "bundle",
+            "single-file"
+          ],
+          "type": "string"
+        },
+        "spec_id": {
+          "description": "Which contract this manifest is written against (core.md \u00a70.6).",
+          "minLength": 1,
+          "type": "string"
+        },
+        "spec_sha": {
+          "description": "The spec commit/tag this manifest targets.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "validator_sha": {
+          "description": "The validator commit that checked this manifest.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "generated_at",
+        "generated_by",
+        "id",
+        "shape",
+        "spec_id",
+        "spec_sha",
+        "validator_sha"
+      ],
+      "type": "object"
+    },
+    "spec": {
+      "description": "[spec] \u2014 the governing document [[claim]] clauses cite.",
+      "properties": {
+        "axis": {
+          "description": "OPTIONAL structurally. SEMANTIC: REQUIRED once ANY claim in the file claims weight (core.md \u00a76/W2) \u2014 not enforced here because that requirement is conditioned on a sibling table's contents, not on [spec] alone. See x-semantic-only-rules 'axis-required-once-any-claim-weighted'.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "external": {
+          "description": "OPTIONAL list of normative references not held in the tree.",
+          "items": {
+            "description": "A normative reference not in the tree.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "path": {
+          "description": "The governing spec document.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "version": {
+          "description": "The spec version the [[claim]] `clause` ids refer to.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "version"
+      ],
+      "type": "object"
+    },
+    "subject": {
+      "description": "[subject] \u2014 the artifact this manifest certifies.",
+      "properties": {
+        "commit": {
+          "description": "40 lowercase hex chars \u2014 git-domain identity (SHA-1 over the repository tree). NEVER compared against an M11 hash (design rule 4a).",
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "dirty": {
+          "description": "true = uncommitted changes were present at `commit`.",
+          "type": "boolean"
+        },
+        "kind": {
+          "description": "The artifact-class registry (format.md '`[subject].kind`'). SEMANTIC NUANCE: this registry is fail-CLOSED-TO-INDETERMINATE in the live validator \u2014 a token outside it is `indeterminate`, not a hard `invalid` \u2014 which is SOFTER than a strict JSON Schema `enum` (which rejects any other value outright). A third-party schema-only consumer will therefore reject some manifests the validator itself would only flag indeterminate; see x-semantic-only-rules 'subject-kind-registry-fail-closed'.",
+          "enum": [
+            "agent-output",
+            "dataset",
+            "design",
+            "doc",
+            "ml-model",
+            "other",
+            "rust-crate",
+            "rust-workspace",
+            "spec",
+            "tool"
+          ],
+          "type": "string"
+        },
+        "name": {
+          "description": "The artifact this manifest certifies.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "record_root": {
+          "description": "OPTIONAL. The base path every `record` pointer on this manifest resolves against, instead of the manifest file's own directory (audit F-3).",
+          "minLength": 1,
+          "type": "string"
+        },
+        "repo": {
+          "description": "OPTIONAL. An identifier for the subject's own repository; not validator-interpreted.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "subject_hash": {
+          "description": "OPTIONAL. The M11 content-hash of the subject artifact, `subject:` domain (design rule 4a). SEMANTIC: when present, every [[claim.evidence]] record naming its own `subject_hash` must equal this value exactly \u2014 an equality binding, not a shape constraint.",
+          "pattern": "^sha-512:[0-9a-f]{128}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commit",
+        "dirty",
+        "kind",
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "format",
+    "subject",
+    "spec",
+    "coverage"
+  ],
+  "title": "acceptance/0 manifest 0.1.0-draft",
+  "type": "object",
+  "x-semantic-only-rules": [
+    {
+      "description": "[spec].axis is REQUIRED (nonempty) once ANY [[claim]] in the file claims weight (core.md \u00a76/W2.4); optional in a wholly unweighted manifest.",
+      "enforced_by": "check_acceptance.check_spec",
+      "id": "axis-required-once-any-claim-weighted"
+    },
+    {
+      "description": "Oracle-bearing bands (A2/A3/A4, and functional A1) require >=1 observed-red control whose kind is on that band's whitelist and whose carrier record's family is species-compatible with the band (assurance-bands.md rule 6); a 'planted-twin' control never satisfies this gate at any band.",
+      "enforced_by": "check_acceptance._check_control_gate / _control_lifts_band",
+      "id": "band-control-gate"
+    },
+    {
+      "description": "A claim's asserted `band` must be reachable by at least one of its own PASSING evidence records' kind/family (assurance-bands.md rule 2).",
+      "enforced_by": "check_acceptance._band_reachable / check_band_reachability",
+      "id": "band-reachability"
+    },
+    {
+      "description": "status == 'blocked' requires a nonempty blocked_by (core.md \u00a77.3, P4) \u2014 an escalation is only greppable if it names what blocks it.",
+      "enforced_by": "check_acceptance.check_claims",
+      "id": "blocked-requires-blocked-by"
+    },
+    {
+      "description": "The claim-level `bounds` field, required on grades ['contract', 'probe'], must carry a free-text tail naming the actual limit after the bounded/unbounded token \u2014 the token alone is refused (core.md \u00a75).",
+      "enforced_by": "check_acceptance.check_grade_companions / acceptance_grammar.has_bounds_tail",
+      "id": "bounds-free-text-tail-required"
+    },
+    {
+      "description": "[[claim]].id must be unique within the file (format.md design rule 6).",
+      "enforced_by": "check_acceptance.check_claims",
+      "id": "claim-id-uniqueness"
+    },
+    {
+      "description": "[[claim.assumes]] and the Reserved-hooks slots (H1-H8; spec/format.md 'Reserved hooks') are parseable TOML but are read by NO validator function in this revision \u2014 neither validated nor rejected. This schema asserts nothing about their shape, on purpose: doing so would not be generated from live registry data, it would be hand-copied prose, exactly the drift risk this whole artifact exists to avoid.",
+      "enforced_by": "spec/format.md 'Reserved hooks'; design rule 7",
+      "id": "claim-open-extension-fields"
+    },
+    {
+      "description": "[coverage].claims_total must equal the number of [[claim]] entries actually present.",
+      "enforced_by": "check_acceptance.check_coverage",
+      "id": "claims-total-must-match-claim-count"
+    },
+    {
+      "description": "clause_source is REQUIRED on a weighted claim (core.md W2.3); absent, it is refused into `weight-pending` (an error only under --strict-weight), per the \u00a78.1 transition ratchet, not an unconditional hard error.",
+      "enforced_by": "check_acceptance.check_claims (W2.3 guard)",
+      "id": "clause-source-required-on-weighted"
+    },
+    {
+      "description": "clause_source in ['none', 'test-name'] is reserved to mean unweightable by design \u2014 a clause read off its own evidence, or off nothing, cannot be falsified (core.md W2).",
+      "enforced_by": "check_acceptance.check_claims",
+      "id": "clause-source-reserved-tokens-unweightable"
+    },
+    {
+      "description": "grade == 'contract' requires >=1 PASSING evidence record whose family is in ['bmc', 'kernel', 'smt-refinement'] (core.md \u00a70.5) \u2014 evidence that only enumerates values witnesses points, not sets, and a test is never `contract`.",
+      "enforced_by": "check_acceptance.check_claims (\u00a70.5/\u00a71 contract-requires-symbolic-domain guard)",
+      "id": "contract-requires-symbolic-domain"
+    },
+    {
+      "description": "control.of_claim must equal the id of the [[claim]] the evidence record is nested under; a value naming no claim anywhere in the file is a separate additional error (assurance-bands.md rule 6).",
+      "enforced_by": "check_acceptance.check_control_of_claim_mismatch / check_dangling_of_claim",
+      "id": "control-of-claim-binding"
+    },
+    {
+      "description": "F4: a record may not simultaneously have control.kind == 'mutation', control.observed == 'red', and its own `result` == 'pass' \u2014 an observed-red mutation control describes the mutant run, not the baseline run `result` describes.",
+      "enforced_by": "check_acceptance.check_evidence_record (F4 contradiction guard)",
+      "id": "control-result-contradiction"
+    },
+    {
+      "description": "[coverage].denominator == 'slice' requires a nonempty slice_note (CLAIM-CLASSES-AWAITING-WEIGHT.md C1).",
+      "enforced_by": "check_acceptance.check_coverage",
+      "id": "denominator-slice-requires-slice-note"
+    },
+    {
+      "description": "grade == 'contract' additionally requires >=1 PASSING evidence record with epistemic_tier in {T1, T2} (core.md \u00a72, CS-4); transitional, refused into `weight-pending` rather than an unconditional hard error.",
+      "enforced_by": "check_acceptance.check_claims (CS-4 guard)",
+      "id": "epistemic-tier-grade-coherence"
+    },
+    {
+      "description": "A weighted claim requires `grade`; an unweighted claim may omit it entirely (core.md W2). A grade with no deciding machinery is never weight-eligible even when present.",
+      "enforced_by": "check_acceptance.check_claims",
+      "id": "grade-required-on-weighted"
+    },
+    {
+      "description": "An evidence record's `family` must equal KIND_REGISTRY[kind]['family'] \u2014 the registry's own kind-to-family pinning, not independently derivable from `family`'s enum membership alone.",
+      "enforced_by": "check_acceptance.check_evidence_record; KIND_REGISTRY",
+      "id": "kind-family-consistency"
+    },
+    {
+      "description": "A claim's id/statement SHOULD name the same thing a reader would derive from its evidence's `ref` (format.md design rule 4b) \u2014 explicitly NOT mechanically checkable, reviewer work only.",
+      "enforced_by": "spec/format.md design rule 4b",
+      "id": "label-binding-not-mechanical"
+    },
+    {
+      "description": "Where `method` names a token the shipped FV profile knows, the profile-pinned tier is a CEILING on `epistemic_tier`: a STRONGER declared tier is an error, a weaker-or-equal one is accepted (evidence-types.md CS-3, ADR-002). An unprofiled `method` makes the record's epistemic_tier `indeterminate`, not a hard error.",
+      "enforced_by": "check_acceptance.check_evidence_record (CS-3 guard); METHOD_EPISTEMIC_TIER",
+      "id": "method-epistemic-tier-pinning"
+    },
+    {
+      "description": "mutants_caught >= 1 is additionally required whenever the SAME record's `result` == 'pass' (assurance-bands.md rule 6) \u2014 a cross-field floor beyond mutants_caught's own >= 0 type constraint.",
+      "enforced_by": "check_acceptance.check_evidence_record",
+      "id": "mutants-caught-floor-on-pass"
+    },
+    {
+      "description": "status == 'parked' requires a nonempty parked_reason.",
+      "enforced_by": "check_acceptance.check_claims",
+      "id": "parked-requires-parked-reason"
+    },
+    {
+      "description": "Each evidence `kind` in KIND_REGISTRY additionally REQUIRES its own 'extra' fields, at their own per-kind type tag (e.g. kani-harness requires `bounds`+`semantics`; lean-theorem requires `axioms`+`semantics`, `semantics` there being str-nonempty where kani-harness's is str-any). This schema documents the UNION of possible extra fields at their loosest common shape (see each field's own description); the per-kind conditional requiredness and exact tag are not expressed structurally.",
+      "enforced_by": "check_acceptance._check_field; KIND_REGISTRY",
+      "id": "per-kind-extra-fields"
+    },
+    {
+      "description": "self_verify.positive_control must be a PHRASE (>=2 word tokens), not a single token (core.md \u00a74) \u2014 the same shape floor as watched_fail.perturbed/observed.",
+      "enforced_by": "check_acceptance.check_self_verify",
+      "id": "positive-control-phrase-floor"
+    },
+    {
+      "description": "item_kind == 'predicate' requires nonempty `over` and a `covered` fraction N/M with N <= M (core.md \u00a77.2, P3); a weighted predicate row missing either is refused weight outright, an unweighted one only warned.",
+      "enforced_by": "check_acceptance.check_claims",
+      "id": "predicate-item-requires-over-and-covered"
+    },
+    {
+      "description": "record_hash is REQUIRED on a weighted, non-illustrative claim's evidence (evidence-types.md P9); when present, the validator recomputes the M11 hash of the `record` file's actual bytes and a mismatch is always an error.",
+      "enforced_by": "check_acceptance.check_evidence_record; tools/m11.py",
+      "id": "record-hash-recompute-and-required-on-weighted"
+    },
+    {
+      "description": "[[claim.evidence]].record must resolve to an existing file (under [subject].record_root, when set) \u2014 enforced as an error only under --strict; a warning otherwise. A filesystem check, never expressible in a schema.",
+      "enforced_by": "check_acceptance.check_evidence_record",
+      "id": "record-pointer-must-exist"
+    },
+    {
+      "description": "Any of ('alpha', 'beta', 'lr') present on an evidence record requires a nonempty `calibration` companion (format.md design rule 3) \u2014 trust numbers without calibration are banned.",
+      "enforced_by": "check_acceptance.check_evidence_record",
+      "id": "reserved-trust-fields-require-calibration"
+    },
+    {
+      "description": "is_scope_locator checks that scope_ref LOOKS like a locator; that the cited location actually says the item is out of scope is reviewer work, not checkable (core.md \u00a77.1).",
+      "enforced_by": "acceptance_grammar.is_scope_locator",
+      "id": "scope-ref-locator-is-shape-only"
+    },
+    {
+      "description": "[format].shape == 'bundle' makes the validator return `indeterminate` for the WHOLE file, unconditionally, until bundle validation ships (format.md '`shape`') \u2014 not a constraint on the `shape` field's own value space.",
+      "enforced_by": "check_acceptance.check_format",
+      "id": "shape-bundle-indeterminate"
+    },
+    {
+      "description": "status in {evidenced, partial} requires >=1 [[claim.evidence]] entry; status in {gap, parked, blocked} requires exactly zero (design rule 1 / core.md \u00a77.3).",
+      "enforced_by": "check_acceptance.check_claims",
+      "id": "status-evidence-count-coupling"
+    },
+    {
+      "description": "status \u00d7 grade must cohere (core.md \u00a77.1) \u2014 a gap/parked/blocked status may not carry a grade asserting a check succeeded, and evidenced/partial may not carry not-covered or out-of-scope. Error on a weighted claim, warning otherwise.",
+      "enforced_by": "check_acceptance.status_grade_incoherence / acceptance_grammar.status_grade_incoherence",
+      "id": "status-grade-coherence"
+    },
+    {
+      "description": "An evidence record's subject_hash, where present, must equal [subject].subject_hash exactly (design rule 4a) \u2014 a present-but-unequal pair is a hard error, unconditionally.",
+      "enforced_by": "check_acceptance.check_evidence_record (design rule 4a guard)",
+      "id": "subject-hash-binding-equality"
+    },
+    {
+      "description": "[subject].kind outside the shipped registry is `indeterminate`, never a hard `invalid` (format.md '[subject].kind') \u2014 SOFTER than this schema's own `enum`, which a strict third-party JSON Schema validator would reject outright. Known, accepted divergence: this schema documents the registry as closed for readability; only check_acceptance.py implements the fail-open-to-indeterminate behaviour.",
+      "enforced_by": "check_acceptance.check_subject",
+      "id": "subject-kind-registry-fail-closed"
+    },
+    {
+      "description": "watched_fail.of_command must equal this claim's own self_verify.command, whitespace-normalized (core.md \u00a74.1) \u2014 a control over a different check witnesses nothing about this one.",
+      "enforced_by": "check_acceptance.check_watched_fail_block",
+      "id": "watched-fail-of-command-binding"
+    },
+    {
+      "description": "A weighted claim whose grade is one of ['contract', 'mechanical', 'not-covered', 'probe', 'test-only'] requires a watched-fail witness: a well-formed [claim.self_verify.watched_fail] table, OR an observed-red control naming this claim, OR (grade == 'not-covered' only) a nonempty positive_control (core.md \u00a74.1, W2.5).",
+      "enforced_by": "check_acceptance._has_watched_fail_witness / _watched_fail_block_is_valid",
+      "id": "watched-fail-witness-required"
+    }
+  ]
+}

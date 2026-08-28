@@ -1,0 +1,168 @@
+# ILLUSTRATIVE manifest for rs-verified-der — hand-written to show the format on a real subject.
+# NOT a generated certificate: evidence `record` pointers name files that exist only in the der
+# repo's evidence/ tree, and clause ids are invented here (the der spec has no clause-id scheme
+# yet — that is design-assessment finding B1: the format demands spec discipline most code lacks).
+# The real trial = wiring gates/gen_proof_manifest.py facts into records like these, in-repo.
+# D-001/D-002's `control` blocks are ALSO illustrative here (control-gated bands, assurance-bands.md
+# v1, 2026-08-22) — they show the shape a control record must have, not a real cargo-mutants/
+# lean-mutate run. Controls are family-agnostic: D-001's is bmc-family (the SAME Kani harness
+# re-run against a mutated implementation — der's real mechanism), D-002's is kernel-family (the
+# Lean theorem source mutated, the kernel must reject it — der's real Lean-lid mechanism). The
+# subject's real manifest is a GENERATED file and does NOT yet emit these (its generator predates
+# control extraction).
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "0000000000000000000000000000000000000000"
+validator_sha = "0000000000000000000000000000000000000000"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-27T00:00:00Z"
+# CS-21 (core.md §0.6): this file's own header comment above already says ILLUSTRATIVE --
+# this field makes that a validator-visible fact, not just a human-readable one.
+illustrative  = true
+
+[subject]
+name   = "rs-verified-der"
+kind   = "rust-crate"
+commit = "fc0dc5fd82d8d10652806b56ab8f5cf4d6c2eb47"
+dirty  = false
+
+[spec]
+path    = "PROOF_MANIFEST.md"     # today's nearest spec-shaped document
+version = "fc0dc5fd82d8"
+
+[coverage]
+clauses_total = 4                 # illustrative subset, not the crate's real clause count
+claims_total  = 4
+
+# -- bounded functional claim, cross-family evidence (bmc + dynamic) ------------------------------
+
+[[claim]]
+id        = "D-001"
+clause    = "INT-MIN"
+item      = "der-verified/src/integer.rs::Integer::decode"
+statement = "decode rejects non-minimal INTEGER encodings (redundant leading 0x00/0xFF padding)"
+band      = "A3"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "integer::verify_rejects_nonminimal"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f"
+  bounds    = "bounded: unwind=16, input<=12B"
+  semantics = "-Z function-contracts"
+  record    = "evidence/kani-integer-2026-08.json"
+
+  [[claim.evidence]]
+  kind   = "unit-test"
+  family = "dynamic"
+  method = "unit-test"
+  epistemic_tier = "T3"
+  ref    = "integer::tests::canonical_encodings"
+  result = "pass"
+  tool   = "rustc@1.79-pinned"
+  cases  = 9
+  record = "evidence/cargo-test-2026-08.log"
+
+  # control-gated (assurance-bands.md rule 6): the A3 species evidence above only earns A3 with
+  # an observed-red control whose of_claim names D-001 — otherwise this claim is capped at A0.
+  # bmc-family: the SAME Kani harness re-run against a mutated `decode`, which must now fail.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "integer::verify_rejects_nonminimal (mutant: dropped padding check)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f + cargo-mutants@25.x"
+  bounds    = "bounded: unwind=16, input<=12B"
+  semantics = "-Z function-contracts"
+  record    = "evidence/mutants-integer-2026-08.json"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "D-001"
+
+# -- foundational claim on the pure core ----------------------------------------------------------
+
+[[claim]]
+id        = "D-002"
+clause    = "LEN-CANON"
+item      = "der-verified/src/length.rs::Length::decode"
+statement = "length decoding accepts exactly the canonical DER length forms (unbounded input length)"
+band      = "A4"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "lean-theorem"
+  family    = "kernel"
+  method    = "lean-theorem"
+  epistemic_tier = "T1"
+  ref       = "DerVerified.Length.decode_canonical_iff"
+  result    = "pass"
+  tool      = "lean4@4.x-pinned+aeneas@pinned"
+  axioms    = ["Aeneas translation faithfulness"]
+  bounds    = "unbounded"
+  semantics = "lean-toolchain + lake pins in-tree"
+  record    = "lean/DerVerified/Length.lean"
+
+  # control-gated (assurance-bands.md rule 6): a Lean-lid mutation control — the theorem source is
+  # mutated and the kernel must reject it (observed red) — earns A4, not the bare proof alone.
+  # kernel-family: der's real Lean-lid mutation control mechanism (STATUS 2026-08-22).
+  [[claim.evidence]]
+  kind      = "lean-theorem"
+  family    = "kernel"
+  method    = "lean-theorem"
+  epistemic_tier = "T1"
+  ref       = "DerVerified.Length.decode_canonical_iff (mutant: flipped comparison)"
+  result    = "fail"
+  tool      = "lean4@4.x-pinned+aeneas@pinned + lean-mutate@pinned"
+  axioms    = ["Aeneas translation faithfulness"]
+  bounds    = "unbounded"
+  semantics = "lean-toolchain + lake pins in-tree"
+  record    = "evidence/mutants-length-lean-2026-08.lean"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "D-002"
+
+# -- honest partial: ambition above current evidence ----------------------------------------------
+
+[[claim]]
+id        = "D-003"
+clause    = "T61-REJECT"
+item      = "der-verified/src/teletex_string.rs::TeletexString::decode"
+statement = "TeletexString content validation matches the spec'd repertoire exactly"
+band      = "A3"
+status    = "partial"                 # tests exist; no contract harness for the full repertoire
+
+  [[claim.evidence]]
+  kind   = "unit-test"
+  family = "dynamic"
+  method = "unit-test"
+  epistemic_tier = "T3"
+  ref    = "teletex_string::tests"
+  result = "pass"
+  tool   = "rustc@1.79-pinned"
+  cases  = 12
+  record = "evidence/cargo-test-2026-08.log"
+
+# -- explicit gap ---------------------------------------------------------------------------------
+
+[[claim]]
+id        = "D-004"
+clause    = "CT-SIDE"
+item      = "der-verified/src/big_integer.rs"
+statement = "big-integer minimality check is constant-time in the secret-dependent path"
+band      = "A0"
+status    = "gap"                     # no admissible evidence kind for timing claims in v0

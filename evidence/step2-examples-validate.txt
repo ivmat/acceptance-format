@@ -1,0 +1,14 @@
+$ python3 tools/check_acceptance.py --strict --strict-weight examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml
+(run at 2026-08-28T15:45:22Z, from repo root, HEAD=433e6dbcffdb053e83b18f12376f206fa3d1d4fb)
+---
+WARN examples/minimal.acceptance.toml: claim 'A-001' evidence[0]: record pointer does not exist: evidence/kani-add.json
+PASS ILLUSTRATIVE examples/minimal.acceptance.toml (1 warning) [weighted: 0, unweighted: 2]
+WARN examples/rs-verified-der/acceptance.toml: claim 'D-001' evidence[0]: record pointer does not exist: evidence/kani-integer-2026-08.json
+WARN examples/rs-verified-der/acceptance.toml: claim 'D-001' evidence[1]: record pointer does not exist: evidence/cargo-test-2026-08.log
+WARN examples/rs-verified-der/acceptance.toml: claim 'D-001' evidence[2]: record pointer does not exist: evidence/mutants-integer-2026-08.json
+WARN examples/rs-verified-der/acceptance.toml: claim 'D-002' evidence[0]: record pointer does not exist: lean/DerVerified/Length.lean
+WARN examples/rs-verified-der/acceptance.toml: claim 'D-002' evidence[1]: record pointer does not exist: evidence/mutants-length-lean-2026-08.lean
+WARN examples/rs-verified-der/acceptance.toml: claim 'D-003' evidence[0]: record pointer does not exist: evidence/cargo-test-2026-08.log
+PASS ILLUSTRATIVE examples/rs-verified-der/acceptance.toml (6 warnings) [weighted: 0, unweighted: 4]
+---
+exit: 0

@@ -1,0 +1,509 @@
+# acceptance.toml — the acceptance-format's SELF-manifest.
+#
+# WHY THIS FILE EXISTS: a format for recording what verification decided should describe itself.
+# Its escape from the self-reference circularity that invites is the format's own core mechanism:
+# every claim below carries a runnable recipe (`self_verify.command` + `expect`) that the READER
+# re-executes against their own checkout — trust in any claim here never rests on this manifest's
+# own say-so about itself. See [[claim]] "SELF-NOTE" below for that relationship stated plainly.
+#
+# This is the first CERTIFICATE-grade manifest in this tree (`illustrative = false`, below): it is
+# required to validate under `--strict --strict-weight`, the same flags a real subject's manifest
+# must clear, with no exemption for being about this repo itself. Wired into the gate as step 9
+# (`gates/run_all.sh`) so this self-description can never silently rot out of sync with the tools
+# and spec it certifies.
+#
+# Every claim below is scoped to exactly what steps 1-8 of `gates/run_all.sh`'s 9 numbered steps
+# mechanically decide about THIS repo's own tooling and artifacts (step 9 validates this manifest
+# itself, so it cannot be a claim inside it) — nothing about whether the FORMAT's design is
+# sound (that is `spec/core.md`'s own freeze-criterion ledger, a human judgment call the owner
+# reserves), only whether the checkers and gates this repo ships actually do what they say.
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+# spec_sha, validator_sha and [subject].commit all name the SAME commit (e37f1d0e8dd8...) under the
+# SELF-CERTIFICATION CONVENTION ruled in format.md's "`[format]` self-location" section: that commit
+# is the CLEAN commit at which every evidence transcript below was captured, and whose spec and
+# validator were the ones read. This manifest and its evidence/ records then land in the IMMEDIATELY
+# FOLLOWING commit, whose diff is exactly this manifest-and-evidence update and nothing else. The
+# one-commit lag is inherent to self-certification — a manifest cannot name a commit that already
+# contains itself — so it is DISCLOSED here (and in evidence/self-reference-disclosure.txt), not
+# carried as an owed re-stamp. Re-run the capture and re-stamp all three whenever the certified
+# tooling changes; that is the convention, not a TODO left open.
+spec_sha      = "e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688"
+validator_sha = "e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-28T14:57:24Z"
+illustrative  = false   # THE POINT of this file: it must validate as a CERTIFICATE, not a teaching
+                        # example — core.md §0.6. --strict --strict-weight is run against it in
+                        # gates/run_all.sh step 9, unconditionally.
+
+[subject]
+name   = "acceptance-format"
+kind   = "tool"          # closest matching token in format.md's registry (rust-crate | rust-workspace
+                          # | doc | tool | ml-model | dataset | spec | design | agent-output |
+                          # other): this subject is a spec + a set of Python validator/gate tools,
+                          # not a library crate, not a bare document either — "tool" fits the actual
+                          # certified surface (the checkers) better than "spec" would.
+commit = "e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688"   # the CLEAN commit on rev-0.1-core-update at
+                          # which every evidence transcript below was captured — the commit this
+                          # manifest certifies, per the self-certification convention named in the
+                          # [format] comment above. The following commit carries this file and its
+                          # evidence/ records, and nothing else.
+dirty  = false            # false, and checked: `git status --short` was empty at the commit named
+                          # above, and every transcript below records that same HEAD. The manifest
+                          # and evidence update that follows is a separate commit by the convention,
+                          # not uncommitted work sitting on top of a dirty tree.
+# subject_hash: DELIBERATELY OMITTED. format.md's `subject:` M11 domain is ratified and computable
+# today only for the SINGLE-FILE case (tools/m11.py `digest_file("subject", path)`); this subject
+# is a MULTI-FILE tree (the whole acceptance-format repo), whose bundle-root-style inventory hash
+# is explicitly PENDING the same P12 canonical-emit work `bundle-root` itself defers to (format.md,
+# "`subject:` domain" section, last paragraph). Recording a hand-rolled multi-file hash here would
+# be inventing the exact P12 byte-serialization this repo's own spec says is not yet fixed — a
+# disclosed absence, not an oversight, and not something to paper over with a placeholder value.
+
+[spec]
+# The governing text for these 8 claims is gates/run_all.sh itself: it is the one artifact that
+# actually enumerates "what does this repo's own gate suite mechanically decide" — the axis below.
+# This is NOT spec/core.md or spec/format.md directly (those define the FORMAT's rules; the claims
+# below are about whether THIS REPO'S TOOLING correctly implements and enforces those rules, which
+# is what steps 1-8 of gates/run_all.sh actually run).
+path    = "gates/run_all.sh"
+version = "e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688"   # the same commit [subject].commit names,
+                          # under the same self-certification convention
+axis    = "steps 1-8 of the 9 numbered steps of gates/run_all.sh (each a mechanically-checked property of this repo's own validator/gate tooling, run against its own shipped artifacts) — step 9 validates this manifest itself and so cannot be a claim inside it — plus one unweighted self-reference disclosure about this manifest's own producer/verifier relationship"
+
+[coverage]
+clauses_total = 9   # the 8 claimable gate steps (steps 1-8 of the script's 9) + the 1
+                    # self-reference disclosure clause (SELF-REF, below) — not part of the numbered
+                    # gate-step axis, but a real clause this manifest speaks to, so it is counted
+                    # rather than smuggled in as a 9th claim over an 8-clause axis (design rule 1:
+                    # omission is the only forbidden state).
+claims_total  = 9   # must equal len([[claim]]) below — checked by the validator, not asserted.
+
+# =====================================================================================================
+# -- step 1: tools/check_acceptance.py's own embedded fixture suite -----------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-1"
+clause    = "RUN-ALL-1"
+item      = "tools/check_acceptance.py::selftest"
+statement = "tools/check_acceptance.py's own embedded fixture suite (210 named fixtures — a mix of fixtures that must validate cleanly and fixtures that must be REFUSED, e.g. a weighted claim with no clause_source) passes end-to-end"
+band      = "A1"
+status    = "evidenced"
+weight    = "weighted"
+grade     = "test-only"       # #[test]-shaped: 210 named concrete fixtures, each with a fixed
+                              # expected outcome (pass/refuse). Not `mechanical`: there IS a
+                              # behavioural oracle per fixture (does this exact input validate,
+                              # and for the stated reason).
+clause_source = "doc-comment"  # the clause text is gates/run_all.sh's own step-1 comment
+                              # ("manifest validator selftest (tools/check_acceptance.py)");
+                              # doc-comment, not spec-document, because that comment lives in a
+                              # script, not in a prose spec file.
+
+  [claim.self_verify]
+  command = "python3 tools/check_acceptance.py --selftest"
+  expect  = "SELFTEST PASS: 210 fixtures"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 tools/check_acceptance.py --selftest"
+    perturbed  = "disabled tools/check_acceptance.py's W2.3/P1 'clause_source not recorded' refusal (the `if cs is None:` branch inside the weighted-claim checks, line 1463) by changing it to `if cs is None and False:`, then re-ran the identical selftest command"
+    observed   = "'SELFTEST FAIL: P1: weighted claim with NO clause_source is refused weight (--strict-weight): expected FAIL, but validation passed'; the run reported 'SELFTEST FAILED: 1/210 cases' and exited 1 — reverted immediately after, confirmed clean (SELFTEST PASS: 210 fixtures) with `git status --short tools/` showing no diff"
+    date       = "2026-08-28"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_acceptance.py::selftest (210 embedded fixtures)"
+  result      = "pass"
+  tool        = "python3@3.14.4 + check_acceptance.py@e37f1d0e8dd8"
+  cases       = 210
+  record      = "evidence/step1-check-acceptance-selftest.txt"
+  record_hash = "sha-512:4d05c66dc90beee6c2650b3897d99a2ada4288b90720aa4b227dad86d3e6a4b300da1bffe0a656fecdf787e69725a0cf736732a070c4998edbe0300ecdb55fef"
+
+  # the mutation control backing this claim's A1 band (assurance-bands.md rule 4: an oracle-bearing
+  # dynamic-only claim needs a matching observed-red control to reach A1, never A2+). This record IS
+  # the mutant run named in watched_fail above, captured as its own evidence record rather than only
+  # narrated in prose.
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_acceptance.py::selftest (mutant: W2.3/P1 clause_source-required refusal disabled)"
+  result      = "fail"
+  tool        = "python3@3.14.4 + check_acceptance.py@e37f1d0e8dd8 (1-line mutation, reverted)"
+  cases       = 210
+  record      = "evidence/step1-mutation-control-clause-source-check-disabled.txt"
+  record_hash = "sha-512:6363ee280e7f5f33656e59e2965db6829815d339af0f534784d3633c63ede7f5fc53661d8051731abacf2ff46088bf2d16b31e0b98d7dde9af7884b069d98c74"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "SELF-1"
+
+# =====================================================================================================
+# -- step 2: both shipped example manifests validate as illustrative ----------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-2"
+clause    = "RUN-ALL-2"
+item      = "examples/minimal.acceptance.toml, examples/rs-verified-der/acceptance.toml"
+statement = "both shipped example manifests validate under `--strict --strict-weight` and are correctly reported as ILLUSTRATIVE (a teaching example, never a certificate) rather than passing silently as if certified. Scope of the recipe, stated rather than left to be discovered: `expect` is ONE literal substring (core.md §3) and the two verdict lines are separated by the first manifest's warnings, so `expect` binds only the second manifest's verdict line — the first manifest's verdict is bound by the command's exit status, which a passing run also requires."
+band      = "A0"              # oracle-bearing dynamic evidence with no matching mutation control on
+                              # THIS claim — A0 per assurance-bands.md rule 4. See SELF-1's
+                              # comment for the A1 case this claim deliberately does not claim.
+status    = "evidenced"
+weight    = "weighted"
+grade     = "test-only"
+clause_source = "doc-comment"  # gates/run_all.sh's own step-2 comment block
+
+  [claim.self_verify]
+  command = "python3 tools/check_acceptance.py --strict --strict-weight examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml"
+  expect  = "PASS ILLUSTRATIVE examples/rs-verified-der/acceptance.toml (6 warnings) [weighted: 0, unweighted: 4]"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 tools/check_acceptance.py --strict --strict-weight examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml"
+    perturbed  = "ran the identical command inside a throwaway `git archive HEAD` export of this tree, in which examples/minimal.acceptance.toml's claim A-001 carries the out-of-vocabulary grade token 'bogus-grade-token' (the shipped A-001 declares no grade at all, so the perturbation introduces the token rather than overwriting one)"
+    observed   = "ERROR examples/minimal.acceptance.toml: claim 'A-001': grade must be one of ['contract', 'inspection-argued', 'mechanical', 'not-covered', 'out-of-scope', 'probe', 'test-only', 'ungraded', 'unspecified'], got 'bogus-grade-token' (core.md §1); then 'FAIL ILLUSTRATIVE examples/minimal.acceptance.toml (1 error) [weighted: 0, unweighted: 2]', the second manifest still 'PASS ILLUSTRATIVE ... (6 warnings)', exit 1 — the real (uncorrupted) examples in the tree were never touched, and `git status --short examples/` was empty afterwards"
+    date       = "2026-08-28"
+
+  # NOTE on the self-certification convention's one-commit lag (format.md, `[format]` self-location):
+  # this record's transcript was re-captured after [subject].commit, at 433e6db (the commit that added
+  # method/epistemic_tier to the two examples' evidence, changing their WARN counts) -- not at
+  # [subject].commit itself like every other record in this file. This is a deliberate, disclosed
+  # partial exception, not a silent drift: only THIS record's transcript moved: [subject].commit,
+  # spec_sha, validator_sha and every other claim's evidence stay pinned to e37f1d0e8dd8 as before,
+  # because nothing else about this repo's tooling changed. The `tool` field's @sha below names the
+  # actual capture commit so a reader can tell the two apart rather than assuming every transcript in
+  # this manifest was captured at [subject].commit.
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_acceptance.py CLI over the 2 shipped example manifests"
+  result      = "pass"
+  tool        = "python3@3.14.4 + check_acceptance.py@433e6dbcffdb"
+  cases       = 2
+  record      = "evidence/step2-examples-validate.txt"
+  record_hash = "sha-512:7775bd5fd9ce00eef0e2cc4052ec5e38e438b0d12bcc5fd64c4c35725ffee4a6b3451d422d4c2714f324d46938bf340291faf5d0d8a929d3545f995899789f1f"
+
+# =====================================================================================================
+# -- step 3: tools/check_ledger.py's own embedded fixture suite ---------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-3"
+clause    = "RUN-ALL-3"
+item      = "tools/check_ledger.py::selftest"
+statement = "tools/check_ledger.py's own embedded fixture suite (117 named fixtures over hand-written Markdown ledger rows) passes end-to-end"
+band      = "A1"
+status    = "evidenced"
+weight    = "weighted"
+grade     = "test-only"
+clause_source = "doc-comment"  # gates/run_all.sh's own step-3 comment
+
+  [claim.self_verify]
+  command = "python3 tools/check_ledger.py --selftest"
+  expect  = "selftest: 117 cases, 0 failed"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 tools/check_ledger.py --selftest"
+    perturbed  = "disabled tools/check_ledger.py's core.md §4 positive_control-required-on-not-covered enforcement (the `if grade == \"not-covered\":` guard around check_positive_control(...), line 1266) by changing it to `if False and grade == \"not-covered\":`, then re-ran the identical selftest command"
+    observed   = "9 of 117 fixtures failed, each with 'expected errors=True, got errors=False ([])' — 'not-covered-grep-no-control', 'not-covered-grep-section-deferral-does-not-satisfy-the-obligation', 'not-covered-non-grep-recipe-still-needs-a-control', 'R8-1-prose-denying-a-control-does-not-declare-one', 'R8-1-the-word-uncontrolled-does-not-declare-a-control', 'R9-1b-a-single-token-positive-control-names-nothing', 'R10-1-a-dangling-structured-control-opener-is-not-a-control', 'R10-1-a-valid-control-does-not-excuse-a-dangling-opener', 'R10-1-an-incomplete-structured-control-is-refused'; the run reported 'selftest: 117 cases, 9 failed' and exited 1 — reverted immediately after, confirmed clean (selftest: 117 cases, 0 failed) with `git status --short tools/` showing no diff"
+    date       = "2026-08-28"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_ledger.py::selftest (117 embedded fixtures)"
+  result      = "pass"
+  tool        = "python3@3.14.4 + check_ledger.py@e37f1d0e8dd8"
+  cases       = 117
+  record      = "evidence/step3-check-ledger-selftest.txt"
+  record_hash = "sha-512:11a64583c8d9179b1e3491fda7a93d6c6832352b9af6baf463c7f60a696c4a4ebc1515b6054941ff8b4c9e5071b9e4f8e1e941ab90d563b269b3cbb6a46825ed"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_ledger.py::selftest (mutant: §4 positive_control-required-on-not-covered refusal disabled)"
+  result      = "fail"
+  tool        = "python3@3.14.4 + check_ledger.py@e37f1d0e8dd8 (1-line mutation, reverted)"
+  cases       = 117
+  record      = "evidence/step3-mutation-control-positive-control-check-disabled.txt"
+  record_hash = "sha-512:d6c20f3f4aaa8aec73ef5fe78abd4a6445b9d663cdc0d60bf7ee7a6404a6469e38c2fa1747e1842b98ae416411e2d0692bb5ac604bce9c9844f751a63948f59d"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "SELF-3"
+
+# =====================================================================================================
+# -- step 4: the shipped rs-verified-der envelope obeys the row rules ---------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-4"
+clause    = "RUN-ALL-4"
+item      = "examples/rs-verified-der/ENVELOPE.md (via tools/check_ledger.py --strict-weight)"
+statement = "the shipped examples/rs-verified-der/ENVELOPE.md obeys every row-level rule tools/check_ledger.py enforces, with exactly 72 weighted rows and 8 unweighted rows out of 80 total, 0 errors and 0 warnings"
+band      = "A1"              # mechanical-family evidence reaches A1 with NO control required
+                              # (assurance-bands.md: "mechanical hygiene" is a named A1 no-oracle
+                              # species) — witnessed non-vacuous below, not merely asserted.
+status    = "evidenced"
+weight    = "weighted"
+grade     = "mechanical"      # a count-derivation gate over a real file, not a fixed named-input
+                              # test battery — core.md §1's own example of `mechanical`.
+clause_source = "doc-comment"  # gates/run_all.sh's own step-4 comment
+
+  [claim.self_verify]
+  command = "python3 tools/check_ledger.py --strict-weight examples/rs-verified-der/ENVELOPE.md"
+  expect  = "check_ledger: 80 rows checked (72 weighted, 8 unweighted), 0 errors, 0 warnings"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 tools/check_ledger.py --strict-weight examples/rs-verified-der/ENVELOPE.md"
+    perturbed  = "ran the identical command against a scratch copy of ENVELOPE.md with row DER-F-2's grade token corrupted from CONTRACT to the out-of-vocabulary token BOGUSGRADE (the real, tracked ENVELOPE.md was never modified)"
+    observed   = "DER-F-2: ERROR: grade text not in the closed vocabulary: 'BOGUSGRADE'; check_ledger: 80 rows checked (71 weighted, 8 unweighted, 1 refused (counted in neither tier)), 1 errors; and a SECOND error fired from the resulting drift: 'W5: declared tier counts 72 weighted, 8 unweighted do not match the computed 71 weighted, 8 unweighted'; exit 1"
+    date       = "2026-08-28"
+
+  [[claim.evidence]]
+  kind        = "lint"
+  family      = "mechanical"
+  method      = "lint"
+  epistemic_tier = "T4"
+  ref         = "check_ledger.py --strict-weight over examples/rs-verified-der/ENVELOPE.md's 80 rows"
+  result      = "pass"
+  tool        = "python3@3.14.4 + check_ledger.py@e37f1d0e8dd8"
+  record      = "evidence/step4-envelope-ledger-check.txt"
+  record_hash = "sha-512:15b97c2a8f3d2477247322d04aff15f299ce5d055595f9ef8c9aba7fc35782815d38815a5bfdf4f7d5c0c851aaf8c6370b9e199b86ab603890427498097bdd76"
+
+# =====================================================================================================
+# -- step 5: tools/check_execute.py's own embedded fixture suite --------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-5"
+clause    = "RUN-ALL-5"
+item      = "tools/check_execute.py::selftest"
+statement = "tools/check_execute.py's own embedded fixture suite (15 named execution-outcome fixtures, e.g. EXECUTED-PASS / EXPECT-MISMATCH / SELF-FULFILLING-SUSPECT) passes end-to-end"
+band      = "A1"
+status    = "evidenced"
+weight    = "weighted"
+grade     = "test-only"
+clause_source = "doc-comment"  # gates/run_all.sh's own step-5 comment
+
+  [claim.self_verify]
+  command = "python3 tools/check_execute.py --selftest"
+  expect  = "selftest: 15 cases, 0 failed"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 tools/check_execute.py --selftest"
+    perturbed  = "disabled tools/check_execute.py's is_self_fulfilling() word-boundary echo detector (the SELF-FULFILLING-SUSPECT rule; `return re.search(pat, c) is not None` forced to `return False`), then re-ran the identical selftest command"
+    observed   = "'SELFTEST FAIL: SELF-1' — the fixture that plants `command = \"printf 'CLAIM VERIFIED'\"` with `expect = \"CLAIM VERIFIED\"` and requires SELF-FULFILLING-SUSPECT — while the other 14 fixtures still passed; the run reported 'selftest: 15 cases, 1 failed' and exited 1 — reverted immediately after, confirmed clean (selftest: 15 cases, 0 failed) with `git status --short tools/` showing no diff"
+    date       = "2026-08-28"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_execute.py::selftest (15 embedded fixtures)"
+  result      = "pass"
+  tool        = "python3@3.14.4 + check_execute.py@e37f1d0e8dd8"
+  cases       = 15
+  record      = "evidence/step5-check-execute-selftest.txt"
+  record_hash = "sha-512:22d62626b51ed9fba1d764d4d750349022e6cf91a8a0664dcf23fb86a9ef66d57cb1f2155b33fae2c394ab472602de8292f941dfb3a8928cca145707c7544acb"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_execute.py::selftest (mutant: is_self_fulfilling() echo detector disabled)"
+  result      = "fail"
+  tool        = "python3@3.14.4 + check_execute.py@e37f1d0e8dd8 (1-line mutation, reverted)"
+  cases       = 15
+  record      = "evidence/step5-mutation-control-self-fulfilling-check-disabled.txt"
+  record_hash = "sha-512:10404c1e5e11efb0af899363078f4dffd5366757c25d6d9d9aca33a6c4f6ed7b68c225a72f492411fd0a6cbdddf71779922b71cc5326e33c2eb2b905b3f6b05a"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "SELF-5"
+
+# =====================================================================================================
+# -- step 6: the two checkers agree on the cross-representation parity battery ------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-6"
+clause    = "RUN-ALL-6"
+item      = "tools/check_acceptance.py + tools/check_ledger.py, cross-representation parity (via tools/check_parity_selftest.py)"
+statement = "the TOML manifest validator and the Markdown ledger checker reach the identical weight/refusal verdict on all 55 paired parity cases, and the harness's own 12 embedded watched-break proofs — what the tool reports as '1 watched-break proof ... (+11 watched-break proofs)': the original 2026-08-25 out-of-scope-rule divergence reproduction, plus 11 shadowed-definition/shared-import wiring break proofs — all fire correctly"
+band      = "A0"              # oracle-bearing dynamic evidence with no matching mutation control on
+                              # THIS claim's own evidence record (the watched-break proofs below are
+                              # a real, running discriminator, but are not modelled here as a
+                              # structured [claim.evidence.control] block — see SELF-NOTE and
+                              # spec/assurance-bands.md rule 4 for why this claim is left at
+                              # A0 rather than reaching for A1).
+status    = "evidenced"
+weight    = "weighted"
+grade     = "test-only"
+clause_source = "doc-comment"  # gates/run_all.sh's own step-6 comment
+
+  [claim.self_verify]
+  command = "python3 tools/check_parity_selftest.py --quiet"
+  expect  = "check_parity: 55 paired cases + 1 watched-break proof + obligations inventory + minimality audit + shared-import wiring audit + shadowed-definition guard (+11 watched-break proofs), 0 failed"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 tools/check_parity_selftest.py --quiet"
+    perturbed  = "no external perturbation was performed for this claim; the harness carries its OWN embedded regression fixture, run every invocation: it restores the PRE-FIX Markdown out-of-scope rule (accepting any nonempty cell, instead of requiring a locator) and re-checks the 2026-08-25 review's O-1 row under both representations"
+    observed   = "the proofs run on every invocation (they sit behind no flag), but `--quiet` suppresses their per-proof lines, so the recorded transcript is the one-line summary; running the SAME harness without `--quiet` at the commit certified here printed 'WATCHED-BREAK PASS: with the pre-fix Markdown rule restored, the review's O-1 row is MD=WEIGHTED against TOML=REFUSED — the harness sees the break it was built for', followed by exactly 11 further lines — 6 'SHADOW-BREAK PASS' and 5 'WIRING-BREAK PASS' — of which 7 report a planted defect correctly detected (a top-level name defined twice; an annotated, a tuple-unpack and a list-unpack rebind of a def; an imported-and-ignored helper; a module alias imported and never accessed; a name imported twice) and 4 are false-positive controls the audit must NOT report and correctly accepts (a singly-defined name, a plain tuple assignment, a used from-import, a used module alias). The harness's summary literal once read '(+10 watched-break proofs)' while printing 11 of them — an off-by-one in that string, not in the proofs; commit 8fd3cff corrected it to '(+11 watched-break proofs)' (verifiable with `git log -S'(+10 watched-break proofs)' -- tools/check_parity_selftest.py`), and `expect` above is byte-matched to the corrected tool output."
+    date       = "2026-08-28"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "check_parity_selftest.py (55 paired cases + 12 watched-break proofs + obligations inventory + minimality/wiring/shadow audits)"
+  result      = "pass"
+  tool        = "python3@3.14.4 + check_parity_selftest.py@e37f1d0e8dd8"
+  cases       = 55
+  record      = "evidence/step6-parity-selftest.txt"
+  record_hash = "sha-512:86cfedd177ff873760c8177ebeea0d8a4c7daace750ecb3c5a8a826eb830769b9727266b7ddfdf1d50606a9e8e5518749c614fdd3bcae25d731f475cbabe69ba"
+
+# =====================================================================================================
+# -- step 7: the content-leak gate passes on all tracked files against an empty baseline ---------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-7"
+clause    = "RUN-ALL-7"
+item      = "gates/check_content_leaks.py tree scan over this repo's git-tracked files"
+statement = "gates/check_content_leaks.py reports zero hits (credentials, absolute paths, hashed private vocabulary) across every git-tracked file in this repo EXCEPT the two the gate skips by exact relpath and names in its own output — gates/check_content_leaks.py and gates/test_check_content_leaks.py, which carry every pattern as source — against the empty baseline gates/leak_baseline.json: 65 of 67 tracked files scanned, 0 hits"
+band      = "A1"              # mechanical-family, no-oracle hygiene species — A1 reachable with no
+                              # control required (assurance-bands.md), witnessed below.
+status    = "evidenced"
+weight    = "weighted"
+grade     = "mechanical"
+clause_source = "doc-comment"  # gates/run_all.sh's own step-7 comment
+
+  [claim.self_verify]
+  command = "python3 gates/check_content_leaks.py"
+  expect  = "PASS check_content_leaks: 65 tracked files scanned; baseline is empty; 2 of 67 tracked file(s) skipped by exact relpath (this gate and its own fixtures, which contain every pattern as source): gates/check_content_leaks.py, gates/test_check_content_leaks.py"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 gates/check_content_leaks.py"
+    perturbed  = "ran this exact command, unmodified, inside a throwaway git-initialised copy of the gate script with one planted file (src/lib.rs containing a fake AWS-shaped access key, `AKIA` + 16 letters) added and committed — no file in the real, tracked acceptance-format tree was touched"
+    observed   = "FAIL check_content_leaks:\\n  src/lib.rs: credential:aws-akia [credentials are NEVER baseline-eligible]\\nexit: 1 — the planted file is NOT one of the two relpaths the gate skips, so the skip list cannot mask it; this exercises the same code path gates/test_check_content_leaks.py's own PlantedCredentialsRefused/PlantedPathsRefused fixtures assert on every gate run (step 7 also runs that suite: 'Ran 27 tests ... OK', several of which plant a credential/path and assert the scan returns exit 1)"
+    date       = "2026-08-28"
+
+  # NOTE on the self-certification convention's one-commit lag (format.md, `[format]` self-location,
+  # "Partial re-certification"): this record's transcript was re-captured after [subject].commit, at
+  # d1620d2ede7f (the commit at which the post-walkthrough fix round's files landed, changing this
+  # repo's tracked-file count) -- not at [subject].commit itself like every other record in this
+  # file. This is a deliberate, disclosed partial exception, not a silent drift: only THIS record's
+  # transcript moved; [subject].commit, spec_sha, validator_sha and every other claim's evidence stay
+  # pinned to e37f1d0e8dd8 as before, because nothing else about this repo's tooling changed. The
+  # `tool` field's @sha below names the actual capture commit so a reader can tell the two apart
+  # rather than assuming every transcript in this manifest was captured at [subject].commit.
+  [[claim.evidence]]
+  kind        = "lint"
+  family      = "mechanical"
+  method      = "lint"
+  epistemic_tier = "T4"
+  ref         = "gates/check_content_leaks.py tree scan, empty baseline, 65 of 67 tracked files scanned (2 skipped by exact relpath: the gate and its own fixtures)"
+  result      = "pass"
+  tool        = "python3@3.14.4 + check_content_leaks.py@d1620d2ede7f"
+  record      = "evidence/step7-content-leak-scan.txt"
+  record_hash = "sha-512:63c76aaba1467eeadf674a8c039e71fc39b8fec4704a5ced77502772f8483546edd2f11669ac23070f2f2a824c6be581ca7aa8715bb9c7537817a796178f8efa"
+
+# =====================================================================================================
+# -- step 8: the committed schema artifact matches the emitted schema ---------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "SELF-8"
+clause    = "RUN-ALL-8"
+item      = "schema/acceptance-0.1.0-draft.schema.json (via tools/emit_schema.py)"
+statement = "the committed schema/acceptance-0.1.0-draft.schema.json byte-matches what tools/emit_schema.py currently emits from the live grammar/validator registries, and both shipped example manifests structurally validate against it. Scope of the recipe, stated rather than left to be discovered: `expect` pins both manifests' PASS lines (they are consecutive on stdout, and `expect` is whitespace-collapsed before matching), while the byte-match half prints nothing on success and is bound by the `&&`-chained exit status, which a passing run also requires."
+band      = "A1"              # mechanical-family, no-oracle drift/hygiene check — A1 reachable with
+                              # no control required, witnessed below.
+status    = "evidenced"
+weight    = "weighted"
+grade     = "mechanical"      # core.md §1's own paradigm case: "a tool decides it with no
+                              # behavioural oracle ... a count-derivation gate" — here, a byte-
+                              # equality/freshness gate over a generated artifact.
+clause_source = "doc-comment"  # gates/run_all.sh's own step-8 comment
+
+  [claim.self_verify]
+  command = "bash -c 'diff -q <(python3 tools/emit_schema.py) schema/acceptance-0.1.0-draft.schema.json && python3 tools/emit_schema.py --check examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml'"
+  expect  = """
+PASS examples/minimal.acceptance.toml
+PASS examples/rs-verified-der/acceptance.toml"""
+
+    [claim.self_verify.watched_fail]
+    of_command = "bash -c 'diff -q <(python3 tools/emit_schema.py) schema/acceptance-0.1.0-draft.schema.json && python3 tools/emit_schema.py --check examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml'"
+    perturbed  = "edited the committed schema/acceptance-0.1.0-draft.schema.json's top-level 'title' field to the literal string TAMPERED, then re-ran the identical command"
+    observed   = "'Files /dev/fd/63 and schema/acceptance-0.1.0-draft.schema.json differ' printed by diff -q, the `&&`-chained --check step never ran, so NEITHER PASS line appeared, exit 1 — reverted immediately after, confirmed clean with `git status --short schema/` showing no diff and the identical command back to both PASS lines, exit 0"
+    date       = "2026-08-28"
+
+  [[claim.evidence]]
+  kind        = "lint"
+  family      = "mechanical"
+  method      = "lint"
+  epistemic_tier = "T4"
+  ref         = "tools/emit_schema.py drift check + --check over the 2 shipped example manifests"
+  result      = "pass"
+  tool        = "python3@3.14.4 + emit_schema.py@e37f1d0e8dd8"
+  record      = "evidence/step8-schema-drift-check.txt"
+  record_hash = "sha-512:803f9a2149bcbee8ee02f8bb9d0e8413d7a195946e2533a06827c4d5401c0d9f9f3fd7328907d70eb1fe2dbde3d26728fbc01134b1778c67b41616f0e484c17a"
+
+# =====================================================================================================
+# -- self-reference honesty note (unweighted) ----------------------------------------------------------
+# =====================================================================================================
+# The producer/verifier relationship is recorded as an explicitly UNWEIGHTED [[claim]], not as a
+# dedicated note construct. ADR-009 (docs/decisions/ADR-009-no-note-construct-unweighted-claims.md)
+# rules that this format adds no `[[note]]` table: the unweighted claim is the canonical carrier for
+# commentary and disclosure, and already carries the intended semantics verbatim (core.md W3):
+# "admitted as an assertion; the format promises nothing about this claim — same evidentiary level
+# as 'it was reviewed'". This claim is the demonstration ADR-009 itself cites.
+
+[[claim]]
+id        = "SELF-NOTE"
+clause    = "SELF-REF"
+item      = "acceptance.toml (this file)"
+statement = "this manifest is produced by, and validated by, tooling that lives in the very repo it certifies — the producer and the verifier are not independent parties, and share one author (`git log --format='%an' | sort -u` over this repo yields exactly one name). It also certifies a commit it is not itself in: under the self-certification convention (format.md, `[format]` self-location) [subject].commit names the clean commit at which every transcript below was captured, and this file lands in the immediately following commit. Nothing above raises either fact above what a reader can check by re-running each claim's own self_verify command, themselves, against their own checkout. That re-run — never this file's own say-so about itself — is the format's actual escape from self-reference."
+band      = "A0"
+status    = "evidenced"
+# weight omitted -> UNWEIGHTED (core.md W1: weight is explicit and defaults to absent). This claim
+# intentionally claims NOTHING the format backs; it is a disclosure, not a certified property.
+grade     = "inspection-argued"   # never weight-eligible, by definition (core.md §1) — the
+                                  # label for "there is nothing to run that decides this sentence".
+doc_ref   = "evidence/self-reference-disclosure.txt"
+
+  [[claim.evidence]]
+  kind      = "human-review"
+  family    = "judgment"
+  method    = "human-review"
+  epistemic_tier = "T5"
+  reviewer  = "manifest author (self-disclosed: also the validator's author, in this repo)"
+  ref       = "direct inspection of this repo's git history and directory layout"
+  result    = "pass"
+  tool      = "git@2.53.0 (log inspection; no repo tool decides this claim, so no @-sha applies)"
+  record    = "evidence/self-reference-disclosure.txt"
+  record_hash = "sha-512:dbc7d35a13c84cd07e12b414bdb0748d2b99cd51a3979c24565e76fd00c987f6762d3ace06fa859501dfa1f66b9f65b8ff8d25070ea0076dddf74cd37ccff9a5"

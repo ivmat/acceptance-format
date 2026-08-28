@@ -1,0 +1,6 @@
+$ python3 tools/check_acceptance.py --selftest
+(run at 2026-08-28T14:48:47Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688)
+---
+SELFTEST PASS: 210 fixtures
+---
+exit: 0

@@ -1,0 +1,6 @@
+$ python3 test_slug.py
+(run at 2026-08-28T17:53:37Z, from examples/weighted-toy/, HEAD=1c65772c4f078ca520f899ce3974565c612da56e)
+---
+TEST-SLUG PASS: 5 cases
+---
+exit: 0

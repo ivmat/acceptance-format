@@ -1,0 +1,135 @@
+$ python3 tools/check_ledger.py --selftest
+MUTATION CONTROL: tools/check_ledger.py's core.md §4 positive_control-required-on-not-covered
+enforcement (the 'if grade == "not-covered":' guard around check_positive_control(...), line
+1266) was disabled by changing it to 'if False and grade == "not-covered":', then the identical
+selftest command was re-run.
+(run at 2026-08-28T14:49:31Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688 + this one-line mutation, reverted immediately after)
+---
+SELFTEST PASS: weight-invariant-refused-rows-are-in-neither-tier (117 fixtures scanned)
+SELFTEST PASS: W5-declared-pending-count-is-checked
+SELFTEST PASS: W5-correct-pending-count-is-clean
+SELFTEST PASS: W5-missing-pending-count-is-reported
+SELFTEST PASS: grade-strength-derivation
+SELFTEST PASS: S3-silence-is-unweighted
+SELFTEST PASS: weight-pending-row-is-not-weighted
+SELFTEST PASS: compliant-row-keeps-weight
+SELFTEST PASS: clean-contract-row
+SELFTEST PASS: free-text-substitute-derived
+SELFTEST PASS: compound-cell
+SELFTEST PASS: ambiguous-two-grades
+SELFTEST PASS: contract-empty-verify
+SELFTEST PASS: contract-no-bounds
+SELFTEST PASS: contract-with-bounds
+SELFTEST FAIL: not-covered-grep-no-control: expected errors=True, got errors=False ([])
+SELFTEST PASS: not-covered-grep-with-control
+SELFTEST FAIL: not-covered-grep-section-deferral-does-not-satisfy-the-obligation: expected errors=True, got errors=False ([])
+SELFTEST PASS: out-of-scope-empty-verify
+SELFTEST PASS: out-of-scope-with-source
+SELFTEST PASS: unspecified-no-wording
+SELFTEST PASS: unspecified-with-wording
+SELFTEST PASS: non-ledger-row-ignored
+SELFTEST PASS: six-column-table
+SELFTEST PASS: unweighted-fluffy-row-is-clean
+SELFTEST PASS: test-name-clause-must-be-marked
+SELFTEST PASS: test-name-clause-marked-unweighted-is-clean
+SELFTEST PASS: weighted-row-missing-recipe-is-refused
+SELFTEST PASS: sub-item-id-with-lowercase-suffix-is-checked
+SELFTEST PASS: backticked-non-id-in-graded-table-is-reported-unchecked
+SELFTEST PASS: backticked-non-id-in-ungraded-table-stays-silent
+SELFTEST PASS: prose-mention-of-unweighted-does-not-exempt-a-strong-row
+SELFTEST PASS: prose-mention-of-a-test-name-does-not-exempt-a-strong-row
+SELFTEST PASS: bracket-U-marker-satisfies-W4
+SELFTEST PASS: dedicated-weight-column-satisfies-W4
+SELFTEST PASS: row-marked-weighted-on-an-unweightable-grade-is-refused
+SELFTEST FAIL: not-covered-non-grep-recipe-still-needs-a-control: expected errors=True, got errors=False ([])
+SELFTEST PASS: P1-weighted-row-with-no-clause-source-is-refused
+SELFTEST PASS: P2-weighted-row-with-no-watched-fail-witness-is-refused
+SELFTEST PASS: P1-P2-both-satisfied-row-keeps-its-weight
+SELFTEST PASS: S3-unmarked-weight-eligible-row-is-unweighted-not-weighted
+SELFTEST PASS: S3-unmarked-unweightable-grade-needs-no-marker
+SELFTEST PASS: S1-witness-naming-a-different-recipe-is-refused
+SELFTEST PASS: S1-bare-phrase-is-not-a-witness
+SELFTEST PASS: S1-witness-with-no-observation-is-refused
+SELFTEST PASS: S1-positive-control-does-not-witness-a-contract
+SELFTEST PASS: S2-out-of-scope-row-owes-clause-source-too
+SELFTEST PASS: S2-free-prose-clause-source-is-not-a-declaration
+SELFTEST PASS: S5-gap-status-cannot-carry-a-weighted-contract
+SELFTEST PASS: S5-unweighted-prospective-grade-warns-but-does-not-error-P5-deferred
+SELFTEST PASS: P4-blocked-status-must-name-what-blocks-it
+SELFTEST PASS: P3-predicate-item-must-state-its-fraction
+SELFTEST PASS: S4-a-row-failing-a-PRE-adoption-rule-is-not-weight-pending
+SELFTEST PASS: R2-1-nonsense-recipe-ref-is-refused
+SELFTEST PASS: R2-1-recipe-table-metavariable-is-not-an-instance
+SELFTEST PASS: R2-1-placeholder-recipe-arg-is-refused
+SELFTEST PASS: R2-1-prose-mentioning-cargo-is-not-a-recipe
+SELFTEST PASS: R2-1-positive-control-real-recipe-still-passes
+SELFTEST PASS: R2-1-positive-control-backticked-literal-command-still-passes
+SELFTEST PASS: R2-3-partial-status-cannot-carry-not-covered
+SELFTEST PASS: R2-3-evidenced-status-cannot-carry-out-of-scope
+SELFTEST PASS: R2-6-weighted-blocked-row-without-blocked-by-is-refused
+SELFTEST PASS: R2-6-predicate-detection-is-declarative-not-semantic
+SELFTEST PASS: R2-6-declared-weighted-predicate-with-no-fraction-is-refused
+SELFTEST PASS: R3-1-out-of-scope-with-a-locator-free-source-is-refused
+SELFTEST PASS: R3-1-positive-control-out-of-scope-with-a-locator-keeps-weight
+SELFTEST PASS: R3-3d-witness-of-single-tokens-is-not-a-witness
+SELFTEST PASS: R3-3d-witness-with-no-date-is-refused
+SELFTEST PASS: R3-3c-bounds-token-with-no-limit-is-refused
+SELFTEST PASS: R3-3c-positive-control-a-stated-limit-keeps-weight
+SELFTEST PASS: R3-3c-positive-control-an-unbounded-domain-keeps-weight
+SELFTEST PASS: R4-1-a-limit-with-no-boundedness-token-is-refused
+SELFTEST PASS: R4-1-grade-token-alone-does-not-declare-boundedness
+SELFTEST PASS: R4-1-positive-control-the-pair-stated-keeps-weight
+SELFTEST PASS: R4-2-clause-source-none-is-reserved-unweightable
+SELFTEST PASS: R4-2-undelimited-test-name-in-a-clause-cell-is-still-reserved
+SELFTEST PASS: R5-1-boundedness-prefix-does-not-declare-boundedness
+SELFTEST PASS: R5-2-a-date-annotation-does-not-satisfy-the-phrase-floor
+SELFTEST PASS: R5-3-reserved-clause-source-behind-a-separator-is-still-reserved
+SELFTEST PASS: R5-3b-two-clause-sources-in-one-cell-declare-nothing
+SELFTEST PASS: R5-4-status-outside-the-closed-vocabulary-is-refused
+SELFTEST PASS: R5-7-a-row-stating-both-tier-markers-declares-neither
+SELFTEST PASS: R6-1-annotation-with-a-colon-separator-is-still-metadata
+SELFTEST PASS: R6-1-annotation-with-an-em-dash-separator-is-still-metadata
+SELFTEST PASS: R6-1-a-date-in-the-middle-of-a-description-is-not-metadata
+SELFTEST PASS: R6-2-dual-markers-in-a-dedicated-weight-cell-declare-nothing
+SELFTEST PASS: R6-4-empty-status-cell-on-a-weighted-row-is-refused
+SELFTEST PASS: R7-1-unbolded-and-bolded-tier-markers-contradict
+SELFTEST PASS: R7-1-two-unbolded-tier-markers-contradict
+SELFTEST PASS: R7-2-blocked-by-inside-an-identifier-does-not-name-what-blocks
+SELFTEST PASS: R7-3-reviewed-over-lunch-does-not-name-a-sub-list
+SELFTEST PASS: R7-3-positive-control-a-declared-over-names-the-sub-list
+SELFTEST PASS: R7-4-item_kindpredicate-is-an-identifier-not-a-declaration
+SELFTEST PASS: R7-5-the-annotation-keyword-does-not-match-inside-a-word
+SELFTEST PASS: R7-6-witness-separator-variant-0
+SELFTEST PASS: R7-6-witness-separator-variant-1
+SELFTEST PASS: R7-6-witness-separator-variant-2
+SELFTEST PASS: R7-6-witness-separator-variant-3
+SELFTEST PASS: R7-6-witness-separator-variant-4
+SELFTEST FAIL: R8-1-prose-denying-a-control-does-not-declare-one: expected errors=True, got errors=False ([])
+SELFTEST FAIL: R8-1-the-word-uncontrolled-does-not-declare-a-control: expected errors=True, got errors=False ([])
+SELFTEST PASS: R8-1-positive-control-declared-keeps-weight
+SELFTEST PASS: R8-2-an-empty-quoted-value-does-not-declare-a-sub-list
+SELFTEST PASS: R8-3-a-fused-weight-pending-keyword-is-not-a-declared-count
+SELFTEST PASS: R8-4-foo_predicate_bar-is-an-identifier-not-a-declaration
+SELFTEST PASS: R8-2-a-paren-is-not-a-witness-separator
+SELFTEST PASS: R9-1a-a-plain-declared-positive-control-is-witness-3
+SELFTEST FAIL: R9-1b-a-single-token-positive-control-names-nothing: expected errors=True, got errors=False ([])
+SELFTEST PASS: R9-2a-weighted-on-an-unweightable-grade-is-refused-not-unweighted
+SELFTEST PASS: R9-2b-contradictory-markers-are-refused-not-unweighted
+SELFTEST PASS: R9-2c-missing-bounds-and-witness-together-are-refused
+SELFTEST FAIL: R10-1-a-dangling-structured-control-opener-is-not-a-control: expected errors=True, got errors=False ([])
+SELFTEST FAIL: R10-1-a-valid-control-does-not-excuse-a-dangling-opener: expected errors=True, got errors=False ([])
+SELFTEST FAIL: R10-1-an-incomplete-structured-control-is-refused: expected errors=True, got errors=False ([])
+SELFTEST PASS: R10-3-weight-claimed-via-a-bracket-marker-is-refused-into-neither-tier
+SELFTEST PASS: R10-3-weight-claimed-via-an-unbolded-weight-column-is-refused-into-neither-tier
+SELFTEST PASS: R10-sweep-a-status-cell-naming-two-statuses-has-named-none
+SELFTEST PASS: R13-a-backticked-literal-command-is-a-recipe
+SELFTEST PASS: R13-a-witness-binds-to-a-literal-command
+SELFTEST PASS: R13-a-witness-naming-a-different-literal-command-does-not-bind
+SELFTEST PASS: R13-a-bare-single-word-is-not-a-literal-command
+SELFTEST PASS: N5-an-unbackticked-id-shaped-row-is-reported-unchecked
+SELFTEST PASS: N5-a-prose-first-cell-is-not-an-unchecked-row
+SELFTEST PASS: recipe-letters-scoped-to-the-documents-own-table--undeclared-letter-refused
+SELFTEST PASS: recipe-letters-scoped-to-the-documents-own-table--declared-letter-accepted
+selftest: 117 cases, 9 failed
+---
+exit: 1

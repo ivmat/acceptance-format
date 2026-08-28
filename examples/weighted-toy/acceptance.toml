@@ -1,0 +1,87 @@
+# examples/weighted-toy/acceptance.toml -- START HERE to write a weighted manifest.
+#
+# This is a genuine, non-illustrative CERTIFICATE (`illustrative = false`), not a fixture: it
+# validates `--strict --strict-weight`, the same flags a real subject's manifest must clear, with
+# no exemption for being a small teaching subject. Every field a weighted claim needs is here and
+# is real: `[spec].axis`, `clause_source`, `band`, `bounds`, `[claim.self_verify]`,
+# `[claim.self_verify.watched_fail]` (genuinely performed -- see below), and `record_hash`
+# (computed with `python3 tools/m11.py evidence-record <file>`, spec/evidence-types.md).
+# Copy this file, point it at your own subject, and you have a real weighted manifest -- see
+# `README.md` in this directory for a field-by-field walkthrough.
+#
+# SELF-LOCATION: this subject (slug.py, test_slug.py, SPEC.md) lives in the same repo as this
+# manifest -- the same one-commit-lag self-certification convention the root `acceptance.toml`
+# documents applies (format.md "`[format]` self-location"). `[subject].commit`/`spec_sha`/
+# `validator_sha` name the commit at which the subject files were added and the evidence
+# transcript below was captured (a clean tree, `dirty = false`); this manifest and its evidence/
+# record land in the immediately following commit.
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "1c65772c4f078ca520f899ce3974565c612da56e"
+validator_sha = "1c65772c4f078ca520f899ce3974565c612da56e"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-28T17:51:54Z"
+illustrative  = false   # THE POINT of this file: a real certificate, not a teaching fixture.
+
+[subject]
+name   = "weighted-toy"
+kind   = "tool"
+commit = "1c65772c4f078ca520f899ce3974565c612da56e"   # the commit that added slug.py/test_slug.py/
+                          # SPEC.md, at which the evidence transcript below was captured
+dirty  = false           # `git status --short` was empty at the commit named above
+
+[spec]
+path    = "SPEC.md"
+version = "v1"
+axis    = "the properties SPEC.md documents for examples/weighted-toy/slug.py's slug() function"
+
+[coverage]
+clauses_total = 1
+claims_total  = 1
+
+[[claim]]
+id        = "WT-1"
+clause    = "S-1"
+item      = "examples/weighted-toy/slug.py::slug"
+statement = "slug(s) never returns a string containing an uppercase ASCII letter"
+band      = "A0"              # ran / asserted, no control -- honest floor for a plain unit test
+                              # with no mutation-control block (assurance-bands.md: a functional
+                              # claim on dynamic evidence alone is A0 unless it carries a matching
+                              # observed-red `control` block, which this claim does not -- the
+                              # watched_fail table below earns WEIGHT, not a higher band).
+status    = "evidenced"
+weight    = "weighted"
+grade     = "probe"           # bounded, fixture-shaped evidence: 5 concrete cases, not the full
+                              # string domain (core.md §1) -- REQUIRES self_verify + bounds +
+                              # watched_fail, all below.
+bounds    = "bounded: 5 concrete input strings, not the full string domain"
+clause_source = "spec-document"   # SPEC.md, above
+
+  [claim.self_verify]
+  command = "python3 test_slug.py"   # subject-root-relative (check_execute.py --subject-root
+                                    # examples/weighted-toy), like a real subject's own commands
+                                    # would be -- README.md in this directory explains why this
+                                    # differs from the repo root's own self-manifest.
+  expect  = "TEST-SLUG PASS: 5 cases"
+
+    [claim.self_verify.watched_fail]
+    of_command = "python3 test_slug.py"
+    perturbed  = "removed the .lower() call from slug.py's return line (`return re.sub(r\"\\s+\", \"-\", s.strip().lower())` -> `return re.sub(r\"\\s+\", \"-\", s.strip())`), then re-ran the identical self_verify.command"
+    observed   = "FAIL: slug('HELLO') = 'HELLO', want 'hello'\nFAIL: slug('Hello World') = 'Hello-World', want 'hello-world'\nTEST-SLUG FAILED: 2/5 cases\nexit: 1 -- 2 of the 5 cases (the ones containing an uppercase letter) caught the break; the other 3 (already-lowercase or letter-free inputs) correctly did not, which is why this witness is not a `control` block: it demonstrates the recipe CAN fail, not that a matching mutation-control gate lifted the band (see `band` above)"
+    date       = "2026-08-28"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "test_slug.py::main (5 named cases)"
+  result      = "pass"
+  tool        = "python3@3.14.4 + test_slug.py@1c65772c4f07"
+  bounds      = "bounded: 5 concrete input strings (plain lowercase, plain uppercase, mixed case with an internal space, an alphanumeric string with no letters to change, already-hyphenated input) -- not the full string domain"
+  cases       = 5
+  record      = "evidence/test-slug-run.txt"
+  record_hash = "sha-512:ae61d3d244e26b96e866ff8258b7c106e2da37bf4e3f7ed4b73f13470529fb929f93f47cf01e0de7ab65d47d0e5f29bd191a34b2ea010b3c8c310f54c1075876"

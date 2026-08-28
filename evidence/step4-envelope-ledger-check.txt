@@ -1,0 +1,7 @@
+$ python3 tools/check_ledger.py --strict-weight examples/rs-verified-der/ENVELOPE.md
+(run at 2026-08-28T14:48:47Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688)
+---
+check_ledger: 80 rows checked (72 weighted, 8 unweighted), 0 errors, 0 warnings
+check_ledger: grade strength: 35 deciding-grade (contract/mechanical), 45 asserted-grade
+---
+exit: 0

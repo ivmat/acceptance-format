@@ -1,0 +1,21 @@
+$ python3 tools/check_execute.py --selftest
+(run at 2026-08-28T14:48:47Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688)
+---
+SELFTEST PASS: OK-1 -> EXECUTED-PASS
+SELFTEST PASS: FAIL-1 -> EXECUTED-FAIL
+SELFTEST PASS: MISMATCH-1 -> EXPECT-MISMATCH
+SELFTEST PASS: NOEXPECT-1 -> exit 0 alone is not a pass
+SELFTEST PASS: CHEAT-1 -> `true` cannot produce its own declared output
+SELFTEST PASS: record-binding -> mismatch caught, match silent, absence noted
+SELFTEST PASS: SELF-1 -> SELF-FULFILLING-SUSPECT, and the report is not ok
+SELFTEST PASS: SELF-2 -> a non-echoed expect still runs and passes
+SELFTEST PASS: STDERR-1 -> stderr-only output is a mismatch, and says so
+SELFTEST PASS: STDERR-2 -> an explicitly declared stderr stream matches
+SELFTEST PASS: HASH-1 -> a mismatched record hash is an error, not a note
+SELFTEST PASS: HASH-2 -> an absent record hash is reported, not failed
+SELFTEST PASS: NR-1 -> NOT-RUN is a note by default, an error under --require-run
+SELFTEST PASS: ONLY-0 -> --only with no match is an error, not a green run
+SELFTEST PASS: ONLY-1 -> --only naming a real claim selects exactly that row
+selftest: 15 cases, 0 failed
+---
+exit: 0

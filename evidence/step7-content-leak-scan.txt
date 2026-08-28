@@ -1,0 +1,6 @@
+$ python3 gates/check_content_leaks.py
+(run at 2026-08-28T18:02:50Z, from repo root, HEAD=d1620d2ede7f59a41cca5fb30fa739e5a80f9e07)
+---
+PASS check_content_leaks: 65 tracked files scanned; baseline is empty; 2 of 67 tracked file(s) skipped by exact relpath (this gate and its own fixtures, which contain every pattern as source): gates/check_content_leaks.py, gates/test_check_content_leaks.py
+---
+exit: 0

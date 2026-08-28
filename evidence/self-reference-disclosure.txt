@@ -1,0 +1,36 @@
+self-reference disclosure — producer/verifier relationship
+============================================================
+
+Observable fact, checkable by any reader of this repo directly (git log/blame, no special
+tooling): the manifest at the repo root, `acceptance.toml`, the spec it cites (spec/core.md,
+spec/format.md), and the validator that checks it (tools/check_acceptance.py) all live in this
+same repository, in the same tree, and were produced by the same author.
+
+Commit of record for this certification (spec_sha = validator_sha = [subject].commit):
+  e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688
+
+git log -1 --format='%H %ad' --date=iso-strict -- <path>, at capture time:
+  tools/check_acceptance.py  630c366ac641ece0f83487a3f78a8a3d45f7a277  2026-08-28T16:29:11+02:00
+  acceptance.toml            8fd3cff98edaa1f2f29499ec765366165e792755  2026-08-28T14:24:31+02:00
+  spec/core.md spec/format.md e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688 2026-08-28T16:48:11+02:00
+
+git log --format='%an' | sort -u  ->  Ivo Matijasevic
+
+Author of both the validator and this manifest: Ivo Matijasevic (@ivmat). The producer of this
+manifest and the verifier that decides its claims are therefore not independent parties. That is
+recorded plainly here, not argued away.
+
+The one-commit lag (format.md, "[format] self-location", self-certification convention). The
+commit named above is the CLEAN commit at which every evidence transcript in this directory was
+captured, and it is the commit whose spec and validator were read. It cannot be the commit that
+contains this manifest, because a manifest cannot name a commit that already includes itself. The
+manifest and these evidence records land in the immediately following commit, whose diff is
+exactly that manifest-and-evidence update and nothing else. A reader who wants to check the lag
+runs `git show --stat` on the commit that carries acceptance.toml and confirms it touches nothing
+but acceptance.toml and evidence/.
+
+Nothing in this file raises the producer/verifier relationship above what a reader can check for
+themselves. Every claim in acceptance.toml carries a `self_verify.command` the reader re-executes
+against their own checkout, and an `expect` stating what the run must show. That re-run — never
+this file's own say-so about itself, and never the manifest's — is what the format's escape from
+self-reference actually is.

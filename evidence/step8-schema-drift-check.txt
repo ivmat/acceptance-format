@@ -1,0 +1,7 @@
+$ bash -c 'diff -q <(python3 tools/emit_schema.py) schema/acceptance-0.1.0-draft.schema.json && python3 tools/emit_schema.py --check examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml'
+(run at 2026-08-28T14:48:48Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688)
+---
+PASS examples/minimal.acceptance.toml
+PASS examples/rs-verified-der/acceptance.toml
+---
+exit: 0

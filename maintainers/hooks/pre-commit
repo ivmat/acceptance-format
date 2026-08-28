@@ -1,0 +1,10 @@
+#!/bin/sh
+# pre-commit — runs the full acceptance-format gate suite before every commit.
+# Installed into .git/hooks/pre-commit by maintainers/install_hooks.sh.
+#
+# Unset git's hook env first: git exports GIT_DIR/GIT_INDEX_FILE/GIT_WORK_TREE into hooks, and any
+# git-touching check would otherwise operate on the real repo rather than the working tree.
+# Defensive here; run_all.sh doesn't touch git, but the strip costs nothing.
+root="$(git rev-parse --show-toplevel)"
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR GIT_INTERNAL_SUPER_PREFIX
+exec bash "$root/gates/run_all.sh"
