@@ -2,7 +2,7 @@ $ python3 tools/check_execute.py --selftest
 MUTATION CONTROL: tools/check_execute.py's is_self_fulfilling() word-boundary echo detector
 ('return re.search(pat, c) is not None', the SELF-FULFILLING-SUSPECT rule) was disabled by
 forcing it to 'return False', then the identical selftest command was re-run.
-(run at 2026-08-28T14:49:44Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688 + this one-line mutation, reverted immediately after)
+(run at 2026-08-28T19:07:38Z, from repo root, HEAD=aeac93f22f15f72d787970135d61ac97e19f4a8a + this one-line mutation, reverted immediately after)
 ---
 SELFTEST PASS: OK-1 -> EXECUTED-PASS
 SELFTEST PASS: FAIL-1 -> EXECUTED-FAIL

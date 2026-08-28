@@ -1,9 +1,12 @@
 $ python3 tools/check_ledger.py --selftest
 MUTATION CONTROL: tools/check_ledger.py's core.md §4 positive_control-required-on-not-covered
 enforcement (the 'if grade == "not-covered":' guard around check_positive_control(...), line
-1266) was disabled by changing it to 'if False and grade == "not-covered":', then the identical
-selftest command was re-run.
-(run at 2026-08-28T14:49:31Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688 + this one-line mutation, reverted immediately after)
+1266) was disabled by changing it to 'if False and grade == "not-covered":', then the
+identical selftest command was re-run. NOTE: this line NUMBER drifts as the file changes --
+re-locate it (`grep -n 'if grade == "not-covered":' tools/check_ledger.py`) before reusing
+this script; the assertion below fails loudly if the anchor is stale rather than mutating
+the wrong occurrence.
+(run at 2026-08-28T19:07:38Z, from repo root, HEAD=aeac93f22f15f72d787970135d61ac97e19f4a8a + this one-line mutation, reverted immediately after)
 ---
 SELFTEST PASS: weight-invariant-refused-rows-are-in-neither-tier (117 fixtures scanned)
 SELFTEST PASS: W5-declared-pending-count-is-checked

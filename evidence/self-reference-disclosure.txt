@@ -7,12 +7,12 @@ spec/format.md), and the validator that checks it (tools/check_acceptance.py) al
 same repository, in the same tree, and were produced by the same author.
 
 Commit of record for this certification (spec_sha = validator_sha = [subject].commit):
-  e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688
+  aeac93f22f15f72d787970135d61ac97e19f4a8a
 
 git log -1 --format='%H %ad' --date=iso-strict -- <path>, at capture time:
-  tools/check_acceptance.py  630c366ac641ece0f83487a3f78a8a3d45f7a277  2026-08-28T16:29:11+02:00
-  acceptance.toml            8fd3cff98edaa1f2f29499ec765366165e792755  2026-08-28T14:24:31+02:00
-  spec/core.md spec/format.md e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688 2026-08-28T16:48:11+02:00
+  tools/check_acceptance.py  aeac93f22f15f72d787970135d61ac97e19f4a8a 2026-08-28T21:07:37+02:00
+  acceptance.toml            aeac93f22f15f72d787970135d61ac97e19f4a8a 2026-08-28T21:07:37+02:00
+  spec/core.md spec/format.md aeac93f22f15f72d787970135d61ac97e19f4a8a 2026-08-28T21:07:37+02:00
 
 git log --format='%an' | sort -u  ->  Ivo Matijasevic
 

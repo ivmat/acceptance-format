@@ -1,8 +1,8 @@
 $ python3 tools/check_acceptance.py --selftest
 MUTATION CONTROL: tools/check_acceptance.py's W2.3/P1 'clause_source not recorded' refusal
-(the 'if cs is None:' branch inside the weighted-claim checks, line 1463) was disabled by
+(the 'if cs is None:' branch inside the weighted-claim checks) was disabled by
 changing it to 'if cs is None and False:', then the identical selftest command was re-run.
-(run at 2026-08-28T14:49:15Z, from repo root, HEAD=e37f1d0e8dd890bb0e3d561a8f78b6b372ed4688 + this one-line mutation, reverted immediately after)
+(run at 2026-08-28T19:07:38Z, from repo root, HEAD=aeac93f22f15f72d787970135d61ac97e19f4a8a + this one-line mutation, reverted immediately after)
 ---
 SELFTEST FAIL: P1: weighted claim with NO clause_source is refused weight (--strict-weight): expected FAIL, but validation passed
 SELFTEST FAILED: 1/210 cases

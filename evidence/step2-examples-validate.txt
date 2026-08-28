@@ -1,5 +1,5 @@
 $ python3 tools/check_acceptance.py --strict --strict-weight examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml
-(run at 2026-08-28T15:45:22Z, from repo root, HEAD=433e6dbcffdb053e83b18f12376f206fa3d1d4fb)
+(run at 2026-08-28T19:07:37Z, from repo root, HEAD=aeac93f22f15f72d787970135d61ac97e19f4a8a)
 ---
 WARN examples/minimal.acceptance.toml: claim 'A-001' evidence[0]: record pointer does not exist: evidence/kani-add.json
 PASS ILLUSTRATIVE examples/minimal.acceptance.toml (1 warning) [weighted: 0, unweighted: 2]
