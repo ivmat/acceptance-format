@@ -1,0 +1,518 @@
+# Hand-authored acceptance/0 manifest for the Challenge-2 (partial) contribution,
+# model-checking/verify-rust-std PR #618 ("Challenge 2 (partial): safety contracts +
+# verification for 15 of 20 raw-pointer core::intrinsics").
+#
+# NOT a generated certificate: hand-authored from the PR's own body plus this control repo's
+# cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md, not the output of a manifest generator.
+# `illustrative = true` (core.md 0.6) makes that a validator-visible fact.
+#
+# WHY every intrinsic claim is band = A0 (not A3, "bounded functional contract"): every claim
+# below is a `kani-harness` proof of a functional contract with declared bounds -- the A3 shape
+# -- but no mutation control specific to that claim's oracle is present as a citable record in
+# this control repo (see RECEIPT.md's "No mutation/ablation control" section). Per
+# assurance-bands.md rule 2/5, an oracle-bearing claim with the right evidence species but no
+# matching observed-red control is capped at A0. The PR body itself states, in prose, that a
+# few preconditions were ablation-tested during authoring (see the per-claim `assumes` blocks)
+# -- disclosed, but not counted as evidence here because no machine record for those specific
+# runs is filed in this control repo.
+#
+# `record` pointers are repo-relative to the private control repo they live in (not
+# this repo); they will not resolve from here or from a public reader's checkout -- expected, and
+# validator-flagged as a WARN, not a FAIL (same shape as the rs-verified-der example).
+#
+# UNWEIGHTED throughout (house rule 2026-08-29): reduced/unweighted manifests are preferred over
+# inflated ones. Validate with:
+#   python3 tools/check_acceptance.py --strict ch2-acceptance.toml   (at acceptance-format @ bd1c995)
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
+validator_sha = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-29T18:00:00Z"
+illustrative  = true
+
+[subject]
+name   = "rust-lang/rust core::intrinsics (verify-rust-std challenge fork, Challenge 2)"
+kind   = "rust-crate"
+# PR model-checking/verify-rust-std#618's CURRENT head as of this manifest's authoring (confirmed
+# via `gh pr view 618`, state=OPEN, updatedAt=2026-08-27T19:23:58Z -- unmoved since). Branch
+# challenge-2-intrinsics-memory, based on upstream/main at the merge-base below.
+commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
+dirty  = false
+
+[spec]
+path = "doc/src/challenges/0002-intrinsics-memory.md"
+# upstream/main merge-base for this PR's branch (the nearest independent spec version to cite;
+# same convention the sibling ch20/ch21 manifests use).
+version = "791a653c844411192254c991657ec28c54cc9cfe"
+axis    = "15 of the 20 raw-pointer core::intrinsics Challenge 2 names (criterion 1); the remaining 5 are not verifiable by the pinned Kani toolchain -- a disclosed tool gap (CH2-016 below), not claimed"
+
+[coverage]
+clauses_total = 20   # the challenge's own mandated intrinsic count
+claims_total  = 16   # 15 intrinsic claims + 1 explicit gap claim naming the 5 tool-blocked residuals
+denominator   = "slice"
+slice_note    = "15 bounded, contract-form PROBE claims -- one per counted intrinsic -- plus one explicit gap claim naming the 5 intrinsics the pinned Kani toolchain cannot currently codegen. No claim asserts unbounded (all-input, all-type) coverage; type/size coverage is finite per claim, stated in each claim's own assumes block."
+
+# =====================================================================================================
+# -- typed_swap ---------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-001"
+clause    = "typed_swap"
+item      = "library/core/src/intrinsics/mod.rs::typed_swap_nonoverlapping (in-tree fallback body for typed_swap)"
+statement = "typed_swap_nonoverlapping swaps *x and *y with no UB and byte-identical post-state to the pre-state values swapped, verified both against Kani's built-in intrinsic model and, separately, by forcing symbolic execution of the production fallback body itself (the intrinsic and the verification wrapper call the same shared private helper, so the two cannot drift apart) -- at three concrete instantiations: u8, char, and a NonZero type"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_typed_swap_{u8,char,non_zero}, check_typed_swap_fallback_{u8,char,non_zero}"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: exactly 3 concrete types (u8, char, NonZero<_>); not a generic proof over arbitrary T"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "type coverage is exactly u8, char, and NonZero<_> -- not a generic contract over arbitrary T"
+  void_if   = "this claim is read as covering any type other than the three instantiated"
+
+# =====================================================================================================
+# -- vtable_size / vtable_align -------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-002"
+clause    = "vtable_size"
+item      = "library/core/src/intrinsics/mod.rs::vtable_size"
+statement = "vtable_size, invoked through a wrapper that performs the unsize coercion to a genuine dyn Debug vtable INSIDE the wrapper (so the pointer handed to the intrinsic is a real vtable for T by construction, not assumed), returns exactly size_of::<T>() -- checked against rustc's own compile-time constant, cross-checked against CBMC's independent __CPROVER_OBJECT_SIZE -- at 7 erased types with independently varying size/align"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_vtable_size_coerced_wrapper_contract_{arr_u8_8,mixed_align,over_aligned,u32,u64,u8,zst}, check_vtable_size_align_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: 7 concrete erased types, single trait (Debug); coerced *const T wrapper form only (the raw *const () monomorphic probes, check_vtable_size_wrapper_contract[_u64], are kept in-tree, labelled, and deliberately excluded from this claim)"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the monomorphization set is finite (7 erased types), not a ∀T proof; the unsize coercion fixes one trait (Debug); the reference value (size_of::<T>()) and the intrinsic's result both ultimately descend from rustc's layout_of, so agreement is relative to that layout model, not an independent ground truth"
+  void_if   = "this claim is read as a generic ∀T proof, as covering any trait other than Debug, or as an independent-of-rustc's-own-model ground-truth check"
+
+[[claim]]
+id        = "CH2-003"
+clause    = "vtable_align"
+item      = "library/core/src/intrinsics/mod.rs::vtable_align"
+statement = "vtable_align, via the same by-construction coerced wrapper as CH2-002, returns exactly align_of::<T>() at the same 7 erased types"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_vtable_align_coerced_wrapper_contract_{arr_u8_8,mixed_align,over_aligned,u32,u64,u8,zst}"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: 7 concrete erased types, single trait (Debug); coerced *const T wrapper form only (the raw *const () monomorphic probes, check_vtable_align_wrapper_contract[_u64], are kept in-tree, labelled, and deliberately excluded from this claim)"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "same scope limits as CH2-002/AS-1: finite monomorphization set, single trait (Debug), agreement relative to rustc's own layout_of model"
+  void_if   = "this claim is read as a generic ∀T proof or as an independent-of-rustc ground-truth check"
+
+# =====================================================================================================
+# -- copy / copy_nonoverlapping -------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-004"
+clause    = "copy"
+item      = "library/core/src/intrinsics/mod.rs::copy"
+statement = "copy produces no UB and byte-exact source-to-destination content, both for the non-overlapping case and for a representative overlapping case with a fixed shift and a symbolic index"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_copy, check_copy_no_ub, check_copy_overlapping_shift_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: small concrete array size (N=4 typical); overlap coverage uses one fixed representative SHIFT with a symbolic index, not an exhaustive overlap sweep"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "overlap coverage is representative (one fixed SHIFT, symbolic index), not exhaustive over all possible overlaps"
+  void_if   = "this claim is read as covering every possible source/destination overlap"
+
+  [[claim.assumes]]
+  id        = "AS-2"
+  statement = "the initialization oracle for the overlapping case compares POST-state source against POST-state destination (not pre-state); a kani::cover records that the non-trivial mixed-initialization-overlap domain is reachable, but the post-state comparison is a named limit on what that domain check can distinguish"
+  void_if   = "this claim is read as independently verifying pre-state-vs-post-state initialization semantics under overlap"
+
+[[claim]]
+id        = "CH2-005"
+clause    = "copy_nonoverlapping"
+item      = "library/core/src/intrinsics/mod.rs::copy_nonoverlapping"
+statement = "copy_nonoverlapping produces no UB and byte-exact source-to-destination content, for a single fixed non-overlapping fixture"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_copy_nonoverlapping, check_copy_nonoverlapping_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: single fixed non-overlapping array fixture, small concrete size"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the non-overlap `requires` clause is doc-correct but NOT falsifiable by this harness's single non-overlapping fixture -- no ablation of that clause is present"
+  void_if   = "this claim is read as having machine-demonstrated that the non-overlap precondition is load-bearing"
+
+# =====================================================================================================
+# -- write_bytes -----------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-006"
+clause    = "write_bytes"
+item      = "library/core/src/intrinsics/mod.rs::write_bytes"
+statement = "write_bytes produces no UB, and the written region is independently read back and checked to equal the written value byte-for-byte"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_write_bytes, check_write_bytes_sets_value"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: small concrete region size, symbolic value byte; this run supersedes the prior #[cfg(not(kani))]-gated kani#90 configuration, which now verifies (a kani::cover witnesses the kani#90 trigger as reachable)"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the base UB/initialization contract and the value-equality check are two separate harnesses, not one combined proof"
+  void_if   = "n/a -- disclosure only"
+
+# =====================================================================================================
+# -- size_of_val ------------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-007"
+clause    = "size_of_val"
+item      = "library/core/src/intrinsics/mod.rs::size_of_val"
+statement = "size_of_val returns the correct size on three paths: Sized types (no precondition, matching documentation, including null/dangling/nondeterministic-address witnesses), trait objects (dyn-metadata wrapper, 4 erased types), and slices with symbolic length under the documented size*len <= isize::MAX precondition"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_size_of_val_wrapper_contract, check_size_of_val_u32_no_ub, check_size_of_val_dyn_wrapper_contract_{arr_u8_8,over_aligned,u32,zst}, check_size_of_val_slice_wrapper_contract_{over_aligned,u32,u8,zst_elem}"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: 4 erased types for the trait-object path, 4 concrete element types for the slice path with symbolic length; the extern-type metadata case does not exist on stable and is out of scope entirely (not a gap in this proof, a nonexistent case)"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the size*len <= isize::MAX precondition on the slice path is claimed load-bearing in the PR's own prose (stated to fail under ablation inside Kani's size model during authoring), but no machine record for that specific ablation run is filed in this control repo -- disclosed as PR-body prose, not counted as evidence in this manifest"
+  void_if   = "this claim is read as having a manifest-citable machine control for that precondition"
+
+# =====================================================================================================
+# -- arith_offset -----------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-008"
+clause    = "arith_offset"
+item      = "library/core/src/intrinsics/mod.rs::arith_offset"
+statement = "arith_offset produces no UB for any offset (fully symbolic, unbounded over the offset value) applied to a single representative 8-byte allocation base pointer -- arith_offset has no documented safety precondition, so this is an unconditional no-UB proof rather than a doc-derived contract"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_arith_offset_unconditional_safety"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: the base pointer is a single fixed representative 8-byte allocation, not varied (only the offset value is unbounded/symbolic). A separate bounded contract-form probe (check_arith_offset_wrapper_contract, check_arith_offset_no_ub) exists in-tree but is a behavioral/pointer-model probe, not this claim's evidence, and is not counted"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the base allocation is a single fixed representative 8-byte allocation; other allocation sizes/kinds are not varied by this harness"
+  void_if   = "this claim is read as covering arbitrary allocation sizes or kinds"
+
+# =====================================================================================================
+# -- volatile_load / volatile_store ---------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-009"
+clause    = "volatile_load"
+item      = "library/core/src/intrinsics/mod.rs::volatile_load"
+statement = "volatile_load produces no UB for Rust-allocation-backed memory satisfying Kani's can_dereference model"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_volatile_load_wrapper_contract, check_volatile_load_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: Rust-allocation-backed memory only"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the documented MMIO case (aligned, non-trapping access outside any Rust allocation) is NOT covered -- Kani's can_dereference does not model it. This is a named unverified residual, not a claim of impossibility"
+  void_if   = "this claim is read as covering MMIO / outside-any-Rust-allocation access"
+
+[[claim]]
+id        = "CH2-010"
+clause    = "volatile_store"
+item      = "library/core/src/intrinsics/mod.rs::volatile_store"
+statement = "volatile_store produces no UB for Rust-allocation-backed memory satisfying Kani's can_write model"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_volatile_store_wrapper_contract, check_volatile_store_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: Rust-allocation-backed memory only"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "same MMIO residual as CH2-009/AS-1: outside-any-Rust-allocation access is NOT covered"
+  void_if   = "this claim is read as covering MMIO / outside-any-Rust-allocation access"
+
+# =====================================================================================================
+# -- ptr_offset_from / ptr_offset_from_unsigned -----------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-011"
+clause    = "ptr_offset_from"
+item      = "library/core/src/intrinsics/mod.rs::ptr_offset_from"
+statement = "ptr_offset_from produces no UB and returns the correct pointer distance, at T=u8, for two pointers within the same allocation"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_ptr_offset_from_wrapper_contract, check_ptr_offset_from_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: instantiated at T=u8 only. At T=u8 the documented byte-distance-divisibility clause reduces to `% 1 == 0`, so it is NOT exercised by this instantiation (a T=u32 instantiation with misaligned pointer pairs would exercise it -- named gap, not claimed)"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the byte-distance-divisibility clause is not exercised at T=u8 (it degenerates to a trivial check); the PR's own prose states the same_allocation clause was observed failing under ablation during authoring, but no machine record for that specific run is filed in this control repo -- disclosed, not counted as evidence"
+  void_if   = "this claim is read as exercising the divisibility clause, or as having a manifest-citable control for same_allocation"
+
+[[claim]]
+id        = "CH2-012"
+clause    = "ptr_offset_from_unsigned"
+item      = "library/core/src/intrinsics/mod.rs::ptr_offset_from_unsigned"
+statement = "ptr_offset_from_unsigned produces no UB and returns the correct unsigned pointer distance, at T=u8, for two ordered pointers within the same allocation"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_ptr_offset_from_unsigned_wrapper_contract, check_ptr_offset_from_unsigned_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: instantiated at T=u8 only, same divisibility-clause gap as CH2-011"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "same scope limits as CH2-011/AS-1: divisibility clause not exercised at T=u8; ablation claim is PR-body prose, not a manifest-citable machine record"
+  void_if   = "this claim is read as exercising the divisibility clause, or as having a manifest-citable control for same_allocation"
+
+# =====================================================================================================
+# -- compare_bytes / read_via_copy / write_via_move ---------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-013"
+clause    = "compare_bytes"
+item      = "library/core/src/intrinsics/mod.rs::compare_bytes"
+statement = "compare_bytes produces no UB and returns a result consistent with byte-wise comparison, for a bounded byte length"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_compare_bytes_wrapper_contract, check_compare_bytes_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: a fixed tractability byte-length cap, stated in the harness (not the contract, which states only the documented condition)"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the byte-length cap is a harness tractability bound, not an assumption in the contract itself; larger lengths are not covered by this claim"
+  void_if   = "this claim is read as covering arbitrary-length byte comparisons"
+
+[[claim]]
+id        = "CH2-014"
+clause    = "read_via_copy"
+item      = "library/core/src/intrinsics/mod.rs::read_via_copy"
+statement = "read_via_copy produces no UB and returns the value at the source location, byte-exact"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_read_via_copy_wrapper_contract, check_read_via_copy_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: small concrete fixed fixture"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "single fixed concrete fixture; not varied across types beyond what the harness instantiates"
+  void_if   = "this claim is read as covering types other than the one instantiated"
+
+[[claim]]
+id        = "CH2-015"
+clause    = "write_via_move"
+item      = "library/core/src/intrinsics/mod.rs::write_via_move"
+statement = "write_via_move produces no UB and writes the moved value to the destination location, byte-exact"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_write_via_move_wrapper_contract, check_write_via_move_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  bounds    = "bounded: small concrete fixed fixture"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "single fixed concrete fixture; not varied across types beyond what the harness instantiates"
+  void_if   = "this claim is read as covering types other than the one instantiated"
+
+# =====================================================================================================
+# -- explicit gap: the 5 intrinsics the pinned toolchain cannot verify --------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH2-016"
+clause    = "volatile_copy_memory, volatile_copy_nonoverlapping_memory, volatile_set_memory, unaligned_volatile_load, unaligned_volatile_store"
+item      = "library/core/src/intrinsics/mod.rs -- 5 of the 20 Challenge-2 mandated intrinsics"
+statement = "these 5 intrinsics are NOT verified by this PR at the pinned Kani commit. Kani emits an explicit \"not currently supported\" diagnostic for each -- a tool limitation, not an attempted-and-failed proof. Harnesses for all 5 are written and kept in-tree under #[cfg(not(kani))], preserving the exact attempted proof for when support lands"
+band      = "A0"
+status    = "gap"   # no admissible evidence under the pinned toolchain; disclosed tool limitation,
+                     # not a claim of impossibility. Upstream fixes are merged (kani#4672, kani#4673)
+                     # but not yet in the release this manifest's toolchain pin uses.
+weight    = "unweighted"

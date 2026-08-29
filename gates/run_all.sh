@@ -16,13 +16,14 @@ python3 tools/m11.py --selftest
 
 echo "-- 2/9: examples validate --"
 # --strict: record-pointer existence is enforced (core.md §0.6 / CS-21..23: strict applies only
-# to non-illustrative manifests -- the two illustrative examples below are marked
+# to non-illustrative manifests -- the illustrative examples below are marked
 # illustrative = true, so this stays a no-op on record-pointer existence for them; they are also
 # wholly unweighted, so --strict-weight is a no-op on them too. examples/weighted-toy/ is
 # illustrative = false and weighted, so both flags are LIVE checks on it, not no-ops -- see its
-# own README for why it is the template to copy, not the two above.
+# own README for why it is the template to copy, not the illustrative ones.
 python3 tools/check_acceptance.py --strict --strict-weight \
   examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml \
+  examples/verify-rust-std-pr618/acceptance.toml \
   examples/weighted-toy/acceptance.toml
 python3 tools/check_execute.py --yes-run-untrusted-commands \
   --subject-root examples/weighted-toy examples/weighted-toy/acceptance.toml
@@ -68,7 +69,8 @@ fi
 rm -f "$schema_tmp"
 trap - EXIT
 python3 tools/emit_schema.py --check examples/minimal.acceptance.toml \
-  examples/rs-verified-der/acceptance.toml examples/weighted-toy/acceptance.toml
+  examples/rs-verified-der/acceptance.toml examples/verify-rust-std-pr618/acceptance.toml \
+  examples/weighted-toy/acceptance.toml
 
 echo "-- 9/9: self-manifest validates as a CERTIFICATE (acceptance.toml) --"
 # This gate validates the manifest that DESCRIBES this gate suite, under the same --strict

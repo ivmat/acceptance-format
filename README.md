@@ -72,10 +72,15 @@ claim falls short — the claim stays visible, honestly unweighted.
 
 Also in the tree: `examples/minimal.acceptance.toml` (an illustrative manifest),
 `examples/rs-verified-der/` (the worked example: an illustrative manifest paired with
-`ENVELOPE.md`, the frozen legacy ledger form — see its own `README.md`), and
+`ENVELOPE.md`, the frozen legacy ledger form — see its own `README.md`),
 [`examples/weighted-toy/`](examples/weighted-toy/) — **start here to write a weighted manifest**: a
 genuine, non-illustrative WEIGHTED certificate for a tiny real subject, small enough to copy
-whole (see its own `README.md` for a field-by-field walkthrough). Also
+whole (see its own `README.md` for a field-by-field walkthrough) — and
+[`examples/verify-rust-std-pr618/`](examples/verify-rust-std-pr618/) — a real manifest for a real
+submission: [`model-checking/verify-rust-std` PR #618](https://github.com/model-checking/verify-rust-std/pull/618)
+(15 Kani-verified `core::intrinsics` claims plus one explicit gap claim, `kani@d4df833c8f8f`
+0.67.0 / CBMC 6.8.0, whole-module `370/370`, every claim unweighted and `A0` with the grading
+rationale in the manifest's own header comments — see its own `README.md`). Also
 `maintainers/hooks/pre-commit` + `maintainers/install_hooks.sh` (installs the gate suite as a
 commit hook, §7), and a standard Python `.gitignore` (`__pycache__/`, `*.pyc`).
 
