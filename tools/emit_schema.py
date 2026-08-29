@@ -100,6 +100,11 @@ ISO_DATE_PATTERN = grammar.ISO_DATE_RE.pattern
 # character classes, which are common-subset and need no flag re-application here either.
 COVERED_FRACTION_PATTERN = ca.COVERED_FRACTION_RE.pattern
 COMMIT_PATTERN = ca.COMMIT_RE.pattern
+# P3 (evidence-types.md "Control block"): the same git-object-name floor the `[format]`
+# self-location shas use (7-40 lowercase hex, full or abbreviated) — shared with
+# `captured_at_commit`, which is optional and abbreviation-tolerant, unlike [subject].commit above
+# (COMMIT_PATTERN), which is the strict full 40-hex form.
+SELF_LOCATION_SHA_PATTERN = ca.SELF_LOCATION_SHA_RE.pattern
 
 # ---------------------------------------------------------------------------
 # Common-subset law (ruled 2026-08-28): every regex pattern reaching the emitted schema must be
@@ -483,6 +488,14 @@ def _build_evidence_item() -> dict:
             M11_HASH_PATTERN,
             "OPTIONAL. SEMANTIC: when present, must equal [subject].subject_hash exactly (design "
             "rule 4a) — an equality binding, not a shape constraint.",
+        ),
+        "captured_at_commit": _pat(
+            SELF_LOCATION_SHA_PATTERN,
+            "OPTIONAL (P3, evidence-types.md 'Control block'). 7-40 lowercase hex — a git object "
+            "name, full or abbreviated, naming the commit at which this record's transcript was "
+            "captured. DISCLOSURE ONLY: it is never a second validity key and this schema and the "
+            "live validator both check it for shape alone — content identity is decided "
+            "exclusively by `subject_hash`, above.",
         ),
         "method": _s1("OPTIONAL, profile-defined technique name (evidence-types.md CS-1/CS-2)."),
         "epistemic_tier": _enum(

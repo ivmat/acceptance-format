@@ -28,6 +28,11 @@ weight-architecture's WEIGHTED/UNWEIGHTED "tier" (core.md
 this axis's key is `epistemic_tier`. In prose either may be shortened to "tier (T1–T5)" once the
 section has said `epistemic_tier` once; the two are never spelled the same in TOML.
 
+**Each row below is a CEILING, not an assignment: the strongest `epistemic_tier` that the row's
+right-column `method` tokens (the FV profile's `method → epistemic_tier` table) may declare** — a
+record may honestly declare that tier or any weaker one; a stronger declared tier is a validator
+error (spelled out in full under "The profile `method → epistemic_tier` table", below).
+
 | `epistemic_tier` | means | this profile's code column (FV) |
 |---|---|---|
 | `T1` | deductive, kernel-checked derivation | `lean-theorem` |
@@ -103,8 +108,10 @@ one as an optional sub-table.
 in this revision** — validated where a record declares it, warned-but-admissible where a record
 omits it. Where present, it is an **open, profile-defined** token naming the concrete technique
 (`kani-harness`, `lean-theorem`, `robustness-proof`, `schema-validate`, …).
-`method` is what a profile's `method → epistemic_tier` table (below) keys on to assign the
-`epistemic_tier` above; it is the field that carries epistemic weight into the format.
+`method` is what a profile's `method → epistemic_tier` table (below) keys on to CAP the
+`epistemic_tier` above — the table sets the strongest permitted value for that `method`, a record
+may honestly declare that tier or any weaker one, and a stronger declared tier is a validator
+error; it is the field that carries epistemic weight into the format.
 
 **A `method` token MUST identify its warrant-relevant mode, not merely a tool family** — the same
 underlying tool can produce warrants of different strength (a bounded harness run exhaustively
@@ -316,3 +323,61 @@ id = "L-length"          # the claim's own id — of_claim below must equal THIS
   gate (assurance-bands.md rule 6).
 - **`of_claim` must resolve.** A `control.of_claim` naming a claim id that does not exist anywhere
   in the manifest is an error — a control pointing at a phantom claim (assurance-bands.md rule 8).
+- **`captured_at_commit` — OPTIONAL per-record provenance disclosure (P3, design ruled
+  2026-08-29).** Any `[[claim.evidence]]` record MAY carry `captured_at_commit`, naming the git
+  commit at which THAT record's transcript was captured — a git object name, full or abbreviated
+  (`tools/check_acceptance.py`'s `SELF_LOCATION_SHA_RE`: 7-40 lowercase hex, the same floor
+  `[format].spec_sha`/`validator_sha` already use). It is a plain per-record field, not nested
+  under `control` and not limited to control-carrying records — documented here because the
+  stale-control policy below is the concern that motivated it. It formalizes, as a real field, the
+  ad hoc workaround this format already tolerated: naming the actual capture commit inside the
+  free-text `tool` field plus a disclosure comment on the record (`format.md`'s "Partial
+  re-certification"). `captured_at_commit` ADDS the structured disclosure alongside that
+  workaround — a producer supplies both, not one instead of the other. It does not alter
+  `format.md`'s own partial-recertification requirements (the capture commit still MUST be named
+  in the evidence `tool` field, and the exception still MUST be disclosed in a comment on the
+  record) — `format.md` itself is unchanged by this field.
+
+  **`captured_at_commit` is DISCLOSURE ONLY — it is NEVER a second validity key.** Validity binding
+  stays exactly where design rule 4a already put it: a record's `subject_hash`, where present,
+  MUST equal `[subject].subject_hash` (Content-hashing, above) — that comparison is what decides
+  whether a record still speaks to the subject a reader holds. `captured_at_commit` answers a
+  different question ("when was this run") and settles nothing about whether the record is still
+  good on its own: a record naming an old commit with a matching `subject_hash` is exactly as valid
+  as one naming today's commit, and a record naming today's commit with a stale `subject_hash` is
+  exactly as invalid either way. The validator checks `captured_at_commit` for SHAPE ONLY — a
+  malformed value is a hard error, unconditionally, the same fail-closed treatment
+  `record_hash`/`subject_hash`'s own malformed-shape branches get, above: a disclosure that cannot
+  be understood is worse than no disclosure.
+
+  **The stale-control policy.** A `control` block's carrier record states an observation —
+  expectation vs. observed — over the subject as it existed when the record was captured. Subject
+  content moves between commits; a control's observation does not automatically travel with it. A
+  control whose carrier record's subject content is UNCHANGED since capture (its `subject_hash` —
+  when DECLARED on both the record and `[subject]` — still equals `[subject].subject_hash` at the
+  commit a reader is checking) REMAINS VALID across commits — nothing about a mutation control's
+  meaning depends on which commit happened to be current when it ran, only on whether the thing it
+  perturbed is still the same bytes. Content that HAS CHANGED since capture VOIDS the control: the
+  mutation was applied to code that no longer exists in this form, the control's
+  `red`/`green`/`sat` observation says nothing about today's subject, and the control MUST be
+  re-run before it is cited again. **When subject hashes are absent, this revision makes no
+  machine-checkable content-continuity determination** — there is nothing for the validator to
+  compare, so it cannot decide staleness either way; `captured_at_commit` MUST NOT be used as a
+  fallback binding to fill that gap. `subject_hash` equality alone carries the content-validity
+  binding. `captured_at_commit` supplies historical context only and MUST NOT be consulted to
+  validate, invalidate, weight, or band-lift a record.
+
+  **Granularity of "subject content" (ruled 2026-08-29): the design-rule-4a subject identity,
+  exactly.** For a single-file subject that is the file's bytes; for a multi-file subject the
+  inventory-hash construction over the declared subject tree — never any finer unit (a
+  per-file identity is not a `subject_hash` and the MUST-equal rule rejects it), never the
+  whole repository tree, and never the toolchain (a build input, pinned by the record's own
+  provenance fields). A producer that wants finer-grained carry-over triage — e.g. treating a
+  control as carried because one file's bytes are unchanged while the declared subject moved —
+  may do so only as a DISCLOSED ASSUMPTION on the consuming claim (a `[[claim.assumes]]` entry
+  naming the file-level identity relied on, the unproven cross-file build-input residual, and
+  void-if triggers covering both a change to the harness's transitive build inputs beyond that
+  file and a toolchain differing from the control's recorded pin). Such an assumption is
+  void-not-discount like every other; it is never spec-blessed validity. The capture-time
+  transitive-closure manifest — the principled successor to file-level triage — is booked in
+  the 0.2 design stream.

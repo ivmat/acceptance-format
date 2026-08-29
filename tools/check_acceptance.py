@@ -801,6 +801,30 @@ def check_evidence_record(
                 f"against an M11 hash)"
             )
 
+    # P3 (evidence-types.md "Control block", design ruled 2026-08-29): `captured_at_commit` --
+    # OPTIONAL per-record PROVENANCE DISCLOSURE naming the git commit at which this record's
+    # transcript was captured. It formalizes, as a real field, the ad hoc workaround this format
+    # already tolerated (naming the actual capture commit inside the free-text `tool` field plus a
+    # disclosure comment -- format.md's "Partial re-certification"). DISCLOSURE ONLY: it is NEVER a
+    # second validity key -- content identity stays exactly where design rule 4a already put it
+    # (subject_hash, above); nothing here compares captured_at_commit against anything or lets it
+    # gate a record's admissibility. Shape only, reusing the same git-object-name pattern the
+    # `[format]` self-location shas use (CS-16: 7-40 lowercase hex, git's own abbreviation floor).
+    # A malformed value is a hard error, unconditionally -- the same fail-closed treatment
+    # record_hash/subject_hash's own malformed-shape branches get, above: a disclosure that cannot
+    # be understood is worse than no disclosure.
+    captured_at_commit = ev.get("captured_at_commit")
+    if captured_at_commit is not None:
+        if (
+            not isinstance(captured_at_commit, str)
+            or not SELF_LOCATION_SHA_RE.match(captured_at_commit)
+        ):
+            rep.error(
+                f"{ctx}: captured_at_commit must be 7-40 lowercase hex characters (a git object "
+                f"name, full or abbreviated), got {captured_at_commit!r} (evidence-types.md "
+                f"'Control block', P3)"
+            )
+
 
 def _band_reachable(band: str, passing: list[dict]) -> bool:
     kinds = {e.get("kind") for e in passing}
@@ -5769,6 +5793,116 @@ status    = "evidenced"
         _with_subject_hash(
             _mini_manifest(_with_evidence_subject_hash(_A1_HYGIENE_NO_CONTROL_CLAIM, _HASH_B)),
             _HASH_A,
+        ),
+        expect_pass=False,
+        expect_substr="evidence-subject binding MISMATCH",
+    )
+    if r:
+        failures.append(r)
+
+    # --------------------------------------------------------------------
+    # P3 (evidence-types.md "Control block", design ruled 2026-08-29) -- captured_at_commit:
+    # OPTIONAL per-record provenance disclosure, shape only, never a second validity key. Exercised
+    # on the control-carrying record of _A1_RULE4_CONTROL_CLAIM, since the stale-control policy this
+    # field exists to support is a control-block concern -- the field itself is a plain per-record
+    # string and behaves identically on a non-control record.
+    # --------------------------------------------------------------------
+
+    def _with_control_captured_at_commit(claim_toml: str, value: str) -> str:
+        return claim_toml.replace(
+            '  record = "evidence/does-not-exist-t-mutants.log"',
+            '  record = "evidence/does-not-exist-t-mutants.log"\n'
+            f'  captured_at_commit = "{value}"',
+        )
+
+    count += 1
+    r = _run_case(
+        "P3 captured_at_commit ABSENT: disclosure is optional, the base fixture validates "
+        "cleanly with no mention of the field",
+        _mini_manifest(_A1_RULE4_CONTROL_CLAIM),
+        expect_pass=True,
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "P3 captured_at_commit, full 40-hex sha: a well-shaped value is accepted (shape check "
+        "only -- see the REGRESSION fixture below for the validity claim itself)",
+        _mini_manifest(
+            _with_control_captured_at_commit(
+                _A1_RULE4_CONTROL_CLAIM, "abcdefabcdefabcdefabcdefabcdefabcdefabcd"
+            )
+        ),
+        expect_pass=True,
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "P3 captured_at_commit, 7-hex ABBREVIATED sha (git's own default abbreviation length): "
+        "accepted, same floor CS-16's self-location shas use",
+        _mini_manifest(
+            _with_control_captured_at_commit(_A1_RULE4_CONTROL_CLAIM, "abcdefa")
+        ),
+        expect_pass=True,
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "P3 captured_at_commit that is not a plausible git commit id is refused (a disclosure "
+        "that cannot be understood is worse than no disclosure)",
+        _mini_manifest(
+            _with_control_captured_at_commit(_A1_RULE4_CONTROL_CLAIM, "yesterday")
+        ),
+        expect_pass=False,
+        expect_substr="captured_at_commit must be 7-40 lowercase hex characters",
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "P3 captured_at_commit that is too short (6 hex) to resolve an identity is refused, "
+        "same floor as CS-16's self-location shas",
+        _mini_manifest(
+            _with_control_captured_at_commit(_A1_RULE4_CONTROL_CLAIM, "abcdef")
+        ),
+        expect_pass=False,
+        expect_substr="captured_at_commit must be 7-40 lowercase hex characters",
+    )
+    if r:
+        failures.append(r)
+
+    # P3 REGRESSION -- the ruled boundary itself: captured_at_commit can never rescue a stale
+    # subject_hash. A fresh-looking, well-shaped captured_at_commit sitting right beside a
+    # MISMATCHED subject_hash must still fail with the same evidence-subject binding error CS-8
+    # already raises with no captured_at_commit present at all -- proving the validator never
+    # reads captured_at_commit as an alternate or fallback validity signal (evidence-types.md
+    # "Control block": "captured_at_commit is never consulted to validate ... a record").
+    def _with_hygiene_captured_at_commit(claim_toml: str, value: str) -> str:
+        return claim_toml.replace(
+            '  record    = "evidence/does-not-exist-a.json"',
+            '  record    = "evidence/does-not-exist-a.json"\n'
+            f'  captured_at_commit = "{value}"',
+        )
+
+    count += 1
+    r = _run_case(
+        "P3 REGRESSION: a fresh-looking captured_at_commit does not rescue a MISMATCHED "
+        "subject_hash -- the binding error still fires exactly as it would with no "
+        "captured_at_commit present (evidence-types.md 'Control block')",
+        _with_subject_hash(
+            _mini_manifest(
+                _with_hygiene_captured_at_commit(
+                    _with_evidence_subject_hash(_A1_HYGIENE_NO_CONTROL_CLAIM, _HASH_A),
+                    "abcdefabcdefabcdefabcdefabcdefabcdefabcd",
+                )
+            ),
+            _HASH_B,
         ),
         expect_pass=False,
         expect_substr="evidence-subject binding MISMATCH",

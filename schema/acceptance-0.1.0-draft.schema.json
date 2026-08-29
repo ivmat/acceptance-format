@@ -85,6 +85,11 @@
                   "minLength": 1,
                   "type": "string"
                 },
+                "captured_at_commit": {
+                  "description": "OPTIONAL (P3, evidence-types.md 'Control block'). 7-40 lowercase hex \u2014 a git object name, full or abbreviated, naming the commit at which this record's transcript was captured. DISCLOSURE ONLY: it is never a second validity key and this schema and the live validator both check it for shape alone \u2014 content identity is decided exclusively by `subject_hash`, above.",
+                  "pattern": "^[0-9a-f]{7,40}$",
+                  "type": "string"
+                },
                 "cases": {
                   "description": "KIND_REGISTRY 'extra' field for kind(s) using it. Per-kind requiredness and exact tag (['int-pos']) are semantic-only, conditioned on this record's own `kind` \u2014 see x-semantic-only-rules 'per-kind-extra-fields' and spec/evidence-types.md.",
                   "minimum": 1,

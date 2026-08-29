@@ -90,6 +90,10 @@ structured disclosed assumptions — see its own `README.md`). Also
 `maintainers/hooks/pre-commit` + `maintainers/install_hooks.sh` (installs the gate suite as a
 commit hook, §7), and a standard Python `.gitignore` (`__pycache__/`, `*.pyc`).
 
+Related project: [`autoprover-core`](https://github.com/ivmat/autoprover-core) — a proving-pipeline
+architecture and reference implementation whose verification receipts are designed to project into
+this format (its ADR-005 states the relationship from that side).
+
 ### For maintainers
 
 [`maintainers/`](maintainers/) — working material for repo maintainers and their agents

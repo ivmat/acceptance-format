@@ -177,6 +177,9 @@ version = "<sha|tag>"        # the spec version the clause ids below refer to
 [coverage]
 clauses_total = 17           # total clause count in spec@version — makes omission detectable
 claims_total  = 17           # must equal the number of [[claim]] entries
+# Where the subject has no clause-addressable specification, clauses_total equals claims_total
+# by construction and the coverage figure carries no information beyond the claim count; such
+# manifests SHOULD say so in this [coverage] comment.
 # denominator = "complete"   # OPTIONAL (coverage-ledger.md): complete | slice. "slice" scopes the
 #                            # omission-detection guarantee to inside the ledger, and requires
 #                            # slice_note. Declaring a real total you do not have is worse than

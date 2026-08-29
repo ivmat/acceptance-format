@@ -105,7 +105,8 @@ VOCAB_HASHES = {
     # Extension 2026-08-25: four additional tokens (categories withheld, per the discipline above).
     "ddcee5a447c418b788dee9f2f62969d9b7ad373987bb91a5dcedc20fa6f3cb4a",
     "b0a9d642d12f553129c39513f7ce26058c34ba4b9062475a8eaac157603e1233",
-    "71a9989a4fd2b33bbcdf286980b04800a3714b165e227311bdbfbe3f3864ce94",
+    # (one token removed 2026-08-29: its subject became PUBLIC by owner act, so it is
+    # no longer private vocabulary; guarding a public name only breeds false positives)
     "dfb316701857783dac69a14d1fe3fd60cff21d56e830baf7f0e3871bd73eee39",
 }
 

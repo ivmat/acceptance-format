@@ -334,3 +334,65 @@ CS-15 (no field exists yet to enforce the shape against), CS-18 (a pointer, not 
 H1-H8 (Reserved hooks, `format.md`) are explicitly reserved with no engine in this revision. Do not
 build ahead of the spec for any of these — a validator that reads a reserved hook for a verdict
 before its shape is fully ruled is exactly the overclaim design rule 7 exists to prevent.
+
+## 0.2 / design stream (DER-lane proposals, adjudicated 2026-08-28)
+
+Three items from the DER-lane review pass, adjudicated together. Not freeze obligations for
+`0.1.0` — booked here so the register stays complete; none blocks the current freeze.
+
+1. **P2-real: per-target clause ids sourced from the subject's spec.** The interim P2 disclosure
+   (`spec/format.md`'s `[coverage]` schema block, added this pass) only states the tautology when
+   `clauses_total` has no clause-addressable specification to bind to; it does not fix it. The real
+   fix is format+engine co-design: per-target clause ids drawn from the subject's own spec
+   document, so `clauses_total` counts a real axis instead of defaulting to `claims_total`. Needs a
+   design pass before implementation — not a small patch.
+2. **P3 — DONE (2026-08-29).** Optional per-record `captured_at_commit` provenance disclosure
+   shipped exactly to the ruled design: validity binding stays on the existing per-record
+   `subject_hash` (content identity, design rule 4a) — `captured_at_commit` is never a second
+   validity key, and no code compares it against anything.
+   - **Spec text + the stale-control policy** — `spec/evidence-types.md` "Control block" section,
+     the new bullet after "`of_claim` must resolve": defines the field, states the
+     disclosure-only/never-a-validity-key rule (tightened per cross-model review 2026-08-29:
+     `subject_hash` equality ALONE carries the content-validity binding; `captured_at_commit`
+     "MUST NOT be consulted to validate, invalidate, weight, or band-lift a record", and the
+     absent-hash case is explicit — "this revision makes no machine-checkable
+     content-continuity determination" and `captured_at_commit` "MUST NOT be used as a fallback
+     binding"), and the stale-control policy in full (a control whose carrier record's subject
+     content is unchanged since capture — `subject_hash` still equals `[subject].subject_hash` —
+     remains valid across commits; changed content voids the control and it must be re-run
+     before it is cited again). Also corrected (same review pass): the field ADDS the structured
+     disclosure alongside `format.md`'s existing partial-recertification workaround (capture
+     commit in the `tool` field + a disclosure comment) rather than "superseding" it — that
+     workaround's own MUST obligations are unchanged, and `format.md` itself is untouched.
+   - **Validator shape check** — `tools/check_acceptance.py`'s `check_evidence_record`, right after
+     the `subject_hash` block: reuses `SELF_LOCATION_SHA_RE` (7-40 lowercase hex, the same
+     git-object-name floor `[format]`'s self-location shas use, CS-16) rather than a new pattern.
+     Present-but-malformed is a hard error, unconditionally — the same fail-closed treatment
+     `record_hash`/`subject_hash`'s own malformed-shape branches get.
+   - **Schema (via the generator, ADR-008)** — `tools/emit_schema.py`'s `_build_evidence_item`
+     gains `captured_at_commit` (OPTIONAL, not in `required`), patterned on the same
+     `SELF_LOCATION_SHA_PATTERN` read live off `check_acceptance.SELF_LOCATION_SHA_RE`; no
+     hand-written pattern. `schema/acceptance-0.1.0-draft.schema.json` regenerated; drift check
+     (`gates/run_all.sh` step 8) green.
+   - **Fixtures** — `tools/check_acceptance.py`'s embedded selftest, 6 new cases right after the
+     CS-8 subject_hash block: absent / full-40-hex / 7-hex-abbreviated / malformed /
+     too-short-6-hex (shape only), plus one REGRESSION fixture proving the ruled boundary itself —
+     a fresh-looking, well-shaped `captured_at_commit` sitting beside a MISMATCHED `subject_hash`
+     still fails with the same evidence-subject binding error, proving the field is never read as
+     an alternate or fallback validity signal. Selftest count: 210 → 216.
+   - `format.md`'s "Partial re-certification" workaround (name the capture commit in the free-text
+     `tool` field plus a disclosure comment) stays admissible and its own MUST obligations are
+     unaltered; `captured_at_commit` is an addition alongside it, not a replacement for it.
+3. **P1 executed.** The ceiling-vs-assignment wording fix (profile `method → epistemic_tier` table,
+   `spec/evidence-types.md`) landed in this same commit set — noted here so this register does not
+   list it as outstanding.
+4. **DER-lane confirmation 2026-08-29:** structured scope/bounds is their top gap (emitter projects
+   asserted `claimed_scope` into free-text `bounds`; 7/7 weighted claims carry the transitional
+   WARN) — served by the freeze per-kind containment + this stream's structured-domain grammar.
+
+- **Capture-time transitive-closure manifest (ruled 2026-08-29, granularity ruling):** the
+  principled successor to file-level carry-over triage — a control's capture records the
+  transitive build-input closure it depended on, making carry-over machine-decidable.
+  Design it WITH the R5 hermetic-witnessed-roots repair family (same machinery), not twice.
+  Interim: file-level triage only as a disclosed [[claim.assumes]] entry per
+  spec/evidence-types.md's granularity ruling.
