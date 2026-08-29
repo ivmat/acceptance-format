@@ -23,7 +23,7 @@ echo "-- 2/9: examples validate --"
 # own README for why it is the template to copy, not the illustrative ones.
 python3 tools/check_acceptance.py --strict --strict-weight \
   examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml \
-  examples/verify-rust-std-pr618/acceptance.toml \
+  examples/verify-rust-std-pr618/acceptance.toml examples/verify-rust-std-pr664/acceptance.toml \
   examples/weighted-toy/acceptance.toml
 python3 tools/check_execute.py --yes-run-untrusted-commands \
   --subject-root examples/weighted-toy examples/weighted-toy/acceptance.toml
@@ -70,7 +70,7 @@ rm -f "$schema_tmp"
 trap - EXIT
 python3 tools/emit_schema.py --check examples/minimal.acceptance.toml \
   examples/rs-verified-der/acceptance.toml examples/verify-rust-std-pr618/acceptance.toml \
-  examples/weighted-toy/acceptance.toml
+  examples/verify-rust-std-pr664/acceptance.toml examples/weighted-toy/acceptance.toml
 
 echo "-- 9/9: self-manifest validates as a CERTIFICATE (acceptance.toml) --"
 # This gate validates the manifest that DESCRIBES this gate suite, under the same --strict

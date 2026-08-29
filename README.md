@@ -80,7 +80,13 @@ whole (see its own `README.md` for a field-by-field walkthrough) — and
 submission: [`model-checking/verify-rust-std` PR #618](https://github.com/model-checking/verify-rust-std/pull/618)
 (15 Kani-verified `core::intrinsics` claims plus one explicit gap claim, `kani@d4df833c8f8f`
 0.67.0 / CBMC 6.8.0, whole-module `370/370`, every claim unweighted and `A0` with the grading
-rationale in the manifest's own header comments — see its own `README.md`). Also
+rationale in the manifest's own header comments — see its own `README.md`) — and
+[`examples/verify-rust-std-pr664/`](examples/verify-rust-std-pr664/) — a real manifest for a real
+submission: [`model-checking/verify-rust-std` PR #664](https://github.com/model-checking/verify-rust-std/pull/664)
+(one bounded `A3`/probe claim on `TwoWaySearcher::next_back`'s backward-search-loop coverage plus
+one explicit `A0` gap claim, `kani@d4df833c8f8f` 0.67.0 / CBMC 6.8.0, `VERIFICATION SUCCESSFUL`
+on all 5 loop-arm covers, every claim unweighted, with a negative-control mutant and three
+structured disclosed assumptions — see its own `README.md`). Also
 `maintainers/hooks/pre-commit` + `maintainers/install_hooks.sh` (installs the gate suite as a
 commit hook, §7), and a standard Python `.gitignore` (`__pycache__/`, `*.pyc`).
 

@@ -1,0 +1,118 @@
+# Hand-authored acceptance/0 manifest for the Challenge-21 next_back focused PROBE.
+# NOT a generated certificate: hand-authored from the receipts in the sibling control repo's
+# `cloud-campaigns/` tree, not the output of
+# a manifest generator. `illustrative = true` per core.md 0.6 makes that a validator-visible fact.
+# `record` pointers below are repo-relative to the private control repo they live in
+# (not this repo); they will not resolve from here or from a public reader's checkout -- expected,
+# and validator-flagged as a WARN, not a FAIL (see the rs-verified-der example for the same shape).
+# Everything here is UNWEIGHTED (task instruction 2026-08-29: reduced/unweighted manifests are
+# fine; do not overclaim to reach a weighted tier). Validate with:
+#   python3 tools/check_acceptance.py --strict ch21-acceptance.toml   (at acceptance-format @ bd1c995)
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
+validator_sha = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-29T00:00:00Z"
+illustrative  = true
+
+[subject]
+name   = "verify-rust-std (core::str::pattern, verify-rust-std challenge fork, Challenge 21)"
+kind   = "rust-crate"
+# PR model-checking/verify-rust-std#664's fork branch head, now public: ivmat/verify-rust-std,
+# branch challenge-21-nextback-probe. Byte-identical content to the 1ff965f7da5a... sha this
+# manifest was originally authored against pre-push; [subject].commit re-stamped to the public
+# fork sha below once the branch went public (fresh owner word covers the content, per the
+# per-push gate this manifest's authoring note referenced). The base it is extracted onto is
+# upstream/main @ 43bd3b1bff2, unmodified.
+commit = "4d26cf4c758b7796f413d6bd45303482d7794908"
+dirty  = false
+
+[spec]
+# No formal clause-id scheme exists for this challenge (same situation the rs-verified-der example
+# discloses); nearest spec-shaped document is the PR body draft that states this claim's scope and
+# residuals in prose. `version` follows that same example's convention: the commit prefix of the
+# artifact the claims describe, since there is no independent spec version to cite.
+path    = "ch21-nextback-focused-PR-BODY-DRAFT.md"
+version = "1ff965f7da5a"
+
+[coverage]
+clauses_total = 2   # invented ids (no clause scheme, see [spec] above); one per claim below
+claims_total  = 2
+
+# -- the submitted PROBE: bounded, one fixed fixture -----------------------------------------------
+
+[[claim]]
+id        = "CH21-001"
+clause    = "TWOWAY-NEXTBACK-SHORT-PERIOD"
+item      = "library/core/src/str/pattern.rs::TwoWaySearcher::next_back"
+statement = "next_back, driven through the real ReverseSearcher API against the UNMODIFIED shipped TwoWaySearcher (no #[cfg(kani)] body swap), is memory-safe per step, returns only sound Match slices, matches an independently-computed expected match (no silent miss), and reaches all five backward search-loop arms -- at one fixed short-period needle (\"abab\"), one fixed haystack length (5 bytes), the 3-symbol representative alphabet {a,b,z}, #[kani::unwind(6)]"
+band      = "A3"
+status    = "evidenced"
+grade     = "probe"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::str::pattern::verify::check_twoway_search_back_arm_covers"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f"
+  bounds    = "bounded: unwind=6, needle=\"abab\" fixed, haystack length=5 fixed, haystack content symbolic over {a,b,z}"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing"
+  record    = "cloud-campaigns/CH21-NEXTBACK-FOCUSED-2026-08-28/RECEIPT.md"
+
+  # negative control (assurance-bands.md rule 6): a soundness mutant of the shipped source
+  # (off-by-one `match_pos` in the Match arm) run against THIS exact fixture -- VM-confirmed RED,
+  # caught directly by the adjacency/slice-equality oracle.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::str::pattern::verify::check_twoway_search_back_arm_covers (mutant: off-by-one match_pos in the Match arm, TwoWaySearcher::next_back)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f"
+  bounds    = "bounded: unwind=6, needle=\"abab\" fixed, haystack length=5 fixed, haystack content symbolic over {a,b,z}"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing"
+  record    = "cloud-campaigns/CH21-M1-2026-08-27/run.log"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH21-001"
+
+  # -- disclosed scope limits and one disclosed evidence GAP (do not overclaim) --
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "coverage is exactly one fixed needle (\"abab\"), one fixed haystack length (5 bytes), and the 3-symbol representative alphabet {a,b,z} -- not any other needle, length, or the full byte/UTF-8 alphabet"
+  void_if   = "this claim is read as covering any other needle, haystack length, or alphabet"
+
+  [[claim.assumes]]
+  id        = "AS-2"
+  statement = "the bounded-completeness (no-miss) oracle's own negative control is NOT discriminating at this exact fixture size: exhaustive offline enumeration over all 3^5 possible haystacks found zero cases where the matching one-line completeness-defect mutation (an off-by-one in the right-part-mismatch fast-forward, `self.end -= self.period` vs `self.end -= self.period + 1`) diverges from the correct algorithm at haystack length 5. A VM-confirmed watched-fail witness for that completeness-defect class exists only on a different, unsubmitted sibling harness at a larger fixture (haystack length 6)"
+  void_if   = "the completeness (no-miss) oracle on THIS submitted claim/fixture is read as having its own dedicated VM-confirmed watched-fail control"
+
+  [[claim.assumes]]
+  id        = "AS-3"
+  statement = "only the RejectAndMatch searcher instantiation is exercised; the MatchOnly backward path (next_match_back/rfind, where use_early_reject() == false takes genuinely different control flow) is not exercised by this harness"
+  void_if   = "the 5-arm reachability result is read as applying to the MatchOnly instantiation"
+
+# -- explicit gap: everything this PROBE does not touch --------------------------------------------
+
+[[claim]]
+id        = "CH21-002"
+clause    = "TWOWAY-NEXTBACK-MATCHONLY-AND-GENERIC"
+item      = "library/core/src/str/pattern.rs::TwoWaySearcher::next_back (MatchOnly path) / generic next_back over a symbolic needle and length"
+statement = "the MatchOnly backward search path (used by next_match_back/rfind) and a generic next_back safety/correctness contract over an arbitrary (symbolic) needle and length are proved"
+band      = "A0"
+status    = "gap"   # no admissible evidence for either in this submission; a generic contract needs
+                     # a symbolic-bound quantified loop invariant not currently discharged (see the
+                     # PR body's "Alternative direction" section) -- observed limitation, not a claim
+                     # of impossibility
