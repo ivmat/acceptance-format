@@ -22,7 +22,7 @@
 id            = "acceptance/0"
 shape         = "single-file"
 spec_id       = "acceptance-format"
-# spec_sha, validator_sha and [subject].commit all name the SAME commit (aeac93f22f15...) under the
+# spec_sha, validator_sha and [subject].commit all name the SAME commit (c8c00bb08ce4...) under the
 # SELF-CERTIFICATION CONVENTION ruled in format.md's "`[format]` self-location" section: that commit
 # is the CLEAN commit at which every evidence transcript below was captured, and whose spec and
 # validator were the ones read. This manifest and its evidence/ records then land in the IMMEDIATELY
@@ -31,10 +31,10 @@ spec_id       = "acceptance-format"
 # contains itself — so it is DISCLOSED here (and in evidence/self-reference-disclosure.txt), not
 # carried as an owed re-stamp. Re-run the capture and re-stamp all three whenever the certified
 # tooling changes; that is the convention, not a TODO left open.
-spec_sha      = "aeac93f22f15f72d787970135d61ac97e19f4a8a"
-validator_sha = "aeac93f22f15f72d787970135d61ac97e19f4a8a"
+spec_sha      = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"
+validator_sha = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"
 generated_by  = "hand-authored"
-generated_at  = "2026-08-28T19:07:38Z"
+generated_at  = "2026-08-29T18:16:44Z"
 illustrative  = false   # THE POINT of this file: it must validate as a CERTIFICATE, not a teaching
                         # example — core.md §0.6. --strict --strict-weight is run against it in
                         # gates/run_all.sh step 9, unconditionally.
@@ -46,7 +46,7 @@ kind   = "tool"          # closest matching token in format.md's registry (rust-
                           # other): this subject is a spec + a set of Python validator/gate tools,
                           # not a library crate, not a bare document either — "tool" fits the actual
                           # certified surface (the checkers) better than "spec" would.
-commit = "aeac93f22f15f72d787970135d61ac97e19f4a8a"   # the CLEAN commit on rev-0.1-core-update at
+commit = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"   # the CLEAN commit on rev-0.1-core-update at
                           # which every evidence transcript below was captured — the commit this
                           # manifest certifies, per the self-certification convention named in the
                           # [format] comment above. The following commit carries this file and its
@@ -70,7 +70,7 @@ dirty  = false            # false, and checked: `git status --short` was empty a
 # below are about whether THIS REPO'S TOOLING correctly implements and enforces those rules, which
 # is what steps 1-8 of gates/run_all.sh actually run).
 path    = "gates/run_all.sh"
-version = "aeac93f22f15f72d787970135d61ac97e19f4a8a"   # the same commit [subject].commit names,
+version = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"   # the same commit [subject].commit names,
                           # under the same self-certification convention
 axis    = "steps 1-8 of the 9 numbered steps of gates/run_all.sh (each a mechanically-checked property of this repo's own validator/gate tooling, run against its own shipped artifacts) — step 9 validates this manifest itself and so cannot be a claim inside it — plus one unweighted self-reference disclosure about this manifest's own producer/verifier relationship"
 
@@ -120,10 +120,10 @@ clause_source = "doc-comment"  # the clause text is gates/run_all.sh's own step-
   epistemic_tier = "T3"
   ref         = "check_acceptance.py::selftest (210 embedded fixtures)"
   result      = "pass"
-  tool        = "python3@3.14.4 + check_acceptance.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + check_acceptance.py@c8c00bb08ce4"
   cases       = 210
   record      = "evidence/step1-check-acceptance-selftest.txt"
-  record_hash = "sha-512:108ade4ed716fae58668f7ff5e2f8a4601cdcca9bbf9ad72fea9286d34ab1ea8f0ca050998f7c98fc4e864bb5b594d35e86dfcde4fc3303bb8bb4d661516e32b"
+  record_hash = "sha-512:9e85cc9ae34cfd4e91ae11f04c1f02c05bdfdc3c42dbf161b9101bca9a0b8d0b968222187a397287f96b333751d0fe0c350259ca642d9d1e28601f44e2ccedd8"
 
   # the mutation control backing this claim's A1 band (assurance-bands.md rule 4: an oracle-bearing
   # dynamic-only claim needs a matching observed-red control to reach A1, never A2+). This record IS
@@ -136,10 +136,10 @@ clause_source = "doc-comment"  # the clause text is gates/run_all.sh's own step-
   epistemic_tier = "T3"
   ref         = "check_acceptance.py::selftest (mutant: W2.3/P1 clause_source-required refusal disabled)"
   result      = "fail"
-  tool        = "python3@3.14.4 + check_acceptance.py@aeac93f22f15 (1-line mutation, reverted)"
+  tool        = "python3@3.14.4 + check_acceptance.py@c8c00bb08ce4 (1-line mutation, reverted)"
   cases       = 210
   record      = "evidence/step1-mutation-control-clause-source-check-disabled.txt"
-  record_hash = "sha-512:b6af7f222868e6e8754ce131ce775d5035444cfa8278c2fb2b877c3a247a73744a03e8cc3c724a322006ce43e3c9fd829e2152a9a89822d8720428969b73360f"
+  record_hash = "sha-512:22003247e6ebcd6786355fb83a76b6f9a47bc27b5e3b36c341ddb4a97b0f2e50b2379b96709fac2147a9fd19cd7a3159f65e9fd4e6db61164fc9e50be33711c9"
 
     [claim.evidence.control]
     kind        = "mutation"
@@ -181,10 +181,10 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-2 comment block
   epistemic_tier = "T3"
   ref         = "check_acceptance.py CLI over the 2 shipped example manifests"
   result      = "pass"
-  tool        = "python3@3.14.4 + check_acceptance.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + check_acceptance.py@c8c00bb08ce4"
   cases       = 2
   record      = "evidence/step2-examples-validate.txt"
-  record_hash = "sha-512:0414c632c59594ab5f77df11054f1f2a31f698caed920f12a119ed45ed688e1b9362c86f88b1e427dacdf8197a9974cf8296c3f76538b8ffedbbda1850e7eccd"
+  record_hash = "sha-512:bd207d8c2b3c555742975cea723e7ba0f9a543c56bc015f151fd2643d7915d851af4871144e3fe1c1d3d8080f502c2d357395d10f310cd5359b6b2d5bf877ef9"
 
 # =====================================================================================================
 # -- step 3: tools/check_ledger.py's own embedded fixture suite ---------------------------------------
@@ -218,10 +218,10 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-3 comment
   epistemic_tier = "T3"
   ref         = "check_ledger.py::selftest (117 embedded fixtures)"
   result      = "pass"
-  tool        = "python3@3.14.4 + check_ledger.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + check_ledger.py@c8c00bb08ce4"
   cases       = 117
   record      = "evidence/step3-check-ledger-selftest.txt"
-  record_hash = "sha-512:8b92981251bcd982a3f24953c61d767293004baca53006f146b3245092d19e8778b2e0cd46e4c5d71ac8aecd5829e732f02c2296ecf923ed044d387a1eee9835"
+  record_hash = "sha-512:6815e2e9a77673d3e98ec5763ee72cdd9c9bd8b3c634132f9aa29748a5b7aa0a1926cfa0399917024809e6cc14a6810a11c17da3ea8d6c0df6124c926aec915d"
 
   [[claim.evidence]]
   kind        = "unit-test"
@@ -230,10 +230,10 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-3 comment
   epistemic_tier = "T3"
   ref         = "check_ledger.py::selftest (mutant: §4 positive_control-required-on-not-covered refusal disabled)"
   result      = "fail"
-  tool        = "python3@3.14.4 + check_ledger.py@aeac93f22f15 (1-line mutation, reverted)"
+  tool        = "python3@3.14.4 + check_ledger.py@c8c00bb08ce4 (1-line mutation, reverted)"
   cases       = 117
   record      = "evidence/step3-mutation-control-positive-control-check-disabled.txt"
-  record_hash = "sha-512:33c6a51fba6777fc385dc80e60d43be8c65b99d87477f388a3526afe43dca60ce4fdabff23fa1c0a1ed417146800de84b3c80c0eff3073dfc09e4f99580250c6"
+  record_hash = "sha-512:d34bf2faea0b25ffb88c96d23239c420270eca79c68b35ce435aa9eaaeb7f5e70c514d7f56421f6b438d3cf08472242249088ac7bf3d473df9ae14e3fd6ca058"
 
     [claim.evidence.control]
     kind        = "mutation"
@@ -276,9 +276,9 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-4 comment
   epistemic_tier = "T4"
   ref         = "check_ledger.py --strict-weight over examples/rs-verified-der/ENVELOPE.md's 80 rows"
   result      = "pass"
-  tool        = "python3@3.14.4 + check_ledger.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + check_ledger.py@c8c00bb08ce4"
   record      = "evidence/step4-envelope-ledger-check.txt"
-  record_hash = "sha-512:ba9bca1bb91b0b97a37f4dcf2a54b1427a3961f644968fcc4ae8d02f66e0f3b8f9646f6f1e5f2ce47270d15b12075d49ad003a036b8d16fa24d3a0c18f529b2f"
+  record_hash = "sha-512:fa93d19ec7fee1a7a92edee3d22bb1cb72748a183be99ae29a892b5df0eb29a0a42758a28b1a56bd3d936492457480d24627dcfd96d7c5f56b85a2fde41a532b"
 
 # =====================================================================================================
 # -- step 5: tools/check_execute.py's own embedded fixture suite --------------------------------------
@@ -312,10 +312,10 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-5 comment
   epistemic_tier = "T3"
   ref         = "check_execute.py::selftest (15 embedded fixtures)"
   result      = "pass"
-  tool        = "python3@3.14.4 + check_execute.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + check_execute.py@c8c00bb08ce4"
   cases       = 15
   record      = "evidence/step5-check-execute-selftest.txt"
-  record_hash = "sha-512:66e60d1e508292296f21532f99f300c760608327c75812e2097379c100fd34d5a28bcd54df722d73779e58aa8af87f518cf4d7f0a93b66381ee2d023a0295b2a"
+  record_hash = "sha-512:caa415e5a9797480790ad62b00476933480c4a92e07db572ba4a9fb89b1b18eb37387095255c53b293abbc0cfafd2976ae1e1f4e982cc6c9967101c5a65689cc"
 
   [[claim.evidence]]
   kind        = "unit-test"
@@ -324,10 +324,10 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-5 comment
   epistemic_tier = "T3"
   ref         = "check_execute.py::selftest (mutant: is_self_fulfilling() echo detector disabled)"
   result      = "fail"
-  tool        = "python3@3.14.4 + check_execute.py@aeac93f22f15 (1-line mutation, reverted)"
+  tool        = "python3@3.14.4 + check_execute.py@c8c00bb08ce4 (1-line mutation, reverted)"
   cases       = 15
   record      = "evidence/step5-mutation-control-self-fulfilling-check-disabled.txt"
-  record_hash = "sha-512:7218ae6c610bb71ef3b805a0f586b4182344d50ef19094d07f1ca83d58814ab7153c986d8da7407e13a6d2f1dea8dcf9401727951674ba380c2fb97e66922a50"
+  record_hash = "sha-512:7a1d78a7c448d21d69f943341bb6c940ef263b2fd3def5637304aaced9f7bef6ec4e5b907c8127396b98428d68e2063a7105d29b18b77d77c185dd325af5c6da"
 
     [claim.evidence.control]
     kind        = "mutation"
@@ -372,10 +372,10 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-6 comment
   epistemic_tier = "T3"
   ref         = "check_parity_selftest.py (55 paired cases + 12 watched-break proofs + obligations inventory + minimality/wiring/shadow audits)"
   result      = "pass"
-  tool        = "python3@3.14.4 + check_parity_selftest.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + check_parity_selftest.py@c8c00bb08ce4"
   cases       = 55
   record      = "evidence/step6-parity-selftest.txt"
-  record_hash = "sha-512:df3bc262154e0b20c1ae4e637c62934fd243bee32b1eafb2bf77bb77534b1c496679ffda7dd864c69a2f565687cb583f1e26085fa974a1e92bf88ab3762f2fc0"
+  record_hash = "sha-512:aeb3f31dd5eb8d047ab570bf2d1b5e66869b55f10c61d3e89dbcd0b605a60bd7c618e37763ad5f546cd466d12cdbdd4a491c77da5d6c7ea39208d370fcf56efb"
 
 # =====================================================================================================
 # -- step 7: the content-leak gate passes on all tracked files against an empty baseline ---------------
@@ -410,9 +410,9 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-7 comment
   epistemic_tier = "T4"
   ref         = "gates/check_content_leaks.py tree scan, empty baseline, 65 of 67 tracked files scanned (2 skipped by exact relpath: the gate and its own fixtures)"
   result      = "pass"
-  tool        = "python3@3.14.4 + check_content_leaks.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + check_content_leaks.py@c8c00bb08ce4"
   record      = "evidence/step7-content-leak-scan.txt"
-  record_hash = "sha-512:5b6b01a41c237a6de516da7cd4e499b10313b20a816d408e617f4dcc7a350ff09261a0851ec9a5e1eea2610ccf97157f9047081e4f3b4ef1931923f4982bb459"
+  record_hash = "sha-512:29288087d7e44c3b3642160701114c17d3a0426d5193b5ebd252df278e3758db4a96f3ae40a1447970b05ce5f4ad2ccd23961ded3451ee5b6bcb2d2938a856fc"
 
 # =====================================================================================================
 # -- step 8: the committed schema artifact matches the emitted schema ---------------------------------
@@ -451,9 +451,9 @@ PASS examples/rs-verified-der/acceptance.toml"""
   epistemic_tier = "T4"
   ref         = "tools/emit_schema.py drift check + --check over the 2 shipped example manifests"
   result      = "pass"
-  tool        = "python3@3.14.4 + emit_schema.py@aeac93f22f15"
+  tool        = "python3@3.14.4 + emit_schema.py@c8c00bb08ce4"
   record      = "evidence/step8-schema-drift-check.txt"
-  record_hash = "sha-512:3df160abd98483bd7146ce2db13ec8352fcb1189c5ea2260f79f1296eed9fb4dd2e21f051b4c997338fdbcbcee30c40beac02ae21374923f9761d2c09af208dd"
+  record_hash = "sha-512:3e96083a63fd4d26872738c4fbe062665f8e68629383dc53fe377886b555769242aad255bc0e61d9783829a7401644179a9e85c1b7d94b15b459f4508c786a03"
 
 # =====================================================================================================
 # -- self-reference honesty note (unweighted) ----------------------------------------------------------
@@ -488,4 +488,4 @@ doc_ref   = "evidence/self-reference-disclosure.txt"
   result    = "pass"
   tool      = "git@2.53.0 (log inspection; no repo tool decides this claim, so no @-sha applies)"
   record    = "evidence/self-reference-disclosure.txt"
-  record_hash = "sha-512:e98fcfa353fc62cddaaa1cc93252bffb9dcdd5aed8ef366b66804914031b88e4186cad79a4b1d58fd6a3d5a17cca1d23aaed9c314e91404936b5aa2d9273407b"
+  record_hash = "sha-512:accb474e681b0019637c35b52b23d16138464fa09bcd56015f57049635cf82dc9ba0f0cb8e38b0691605be7d141bac14a329b5b52e8b01df61680dc571e49b72"
