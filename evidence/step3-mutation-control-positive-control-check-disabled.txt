@@ -6,7 +6,7 @@ identical selftest command was re-run. NOTE: this line NUMBER drifts as the file
 re-locate it (`grep -n 'if grade == "not-covered":' tools/check_ledger.py`) before reusing
 this script; the assertion below fails loudly if the anchor is stale rather than mutating
 the wrong occurrence.
-(run at 2026-08-29T18:16:43Z, from repo root, HEAD=c8c00bb08ce423e6b4f2403bf2f4f8029393b812 + this one-line mutation, reverted immediately after)
+(run at 2026-08-30T08:19:34Z, from repo root, HEAD=5701c476a344448626c90e4e34f52ad6695b4ad4 + this one-line mutation, reverted immediately after)
 ---
 SELFTEST PASS: weight-invariant-refused-rows-are-in-neither-tier (117 fixtures scanned)
 SELFTEST PASS: W5-declared-pending-count-is-checked
