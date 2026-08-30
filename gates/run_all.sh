@@ -85,4 +85,14 @@ echo "-- 9/9: self-manifest validates as a CERTIFICATE (acceptance.toml) --"
 # from a cold read, not from anything cached.
 python3 tools/check_acceptance.py --strict --strict-weight acceptance.toml
 
+# Static validation above proves the manifest is well-FORMED; it cannot tell whether each claim's
+# declared `self_verify.expect` still matches what that command actually prints today. That is the
+# drift core.md 8.2 exists to catch, and until now this suite ran --execute against
+# examples/weighted-toy but never against the manifest describing THIS repo -- so a claim of ours
+# could go stale silently while every gate stayed green. It did: SELF-1's fixture count and SELF-7's
+# tracked-file count both drifted. Executing our own recipes closes the gap that let that ship.
+# (no --require-run: SELF-NOTE is a deliberate unweighted note with no self_verify.command, and
+# the format does not require one for an unweighted row.)
+python3 tools/check_execute.py --yes-run-untrusted-commands --subject-root . acceptance.toml
+
 echo "== acceptance-format gates: PASS =="

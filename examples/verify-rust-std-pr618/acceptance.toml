@@ -22,14 +22,17 @@
 #
 # UNWEIGHTED throughout (house rule 2026-08-29): reduced/unweighted manifests are preferred over
 # inflated ones. Validate with:
-#   python3 tools/check_acceptance.py --strict ch2-acceptance.toml   (at acceptance-format @ bd1c995)
+#   python3 tools/check_acceptance.py --strict ch2-acceptance.toml   (at acceptance-format @ c8c00bb)
 
 [format]
 id            = "acceptance/0"
 shape         = "single-file"
 spec_id       = "acceptance-format"
-spec_sha      = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
-validator_sha = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
+spec_sha      = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"       # public acceptance-format commit; content-
+                              # identical (spec/ + tools/ blob-identical, 13 files, 0 diffs) to the
+                              # private working-repo commit this file was originally validated at —
+                              # a coordinate repin to a publicly resolvable sha, not a re-validation.
+validator_sha = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"
 generated_by  = "hand-authored"
 generated_at  = "2026-08-29T18:00:00Z"
 illustrative  = true

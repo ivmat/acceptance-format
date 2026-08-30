@@ -7,28 +7,45 @@
 # and validator-flagged as a WARN, not a FAIL (see the rs-verified-der example for the same shape).
 # Everything here is UNWEIGHTED (task instruction 2026-08-29: reduced/unweighted manifests are
 # fine; do not overclaim to reach a weighted tier). Validate with:
-#   python3 tools/check_acceptance.py --strict ch21-acceptance.toml   (at acceptance-format @ bd1c995)
+#   python3 tools/check_acceptance.py --strict acceptance.toml   (public acceptance-format @ c8c00bb)
 
 [format]
 id            = "acceptance/0"
 shape         = "single-file"
 spec_id       = "acceptance-format"
-spec_sha      = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
-validator_sha = "bd1c995bd9ae7382d33e3db8c11acc5a99ac3ba4"
+# PUBLIC shas (ruling R-1: a pin in a public artifact must be resolvable by a public reader).
+# This manifest ships in the public repo, so it pins the PUBLIC spec/validator commit
+# c8c00bb08ce4. Earlier revisions of this example pinned bd1c995bd9ae, which is a commit in the
+# private WORKING repo and does not resolve against github.com/ivmat/acceptance-format. The two
+# are the same spec and the same validator -- verified byte-identical at spec/core.md,
+# spec/assurance-bands.md and tools/check_acceptance.py -- so only the coordinate system changed,
+# not the version being cited. (The sibling pr618 example still carries the private-repo pin; see
+# this example's README note.)
+spec_sha      = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"
+validator_sha = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"
 generated_by  = "hand-authored"
-generated_at  = "2026-08-29T00:00:00Z"
+generated_at  = "2026-08-30T00:00:00Z"
 illustrative  = true
 
 [subject]
 name   = "verify-rust-std (core::str::pattern, verify-rust-std challenge fork, Challenge 21)"
 kind   = "rust-crate"
-# PR model-checking/verify-rust-std#664's fork branch head, now public: ivmat/verify-rust-std,
-# branch challenge-21-nextback-probe. Byte-identical content to the 1ff965f7da5a... sha this
-# manifest was originally authored against pre-push; [subject].commit re-stamped to the public
-# fork sha below once the branch went public (fresh owner word covers the content, per the
-# per-push gate this manifest's authoring note referenced). The base it is extracted onto is
+# PR model-checking/verify-rust-std#664's fork branch head: ivmat/verify-rust-std, branch
+# challenge-21-nextback-probe. This manifest has been re-stamped twice, and both moves are
+# recorded here rather than silently absorbed:
+#   1ff965f7da5a  -- the private sha this manifest was originally authored against, pre-push.
+#   4d26cf4c758b  -- the first public fork sha (byte-identical content to 1ff965f7da5a).
+#   09a3d026f662  -- CURRENT. 4d26cf4c758b plus one formatting-only commit.
+# The formatting commit exists because the repo's `upstream_test` CI job runs `./x fmt --check`
+# inside a rust-lang/rust checkout, so the effective style config is that repo's rustfmt.toml
+# (style_edition 2024, use_small_heuristics = "Max"); verify-rust-std carries no rustfmt.toml of
+# its own, so a plain `cargo fmt` does not reproduce it. The change is line-wrapping only inside
+# `pub mod verify`: no harness, assertion message, `kani::cover` string, bound, fixture or
+# assumption differs between 4d26cf4c758b and 09a3d026f662. Every claim below was independently
+# re-verified AT 09a3d026f662 (see the carrier record), so this manifest describes the sha it is
+# stamped with rather than inheriting a result from an ancestor. The base it is extracted onto is
 # upstream/main @ 43bd3b1bff2, unmodified.
-commit = "4d26cf4c758b7796f413d6bd45303482d7794908"
+commit = "09a3d026f66295f0dc7b976610c1d23e10c216cb"
 dirty  = false
 
 [spec]
@@ -37,7 +54,7 @@ dirty  = false
 # residuals in prose. `version` follows that same example's convention: the commit prefix of the
 # artifact the claims describe, since there is no independent spec version to cite.
 path    = "ch21-nextback-focused-PR-BODY-DRAFT.md"
-version = "1ff965f7da5a"
+version = "09a3d026f662"
 
 [coverage]
 clauses_total = 2   # invented ids (no clause scheme, see [spec] above); one per claim below
@@ -64,7 +81,11 @@ grade     = "probe"
   tool      = "kani@d4df833c8f8f"
   bounds    = "bounded: unwind=6, needle=\"abab\" fixed, haystack length=5 fixed, haystack content symbolic over {a,b,z}"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing"
-  record    = "cloud-campaigns/CH21-NEXTBACK-FOCUSED-2026-08-28/RECEIPT.md"
+  # Re-verified AT the stamped sha 09a3d026f662: VERIFICATION:- SUCCESSFUL, 5 of 5 cover
+  # properties satisfied, kani 0.67.0 @ d4df833 / CBMC 6.8.0. The earlier run at the
+  # content-identical ancestor 4d26cf4c758b is at
+  # cloud-campaigns/CH21-NEXTBACK-FOCUSED-2026-08-28/RECEIPT.md.
+  record    = "cloud-campaigns/CH-FMTFIX-D0088-2026-08-30/RECEIPT.md"
 
   # negative control (assurance-bands.md rule 6): a soundness mutant of the shipped source
   # (off-by-one `match_pos` in the Match arm) run against THIS exact fixture -- VM-confirmed RED,
@@ -78,7 +99,7 @@ grade     = "probe"
   result    = "fail"
   tool      = "kani@d4df833c8f8f"
   bounds    = "bounded: unwind=6, needle=\"abab\" fixed, haystack length=5 fixed, haystack content symbolic over {a,b,z}"
-  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing; run against the pre-formatting content (see AS-4), which differs from the stamped sha only in line wrapping"
   record    = "cloud-campaigns/CH21-M1-2026-08-27/run.log"
 
     [claim.evidence.control]
@@ -98,6 +119,11 @@ grade     = "probe"
   id        = "AS-2"
   statement = "the bounded-completeness (no-miss) oracle's own negative control is NOT discriminating at this exact fixture size: exhaustive offline enumeration over all 3^5 possible haystacks found zero cases where the matching one-line completeness-defect mutation (an off-by-one in the right-part-mismatch fast-forward, `self.end -= self.period` vs `self.end -= self.period + 1`) diverges from the correct algorithm at haystack length 5. A VM-confirmed watched-fail witness for that completeness-defect class exists only on a different, unsubmitted sibling harness at a larger fixture (haystack length 6)"
   void_if   = "the completeness (no-miss) oracle on THIS submitted claim/fixture is read as having its own dedicated VM-confirmed watched-fail control"
+
+  [[claim.assumes]]
+  id        = "AS-4"
+  statement = "the mutation control was run against the pre-formatting content, not against the stamped sha 09a3d026f662 itself; the two differ only in line wrapping inside `pub mod verify` (no harness, oracle, bound, cover string or fixture differs), so the control is treated as applying unchanged -- disclosed rather than left implicit"
+  void_if   = "the formatting difference is ever shown to be more than whitespace, or the control is read as having been re-run at the stamped sha"
 
   [[claim.assumes]]
   id        = "AS-3"

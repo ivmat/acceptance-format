@@ -41,6 +41,29 @@ subject is real.
 - Every claim is `weight = "unweighted"` — a reduced, honest manifest rather than an inflated one
   (see the manifest's own header comment).
 
+## Which sha this manifest describes
+
+`[subject].commit` is `09a3d026f66295f0dc7b976610c1d23e10c216cb` — the head of
+`challenge-21-nextback-probe` on the fork behind PR #664. That is one formatting-only commit ahead
+of the previously stamped `4d26cf4c758b`: the repo's `upstream_test` CI job runs `./x fmt --check`
+inside a rust-lang/rust checkout, so the effective style config is *that* repo's `rustfmt.toml`,
+which `verify-rust-std` does not carry its own copy of. The difference is line wrapping inside
+`pub mod verify` only — no harness, assertion, `kani::cover` string, bound or fixture differs.
+
+The claims were nonetheless **re-verified at the stamped sha** rather than inherited from the
+ancestor, so the manifest describes the commit it names. `AS-4` discloses the one thing that was
+not re-run there: the mutation control, which executed against the pre-formatting content.
+
+## A note on the pinned `spec_sha` / `validator_sha`
+
+This example pins the **public** spec/validator commit `c8c00bb08ce4`, because a pin in a public
+artifact has to be resolvable by a public reader (ruling R-1). Earlier revisions of this example —
+and, at the time of writing, the sibling `examples/verify-rust-std-pr618/` — pin
+`bd1c995bd9ae`, which is a commit in the *private working repo* and does not resolve against
+`github.com/ivmat/acceptance-format`. The two name the same spec and the same validator: their
+`spec/core.md`, `spec/assurance-bands.md` and `tools/check_acceptance.py` are byte-identical. Only
+the coordinate system differs, so nothing about the version being cited changed here.
+
 ## Why the `record` pointers do not resolve here
 
 Each claim's `record` field points into the private control repo that produced this manifest
