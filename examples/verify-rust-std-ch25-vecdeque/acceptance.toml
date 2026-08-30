@@ -1,0 +1,290 @@
+# Hand-authored acceptance/0 manifest for the Challenge-25 VecDeque ring-buffer wraparound PROBE
+# set (as_slices / as_mut_slices / pop_front / swap / grow via handle_capacity_increase).
+# NOT a generated certificate: this is a hand-authored manifest built from the
+# receipts in the sibling private control repo's `cloud-campaigns/` tree, not the output of
+# a manifest generator. `illustrative = true` per core.md 0.6 makes that a validator-visible fact.
+# `record` pointers below are repo-relative to the private control repo they live in
+# (not this repo); they will not resolve from here or from a public reader's checkout -- expected,
+# and validator-flagged as a WARN, not a FAIL (same shape as the ch20/ch21/ch4 examples this
+# manifest is modeled on). Everything here is UNWEIGHTED.
+#
+# WHY illustrative = true:
+#   1. Hand-authored, no automated capture pipeline behind these records.
+#   2. Challenge 25's OWN success criteria (doc/src/challenges/0025-vecdeque.md) require UNBOUNDED
+#      verification (arbitrary length) AND genericity over T (no monomorphization) across 43 listed
+#      items (13 unsafe-contract functions + 30 safe abstractions). This manifest's 5 claims target
+#      5 of those 43, all BOUNDED at one concrete element type (u32) -- a bounded PROBE does not
+#      count as criterion coverage. Never read this manifest as satisfying Challenge 25 --
+#      illustrative=true, the [coverage] denominator/slice_note, and each claim's `statement`
+#      scoping are the places that is stated, not just this header.
+#
+# BAND RATIONALE (assurance-bands.md, this private repo's checkout / public checkout both current
+# as of 2026-08-29 -- see PACKET-STATE.md for both validator outputs):
+#   - CH25-1..CH25-4 (as_slices, as_mut_slices, pop_front, swap): no mutation control of the
+#     PRODUCTION implementation exists for any of these four. The out-of-tree "unwrapped fixture"
+#     control that DID run is a fixture-level differentiation check (removes the wraparound-inducing
+#     construction steps, not a mutation of any target function's own code) -- it corroborates that
+#     the shared fixture genuinely wraps, but it does not mutate wrap_add/to_physical_idx/
+#     slice_ranges/as_slices/as_mut_slices/pop_front/swap themselves, so per assurance-bands.md rule
+#     2/6 it does not satisfy the A2/A3 control-kind gate for any of these four claims -> A0 each,
+#     with the fixture control recorded as corroborating (non-band-lifting) evidence.
+#   - CH25-5 (grow / handle_capacity_increase): carries a dedicated mutation control that DOES
+#     mutate the production implementation (an off-by-one in the copy-destination arithmetic,
+#     new_head = new_capacity - head_len - 1), independently VM-confirmed RED -- carrier is
+#     bmc/kani-harness, control kind "mutation", matching assurance-bands.md's A3 species+control
+#     requirement -> A3. An earlier, different mutation on the SAME harness (weakening the Case B/C
+#     branch-condition operator > to >=) is disclosed and explicitly NOT counted: it is globally
+#     API-equivalent across the whole domain at this fixture's symmetric head_len==tail_len
+#     boundary, so its GREEN result is not informative either way (assurance-bands.md's control
+#     gate requires an actually-discriminating mutation, not merely a mutation that was applied).
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "2788bbfdb7b01c1fdd0013ce5bd4714166301ddf"
+validator_sha = "2788bbfdb7b01c1fdd0013ce5bd4714166301ddf"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-29T21:00:00Z"
+illustrative  = true
+
+[subject]
+name   = "verify-rust-std (alloc::collections::vec_deque, Challenge 25 wraparound PROBE set)"
+kind   = "rust-crate"
+# The working branch's HEAD after the 2026-08-29 cross-family review verdict (NO-GO as first
+# submitted -- an enabled, intentionally-failing control harness was shipped inside the module) was
+# fixed by removing that harness, rewording the module-label/positive-control claims, and scrubbing
+# residual private-repo/process provenance strings. Since a harness was REMOVED (a real code change,
+# not comment-only), the surviving 5 wraparound harnesses (+ the pre-existing check_vecdeque_swap)
+# were re-VM-confirmed GREEN at this exact sha. The grow-mutation control below ran one sha earlier
+# (7b227b480ec43c2bb103c72549a127bd86854a3a), whose only difference from this sha is that later
+# harness removal plus comment/prose edits -- neither touches check_wraparound_grow_preserves_order's
+# own code, so the control's result carries forward; the confirm run's independent re-verification of
+# that same harness (unmutated) at this sha corroborates it was not disturbed. NOTE: the sha that
+# ships in the actual upstream PR may differ (cherry-pick onto the public fork can change the commit
+# hash even with identical content) -- re-stamp this field at push time if so.
+commit = "9cd331421bbd0451b554de4f7572a7340d3962e9"
+dirty  = false
+
+[spec]
+path    = "doc/src/challenges/0025-vecdeque.md"
+version = "4070e2f4032fc3097029189103825bf75febb61d"   # upstream/main base commit
+axis    = "5 of the 43 items Challenge 25 names (13 unsafe-contract functions + 30 safe abstractions) -- as_slices, as_mut_slices, pop_front, swap (4 of the 30 safe abstractions) and handle_capacity_increase (1 of the 13 unsafe-contract functions, exercised via grow) -- further restricted to a bounded fixture regime (concrete element type u32, concrete capacity 4 growing to 8, exactly one wraparound), not the challenge's own required unbounded-length, generic-T domain and not any of the other 38 listed items"
+
+[coverage]
+clauses_total = 5   # as_slices, as_mut_slices, pop_front, swap, handle_capacity_increase
+claims_total  = 5
+denominator   = "slice"
+slice_note    = "five bounded PROBE claims targeting 5 of Challenge 25's 43 listed items; the other 38 (12 remaining unsafe-contract functions incl. push_unchecked/buffer_read/buffer_write/buffer_range/copy/copy_nonoverlapping/wrap_copy/copy_slice/write_iter/write_iter_wrapping/from_contiguous_raw_parts_in/abort_shrink, and 26 remaining safe abstractions incl. get/get_mut/reserve*/shrink_to/truncate/range*/drain/push_front/push_back/insert/remove/split_off/append/retain_mut/resize_with/make_contiguous/rotate_*) are not covered by this manifest"
+
+# =====================================================================================================
+# -- as_slices ----------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH25-1"
+clause    = "as_slices"
+item      = "library/alloc/src/collections/vec_deque/mod.rs::VecDeque::as_slices (+ slice_ranges, to_physical_idx)"
+statement = "as_slices, on a genuinely wrapped capacity-4 VecDeque<u32> (head=2, built via real push_back/pop_front calls, not a raw-field construction), returns both slices non-empty with exact split sizes and content matching the tracked logical push/pop history"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness check_wraparound_as_slices_split_and_content --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::check_wraparound_as_slices_split_and_content"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: no loops in the harness body; concrete capacity 4, concrete element type u32, exactly one wraparound"
+  semantics = "no mutation control of as_slices/slice_ranges/to_physical_idx's own implementation has been run; disclosed, not claimed -- see header rationale"
+  record    = "../cloud-campaigns/EXTRA5-ch25-CONFIRM-2026-08-29/RECEIPT.md"
+
+  # fixture-differentiation evidence (NOT a band-lifting control per assurance-bands.md -- this
+  # rebuilds the FIXTURE without the wrap step, it does not mutate as_slices/slice_ranges/
+  # to_physical_idx's own code): confirms the "genuine wrap" claim is non-vacuous relative to a
+  # non-wrapped construction. Recorded as corroborating evidence, not as a control block.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::control_unwrapped_fixture_as_slices_expect_red (out-of-tree, not shipped in the branch)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: same capacity-4 VecDeque<u32>, but filled once via push_back with no pop/push-again step, so head stays 0 and never wraps"
+  semantics = "run out-of-tree as a differentiation-collapse check, not committed to the branch (an enabled, intentionally-failing proof inside the submittable module would turn an all-harness run RED); this is fixture-level, not an implementation mutation, so it does not lift CH25-1's band per assurance-bands.md rule 2/6"
+  record    = "../cloud-campaigns/EXTRA5-ch25-VERIFY-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "the fixture-differentiation record above shows the wrap is non-vacuous (an unwrapped fixture genuinely fails the same assertion); it is not a mutation control of as_slices/slice_ranges/to_physical_idx's own implementation and does not by itself justify a band above A0"
+  void_if   = "this claim is read as A2 or A3 on the strength of the fixture-differentiation record"
+
+# =====================================================================================================
+# -- as_mut_slices ------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH25-2"
+clause    = "as_mut_slices"
+item      = "library/alloc/src/collections/vec_deque/mod.rs::VecDeque::as_mut_slices (+ buffer_range)"
+statement = "as_mut_slices, on the same wrapped fixture as CH25-1, allows mutating one element in each returned slice (straddling the physical wrap boundary), with both mutations landing correctly and the two untouched positions unchanged, verified by reading back through the safe get API, not through the mut slices again"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness check_wraparound_as_mut_slices_mutation_lands_correctly --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::check_wraparound_as_mut_slices_mutation_lands_correctly"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: no loops in the harness body; concrete capacity 4, concrete element type u32, exactly one wraparound"
+  semantics = "no mutation control of as_mut_slices/buffer_range's own implementation has been run; disclosed, not claimed"
+  record    = "../cloud-campaigns/EXTRA5-ch25-CONFIRM-2026-08-29/RECEIPT.md"
+
+# =====================================================================================================
+# -- pop_front ------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH25-3"
+clause    = "pop_front"
+item      = "library/alloc/src/collections/vec_deque/mod.rs::VecDeque::pop_front (+ to_physical_idx, buffer_read)"
+statement = "pop_front, called four times on the same wrapped fixture as CH25-1 (draining it to empty), returns the correct FIFO order across the exact pop that crosses the physical buffer's end back to physical index 0, and the deque is correctly empty (len 0, is_empty true, a further pop_front returns None) afterward"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness check_wraparound_pop_front_crosses_boundary --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::check_wraparound_pop_front_crosses_boundary"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: no loops in the harness body; concrete capacity 4, concrete element type u32, exactly one wraparound"
+  semantics = "no mutation control of pop_front/to_physical_idx/buffer_read's own implementation has been run; disclosed, not claimed"
+  record    = "../cloud-campaigns/EXTRA5-ch25-CONFIRM-2026-08-29/RECEIPT.md"
+
+# =====================================================================================================
+# -- swap -----------------------------------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH25-4"
+clause    = "swap"
+item      = "library/alloc/src/collections/vec_deque/mod.rs::VecDeque::swap"
+statement = "swap, called on two logical indices that sit on opposite physical sides of the wrap (logical 1 at physical 3, logical 2 at physical 0) on the same wrapped fixture as CH25-1, correctly exchanges the two elements and leaves the two untouched positions unchanged"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness check_wraparound_swap_across_boundary --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::check_wraparound_swap_across_boundary"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: no loops in the harness body; concrete capacity 4, concrete element type u32, exactly one wraparound"
+  semantics = "no mutation control of swap's own implementation has been run; disclosed, not claimed"
+  record    = "../cloud-campaigns/EXTRA5-ch25-CONFIRM-2026-08-29/RECEIPT.md"
+
+# =====================================================================================================
+# -- grow / handle_capacity_increase -----------------------------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH25-5"
+clause    = "handle_capacity_increase"
+item      = "library/alloc/src/collections/vec_deque/mod.rs::VecDeque::grow (-> RawVec::grow_one -> handle_capacity_increase)"
+statement = "one more push_back on the full, wrapped fixture from CH25-1 triggers grow(); the resulting capacity is exactly 8 (not merely > 4), length is exactly 5, and every logical position -- including the newly pushed element -- is correct after the move-and-relabel copy handle_capacity_increase performs on the Case-C (symmetric head_len == tail_len) path"
+band      = "A3"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness check_wraparound_grow_preserves_order --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::check_wraparound_grow_preserves_order"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: no loops in the harness body; concrete capacity 4 growing to 8, concrete element type u32, exactly one wraparound before growth"
+  semantics = "handle_capacity_increase's Case B branch is never exercised by this harness; Case C's branch CHOICE (as opposed to its copy's correctness) is undistinguished at this fixture's symmetric head_len==tail_len boundary -- see [[claim.assumes]] below"
+  record    = "../cloud-campaigns/EXTRA5-ch25-CONFIRM-2026-08-29/RECEIPT.md"
+
+  # negative control (assurance-bands.md rule 6): a genuine off-by-one in the Case-C copy
+  # destination (new_head = new_capacity - head_len - 1, was new_capacity - head_len) applied to
+  # the real handle_capacity_increase and re-run against THIS exact fixture -- VM-confirmed RED,
+  # one of the harness's get() position assertions tripped.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::check_wraparound_grow_preserves_order (mutant: new_head = new_capacity - head_len - 1 in handle_capacity_increase's Case C)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: same fixture as the carrier record above (no loops, concrete capacity 4 growing to 8, concrete element type u32)"
+  semantics = "transient production-code patch, applied and reverted on the VM, not part of the committed branch"
+  record    = "../cloud-campaigns/EXTRA5-FIXWAVE-2026-08-29/RECEIPT.md"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH25-5"
+
+  # disclosed prior attempt that did NOT count (assurance-bands.md: a control must be
+  # discriminating, not merely applied) -- recorded for honesty, not used to justify any band.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "alloc::collections::vec_deque::verify::check_wraparound_grow_preserves_order (mutant: handle_capacity_increase's Case B/C branch condition weakened from head_len > tail_len to head_len >= tail_len)"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: same fixture as the carrier record above (no loops, concrete capacity 4 growing to 8, concrete element type u32)"
+  semantics = "GREEN when RED was expected -- traced by hand: this fixture's head_len==tail_len exactly, so > vs >= only changes which branch runs, not the final logical arrangement (both produce the identical correct result at this exact boundary); the mutation is globally API-equivalent away from that tie, so no fixture could have made it diverge. Not a control failure to explain away -- an uninformative mutation choice, disclosed rather than hidden, superseded by the discriminating mutation above"
+  record    = "../cloud-campaigns/EXTRA5-ch25-VERIFY-2026-08-29/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-2"
+  statement = "handle_capacity_increase's Case B branch is never exercised by any harness in this module; Case C's branch CHOICE (as distinct from its copy destination's correctness, which IS confirmed load-bearing by the control above) remains undistinguished by any assertion at this fixture's symmetric head_len==tail_len boundary"
+  void_if   = "this claim is read as covering the Case B path, or as distinguishing the Case B/C branch choice itself"

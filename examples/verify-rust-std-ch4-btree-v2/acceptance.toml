@@ -1,0 +1,523 @@
+# Challenge-4 (btree::node) STRENGTHENED v2 -- acceptance/0 manifest.
+# NOT illustrative: records real evidence for a real branch, challenge-4-btree-v2 @
+# 9a083f4bc124925f2fc0c447d688110dd3b89ac8 in the PUBLIC fork ivmat/verify-rust-std, based on the reviewed
+# fmt-clean base df4829c6cff1ba9b5983ae8983777e944c40bda4.
+#
+# WHAT CHANGED vs the v1 manifest, and it is material:
+#   * v1 stated plainly that NONE of its 6 claims targeted a function literally named in the
+#     challenge doc's two enumerated lists -- they were the bounded slot-copy and relink helpers
+#     the List-2 functions are built from. THAT IS NO LONGER TRUE. v2 targets SEVEN of the EIGHT
+#     functions in the second list (new_internal, do_merge, merge_tracking_child_edge, steal_left,
+#     steal_right, bulk_steal_left, bulk_steal_right) directly, by name. Only insert_recursing is
+#     absent, and its absence is recorded as an explicit gap claim below rather than left silent.
+#   * v1's CH4-L6 (move_suffix functional content) was status = "gap", evidence-free, on the
+#     strength of a run at Kani 0.65.0 / CBMC 6.7.1. Re-measured at THIS entry's pin it discharges,
+#     so the claim below carries harness records instead of a gap marker.
+#
+# BANDS. assurance-bands.md rule 2 and its one-sentence gate: an oracle-bearing claim cannot exceed
+# A0 without an observed-red control whose of_claim names it. Every claim below is written at the
+# band its control evidence actually earns. The mutation-control campaign has landed: 5/5 controls
+# observed-red at [subject].commit, and exactly the four claims whose controls name them carry
+# [claim.evidence.control] blocks and stand at A3. Every other claim remains at A0 and says so.
+#
+# NOT FINAL UNTIL --strict PASSES. Every evidence entry points at a log from the one-run-one-sha
+# verification at [subject].commit. While those records do not resolve, `check_acceptance.py
+# --strict` FAILS on dangling record pointers, and that failure is the mechanical guard against
+# this manifest asserting a pass before its run happened. It is a real guard, not a formality: the
+# first assembly of this entry did not compile, so passes recorded against it would have been
+# false. Do not treat this manifest as evidence until the validator is green.
+#
+# UNWEIGHTED throughout (no grade/weight -- W1, core.md: "weight is explicit and defaults to
+# absent"). A claim visible and honestly unweighted beats one absent.
+#
+# NOTE: node lengths are symbolic EXCEPT in the move_suffix family ({0,1,CAPACITY}) and
+# Handle::split ({1,CAPACITY}); each claim's bounds field states this.
+#
+# clause is an informal function-name token; this challenge doc has no clause-id scheme. But unlike
+# v1, the List-2 membership of the targeted functions IS asserted here, and is checkable against
+# doc/src/challenges/0004-btree-node.md's second enumerated list.
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "2788bbfdb7b01c1fdd0013ce5bd4714166301ddf"
+validator_sha = "2788bbfdb7b01c1fdd0013ce5bd4714166301ddf"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-30T09:30:00Z"
+illustrative  = false
+
+# record_root is relative to this manifest's location in the PRIVATE control repo and must be
+# re-rooted to a public evidence layout before publication (owner-gated; not invented here).
+[subject]
+name        = "verify-rust-std (alloc::collections::btree::node, Challenge 4 strengthened v2)"
+kind        = "rust-workspace"
+commit      = "9a083f4bc124925f2fc0c447d688110dd3b89ac8"
+dirty       = false
+record_root = "../cloud-campaigns/CH4-CONTRACT-2026-08-30/artifacts-v2/proofs"
+
+[spec]
+path    = "doc/src/challenges/0004-btree-node.md"
+version = "verify-rust-std upstream/main @ 4070e2f4032fc3097029189103825bf75febb61d"
+
+[coverage]
+clauses_total = 13
+claims_total  = 13
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V1"
+clause    = "NodeRef::new_internal (List-2 #1)"
+item      = "alloc::collections::btree::node::NodeRef::<Owned,K,V,Internal>::new_internal"
+statement = "constructing an internal node over a child links that child at edge 0 and points it back at the new node, for both child shapes (a height-0 leaf child yielding height 1, and a height-1 internal child yielding height 2)"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_new_internal_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32; two child shapes; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_new_internal_no_ub.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V2"
+clause    = "BalancingContext::do_merge -- leaf arm (List-2 #3)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::do_merge, driven through its own public wrapper merge_tracking_parent (the real call path, not a re-implementation)"
+statement = "merging two leaf children and the parent's separating pair into the left child preserves the left child's existing prefix, places the parent's pair at the join, appends the whole right child after it, shrinks the parent, closes its edge array and repairs the surviving children's parent links -- over the complete occupancy domain"
+band      = "A3"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_do_merge_leaf_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, height-1 parent, leaf children; complete occupancy domain: len symbolic over 0..=CAPACITY, which is the node type's full range since CAPACITY is a compile-time constant and LeafNode stores [MaybeUninit<K>; CAPACITY]; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_do_merge_leaf_no_ub.log"
+
+  # BAND-LIFTING CONTROL. The mutation is applied to the IMPLEMENTATION on the verification VM only
+  # and is never committed: an in-tree enabled #[kani::proof] designed to fail would turn any
+  # whole-set run of the submitted diff red. `result = "fail"` is the EXPECTED outcome -- the
+  # mutated implementation must not verify.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_do_merge_leaf_no_ub (against mutant M2)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain as the claim's harness; mutant M2 sets do_merge's merged-child stored length to new_left_len - 1 (new_left_len >= 1 by construction)"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/mutctl-M2-check_do_merge_leaf_no_ub.log"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH4-V2"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V3"
+clause    = "BalancingContext::do_merge -- internal arm (List-2 #3)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::do_merge (internal children)"
+statement = "merging two INTERNAL children executes without undefined behaviour, including the edge-array move and the relink of children transferred between two different parents; verified with child occupancies constrained only by do_merge's own precondition for memory safety (the fixture cap of CAPACITY per child is deliberately non-binding, so no single child reaches CAPACITY pre-merge -- the reachable maximum is CAPACITY-1 with the other child empty), and with post-state content assertions at a stated harness-chosen bound"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_do_merge_internal_full_occupancy_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, height-2 tree; fixture cap IB=CAPACITY, non-binding -- do_merge's own precondition constrains the pair; memory safety only; unwind=15"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_do_merge_internal_full_occupancy_no_ub.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_do_merge_internal_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, height-2 tree; child occupancy IB=2 (harness-chosen); with content assertions; unwind=5"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_do_merge_internal_no_ub.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V4"
+clause    = "BalancingContext::merge_tracking_child_edge (List-2 #4)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::merge_tracking_child_edge"
+statement = "the tracked edge index is translated to its documented post-merge position -- unchanged for a Left-tracked edge, offset by old_left_len + 1 for a Right-tracked edge -- -- the returned handle's INDEX is asserted; its node identity is not"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_merge_tracking_child_edge_leaf_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, leaf children; complete occupancy domain: len symbolic over 0..=CAPACITY, which is the node type's full range since CAPACITY is a compile-time constant and LeafNode stores [MaybeUninit<K>; CAPACITY]; both LeftOrRight arms; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_merge_tracking_child_edge_leaf_no_ub.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V5"
+clause    = "BalancingContext::steal_left (List-2 #5)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::steal_left"
+statement = "stealing one pair from the left sibling shifts the tracked right-child edge index up by exactly one (the returned handle's INDEX is asserted; its node identity is not)"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_steal_left_leaf_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, leaf children; complete occupancy domain: len symbolic over 0..=CAPACITY, which is the node type's full range since CAPACITY is a compile-time constant and LeafNode stores [MaybeUninit<K>; CAPACITY]; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_steal_left_leaf_no_ub.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V6"
+clause    = "BalancingContext::steal_right (List-2 #6)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::steal_right"
+statement = "stealing one pair from the right sibling leaves the tracked left-child edge index unchanged (the returned handle's INDEX is asserted; its node identity is not)"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_steal_right_leaf_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, leaf children; complete occupancy domain: len symbolic over 0..=CAPACITY, which is the node type's full range since CAPACITY is a compile-time constant and LeafNode stores [MaybeUninit<K>; CAPACITY]; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_steal_right_leaf_no_ub.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V7"
+clause    = "BalancingContext::bulk_steal_left -- leaf arm (List-2 #7)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::bulk_steal_left"
+statement = "moving count pairs from the left child to the right one leaves the source's retained prefix untouched, places the stolen block and the parent's old pair at the front of the destination, rotates left[new_left_len] into the parent, and -- asserted, not merely witnessed -- sets the destination's stored length to old_right_len + count and shifts the destination's own pairs up by count in BOTH the key and the value array"
+band      = "A3"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_bulk_steal_left_leaf_scoped_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, leaf children; complete occupancy domain: len symbolic over 0..=CAPACITY, which is the node type's full range since CAPACITY is a compile-time constant and LeafNode stores [MaybeUninit<K>; CAPACITY] on both children; count symbolic; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_bulk_steal_left_leaf_scoped_no_ub.log"
+
+  # BAND-LIFTING CONTROL. The mutation is applied to the IMPLEMENTATION on the verification VM only
+  # and is never committed: an in-tree enabled #[kani::proof] designed to fail would turn any
+  # whole-set run of the submitted diff red. `result = "fail"` is the EXPECTED outcome -- the
+  # mutated implementation must not verify.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_bulk_steal_left_leaf_scoped_no_ub (against mutant M3)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain as the claim's harness; mutant M3 sets bulk_steal_left's destination stored length to new_right_len - 1 (count >= 1, so no underflow)"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/mutctl-M3-check_bulk_steal_left_leaf_scoped_no_ub.log"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH4-V7"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V8"
+clause    = "BalancingContext::bulk_steal_right -- leaf arm (List-2 #8)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::bulk_steal_right"
+statement = "the mirror operation: the destination's prefix is preserved, the parent's old pair and the stolen block land after it, the parent takes right[count-1], and -- asserted, not merely witnessed -- the source's stored length becomes old_right_len - count and its surviving pairs shift DOWN by count in the value array as well as the key array"
+band      = "A3"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_bulk_steal_right_leaf_scoped_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, leaf children; complete occupancy domain: len symbolic over 0..=CAPACITY, which is the node type's full range since CAPACITY is a compile-time constant and LeafNode stores [MaybeUninit<K>; CAPACITY] on both children; count symbolic; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_bulk_steal_right_leaf_scoped_no_ub.log"
+
+  # BAND-LIFTING CONTROL. The mutation is applied to the IMPLEMENTATION on the verification VM only
+  # and is never committed: an in-tree enabled #[kani::proof] designed to fail would turn any
+  # whole-set run of the submitted diff red. `result = "fail"` is the EXPECTED outcome -- the
+  # mutated implementation must not verify.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_bulk_steal_right_leaf_scoped_no_ub (against mutant M4)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain as the claim's harness; mutant M4 sets bulk_steal_right's source stored length to new_right_len + 1 (<= CAPACITY, so in range)"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/mutctl-M4-check_bulk_steal_right_leaf_scoped_no_ub.log"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH4-V8"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V9"
+clause    = "bulk_steal_left / bulk_steal_right -- internal arms (List-2 #7, #8)"
+item      = "alloc::collections::btree::node::BalancingContext::<K,V>::{bulk_steal_left, bulk_steal_right} (internal children)"
+statement = "both bulk-steal operations execute without undefined behaviour when the children are themselves internal nodes, exercising the edge-array shift, the edge move between siblings, and correct_childrens_parent_links over a symbolic range of children re-parented across two different nodes"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_bulk_steal_left_internal_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, height-2 tree; child occupancy IB=2 (harness-chosen); memory safety only; unwind=6"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_bulk_steal_left_internal_no_ub.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_bulk_steal_right_internal_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32, height-2 tree; child occupancy IB=2 (harness-chosen); memory safety only; unwind=6"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_bulk_steal_right_internal_no_ub.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V10"
+clause    = "Handle::split (leaf)"
+item      = "alloc::collections::btree::node::Handle::<NodeRef<Mut,K,V,Leaf>,KV>::split"
+statement = "splitting a leaf at a symbolic index returns the pair that sat at that index, truncates the source to exactly that many pairs, and produces a new node holding the suffix with its first and last elements at the expected positions, leaving the source's head unchanged"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_leaf_split_no_ub"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32; old_len in {1,CAPACITY}, idx symbolic < old_len; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_leaf_split_no_ub.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V11"
+clause    = "correct_all_childrens_parent_links over the complete occupancy domain"
+item      = "alloc::collections::btree::node::NodeRef::<Mut,K,V,Internal>::correct_all_childrens_parent_links"
+statement = "after every child's parent link is perturbed to a sentinel, the full-range relink restores a symbolically-chosen child's (parent ptr, parent_idx) so that descend().ascend() round-trips -- with the node's occupancy symbolic over its complete domain rather than sampled at three points"
+band      = "A0"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_correct_all_childrens_parent_links_full_domain"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32; complete occupancy domain: len symbolic over 0..=CAPACITY, which is the node type's full range since CAPACITY is a compile-time constant and LeafNode stores [MaybeUninit<K>; CAPACITY]; one symbolic check index per run; unwind=13"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_correct_all_childrens_parent_links_full_domain.log"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V12"
+clause    = "Handle::move_suffix (leaf height) -- content"
+item      = "alloc::collections::btree::node::Handle::<NodeRef<Mut,K,V,LeafOrInternal>,Edge>::move_suffix"
+statement = "after the type-erasure and two-node move, the source keeps its head and its new last element, the destination's first element is the pair that sat at the split index, the destination's last element is the source's original last, and the two stored lengths are idx and old_len - idx respectively"
+band      = "A3"
+status    = "evidenced"
+
+# v1 carried this as a gap with no evidence, on the strength of a run at Kani 0.65.0 /
+# CBMC 6.7.1. It discharges at this entry's pin, so the gap is closed with evidence rather
+# than reworded.
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_move_suffix_leaf_content_all"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: K=V=i32; old_len in {0,1,CAPACITY}, idx symbolic <= old_len; unwind=12"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_move_suffix_leaf_content_all.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_move_suffix_leaf_raw_len"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain; raw LeafNode projection readback; unwind=12"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_move_suffix_leaf_raw_len.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_move_suffix_leaf_content_check_a"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain, one spot-check per harness; unwind=12"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_move_suffix_leaf_content_check_a.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_move_suffix_leaf_content_check_b"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain, one spot-check per harness; unwind=12"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_move_suffix_leaf_content_check_b.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_move_suffix_leaf_content_check_c"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain, one spot-check per harness; unwind=12"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_move_suffix_leaf_content_check_c.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_move_suffix_leaf_content_check_d"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain, one spot-check per harness; unwind=12"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/ch4v2verify-check_move_suffix_leaf_content_check_d.log"
+
+  # BAND-LIFTING CONTROL. The mutation is applied to the IMPLEMENTATION on the verification VM only
+  # and is never committed: an in-tree enabled #[kani::proof] designed to fail would turn any
+  # whole-set run of the submitted diff red. `result = "fail"` is the EXPECTED outcome -- the
+  # mutated implementation must not verify.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verify::check_move_suffix_leaf_content_all (against mutant M1)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f + cbmc@6.8.0"
+  bounds    = "bounded: same domain as the claim's harnesses; mutant M1 sets move_suffix's destination stored length to new_right_len - 1 (guarded by new_right_len > 0, so no underflow)"
+  semantics = "-Z unstable-options -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "logs/mutctl-M1-check_move_suffix_leaf_content_all.log"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH4-V12"
+
+# ------------------------------------------------------------------------------------------------
+
+[[claim]]
+id        = "CH4-V13"
+clause    = "Handle::insert_recursing (List-2 #2)"
+item      = "alloc::collections::btree::node::Handle::<NodeRef<Mut,K,V,Leaf>,Edge>::insert_recursing"
+statement = "memory safety of the recursive insert path at unbounded tree height"
+band      = "A0"
+status    = "gap"
+
+# No evidence in this entry, and the gap is structural rather than incidental. insert_recursing's
+# loop ascends from the insertion point to the root, so its trip count is the tree's HEIGHT -- the
+# one axis the node type does not bound (occupancy is bounded by CAPACITY, a compile-time constant;
+# height is bounded only by element count). Harnessing it at a fixed height is possible and was done
+# during development, but a bounded-height result does not discharge the unboundedness the challenge
+# states for this function, so nothing is claimed here rather than shipping a bound that would read
+# stronger than it is. Measured at Kani 0.67.0 / CBMC 6.8.0.

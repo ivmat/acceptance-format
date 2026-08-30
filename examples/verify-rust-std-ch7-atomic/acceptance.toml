@@ -1,0 +1,378 @@
+# Hand-authored acceptance/0 manifest for the Challenge-7 atomic `from_ptr` PROBE set
+# (AtomicBool / AtomicI8 / AtomicI32 / AtomicU64 / AtomicPtr<u8> / AtomicPtr<[u8; 3]>).
+# NOT a generated certificate: built by hand from the receipts in the sibling private
+# control repo's `cloud-campaigns/` tree, not the output of a manifest generator.
+# `illustrative = true` per core.md 0.6 makes that a validator-visible fact.
+# `record` pointers are repo-relative to the private control repo they live in
+# (not this repo); they will not resolve from a public reader's checkout -- expected, and
+# validator-flagged as a WARN, not a FAIL (same shape as the ch20/ch21/ch22/ch4 examples this
+# manifest is modeled on). Everything here is UNWEIGHTED.
+#
+# WHY illustrative = true:
+#   1. Hand-authored, no automated capture pipeline behind these records.
+#   2. Challenge 7's OWN Part 1 success criteria (doc/src/challenges/0007-atomic-types.md) ask for
+#      SAFETY CONTRACTS written on each of TWELVE listed `from_ptr` methods, then verification that
+#      each is safe for all pointee values given those preconditions. This manifest's 6 claims write
+#      NO contract on ANY of the twelve -- they are assume-based PROBEs over 6 concrete type
+#      instantiations. A PROBE does not count as criterion coverage. Part 2 (Safe Abstractions) and
+#      Part 3 (Atomic Intrinsics) are entirely absent. Never read this manifest as satisfying Challenge 7 -- illustrative=true, the
+#      [coverage] denominator/slice_note, and each claim's `statement` scoping are where that is
+#      said, not just this header.
+#
+# BAND RATIONALE (assurance-bands.md):
+#   - CH7-3 / CH7-4 / CH7-5 / CH7-6 (i32, u64, AtomicPtr<u8>, AtomicPtr<[u8;3]>): each carries a
+#     dedicated alignment requires-ablation control, independently VM-confirmed RED against the
+#     real shipped `from_ptr` -- carrier family is `bmc`, control kind is "ablation", and the claim
+#     is memory safety on an UNSAFE surface. That matches assurance-bands.md's A2 species+control
+#     requirement exactly ("memory safety on the unsafe surface" + control kind in
+#     {mutation, ablation} on that surface) -> A2.
+#   - CH7-1 / CH7-2 (bool, i8): `align_of::<AtomicBool>() == align_of::<AtomicI8>() == 1`
+#     unconditionally, so the alignment assume excludes nothing and ALIGNMENT ablation cannot yield a
+#     control for them -- not merely "not run". Other control shapes are conceivable in principle;
+#     none was run. No observed-red control -> A0, per the one-sentence gate
+#     ("an oracle-bearing claim cannot exceed A0 without an observed-red control whose `of_claim`
+#     names it"). This follows the estate's existing conservative precedent for control-less
+#     UB-freedom probes (ch4's *_no_ub claims and all four ch20 claims are A0).
+#
+#     *** FORMAT-SEMANTICS QUESTION FOR THE CONTROL SEAT (not self-ruled) ***
+#     assurance-bands.md rule 6 carves out an exception: no-oracle hygiene / panic- and UB-freedom
+#     claims "reach A1 without a control ... there is no postcondition oracle to mutate". CH7-1 and
+#     CH7-2 are exactly that shape (UB-freedom only, no postcondition oracle) AND they carry a
+#     terminal `kani::cover` non-vacuity witness, which is the thing A1's "non-vacuous but not
+#     state-exhaustive" wording asks for. So a defensible reading puts them at A1, not A0.
+#     They are recorded here at A0 because under-claiming is safe and over-claiming is not, and
+#     because A0 matches existing estate precedent. If the control seat rules rule 6 applies, these
+#     two lift to A1 with no other change. Routed, deliberately not decided by this lane.
+#
+# HARNESS-NAME NOTE: the EXTRA5-ch7-VERIFY-2026-08-29 receipt logs the bool and i8 probes under
+# their OLD names (`probe_atomic_bool_from_ptr_requires_ablation` /
+# `probe_atomic_i8_from_ptr_requires_ablation`). They were RENAMED on the branch to drop the
+# `_requires_ablation` suffix precisely because no ablation control exists or can exist for them.
+# The `ref` fields below use the CURRENT names. NOTE: the EXTRA5-ch7-VERIFY bodies are NOT identical
+# to the current ones -- they are the earlier LOAD-ONLY harnesses (no terminal cover, no Relaxed
+# store, is_initialized still assumed). The CURRENT carriers were verified in EXTRA5-FIXWAVE
+# (6/6 SUCCESSFUL, 1/1 cover each), which is what the carrier `record` fields now point at; only the
+# alignment-ablation CONTROL records still point at EXTRA5-ch7-VERIFY, where they were run.
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "2788bbfdb7b01c1fdd0013ce5bd4714166301ddf"
+validator_sha = "2788bbfdb7b01c1fdd0013ce5bd4714166301ddf"
+generated_by  = "hand-authored"
+generated_at  = "2026-08-30T00:00:00Z"
+illustrative  = true
+
+[subject]
+name   = "verify-rust-std (core::sync::atomic, Challenge 7 from_ptr PROBE set)"
+kind   = "rust-crate"
+# Branch HEAD after the 2026-08-30 rustfmt fix (formatting-only: the repo's `upstream_test` CI job
+# runs `./x fmt --check` inside a rust-lang/rust tree, which the pre-fix sha 2c43bd330d5 failed --
+# see the private control repo's session-prompts-2026-08-29/664-CI-FORENSICS-2026-08-30.md). The fix changed only
+# import ordering in the verify module; every predicate, assume, assertion, cover expression and
+# target call is byte-for-byte identical to the sha the VM evidence below was gathered at
+# (2c43bd330d5). NOTE: the sha that ships in the upstream PR may differ (cherry-pick onto the
+# public fork can change the hash even with identical content) -- re-stamp at push time if so.
+commit = "c8494c66431256f6d903a47078d69939a929c499"
+dirty  = false
+
+[spec]
+path    = "doc/src/challenges/0007-atomic-types.md"
+version = "4070e2f4032fc3097029189103825bf75febb61d"   # upstream/main base commit
+axis    = "6 concrete type instantiations (AtomicBool, AtomicI8, AtomicI32, AtomicU64, AtomicPtr<u8>, AtomicPtr<[u8; 3]>) of the 12 from_ptr methods Challenge 7 Part 1 names, verified as assume-based PROBEs rather than as the written safety contracts the criteria actually require, and restricted to a single-execution, single-call fixture (one PointerGenerator any_in_bounds pointer, one Relaxed load, one Relaxed store). Parts 2 (Safe Abstractions) and 3 (Atomic Intrinsics) are not addressed at all. The six instantiations span only 5 distinct methods, since both AtomicPtr claims instantiate the same AtomicPtr::from_ptr."
+
+[coverage]
+clauses_total = 12  # the twelve from_ptr methods Challenge 7 Part 1 lists
+claims_total  = 6   # 6 claims over 5 distinct methods (AtomicPtr::from_ptr carries two)
+denominator   = "slice"
+slice_note    = "six bounded PROBE claims spanning 5 of the 12 listed from_ptr methods (CH7-5 and CH7-6 are two T instantiations of the SAME AtomicPtr::from_ptr, not two methods); the remaining SEVEN methods -- AtomicU8, AtomicI16, AtomicU16, AtomicU32, AtomicI64, AtomicI128, AtomicU128 -- are not covered. No safety contract is written on any of the twelve. For AtomicPtr the challenge asks for T of byte sizes 0, 1, 2, 4 and at least one non-power-of-two; only sizes 1 and 3 are covered here. Challenge 7 Part 2 (Safe Abstractions) and Part 3 (Atomic Intrinsics) are entirely outside this manifest"
+
+# =====================================================================================================
+# -- alignment tautological (align_of == 1): no ablation control possible -> A0 ----------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH7-1"
+clause    = "AtomicBool::from_ptr"
+item      = "library/core/src/sync/atomic.rs::AtomicBool::from_ptr"
+statement = "from_ptr on the shipped AtomicBool, given a kani::PointerGenerator any_in_bounds pointer assumed aligned for AtomicBool, produces no enabled Kani default-check violation across from_ptr + one Relaxed load + one Relaxed store; the aligned in-bounds path is witnessed reachable by a terminal kani::cover. align_of::<AtomicBool>() == 1 unconditionally, so the alignment assume excludes nothing and this claim rests on an UNCONTROLLED pass -- no ablation control exists or can exist for this type"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness probe_atomic_bool_from_ptr --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL; 1 of 1 cover properties satisfied"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::probe_atomic_bool_from_ptr"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: PointerGenerator cell of 2 * size_of::<bool>(), one any_in_bounds pointer, single from_ptr call + one Relaxed load + one Relaxed store; no loops in the target, so no kani::unwind is needed; --object-bits 12"
+  semantics = "alignment is tautological for this type (align_of == 1); the kani::assume is kept for documentation parity with the ablatable harnesses, not because it constrains anything"
+  record    = "../cloud-campaigns/CH-FMTFIX-D0088-2026-08-30/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "Under the flag set these harnesses run with, UNINITIALIZED-MEMORY CHECKING IS ABSENT FROM THE ENABLED CHECK SET: uninitialized reads are a class of undefined behavior this claim CANNOT observe. The claim is therefore worded as 'no enabled Kani default-check violation', not 'UB-free'. The harness assumes initialized storage so that its own load() is not UB in the harness source; that assume is not a documented precondition of from_ptr and, because no enabled property observes it, dropping it does not turn the proof red -- which is a fact about the check set, NOT evidence that initialization is unnecessary (measured at Kani 0.67.0, source pin d4df833c8f8f18e632e7b0a7945bb2161f708990, CBMC 6.8.0, under the canonical flag set; a property of that pin, not a permanent fact -- re-measure before relying on it at another version)"
+  void_if   = "this claim is read as covering initialization of the pointee, as UB-freedom in the full sense, or as evidence that reading uninitialized memory through from_ptr is safe"
+
+  [[claim.assumes]]
+  id        = "AS-2"
+  statement = "the # Safety requirement that ptr be valid for the LIFETIME 'a is assumed, not verified: Kani does not track reference lifetimes (maintainer-confirmed on tracking issue #83), so no Kani harness can discharge that clause"
+  void_if   = "this claim is read as establishing lifetime validity of the returned reference"
+
+  [[claim.assumes]]
+  id        = "AS-3"
+  statement = "the no-conflicting-atomic/non-atomic-access memory-model clause is out of scope: Kani's proof model is single-execution, so cross-thread data-race freedom is not addressed by this or any claim in this manifest"
+  void_if   = "this claim is read as establishing any concurrency or data-race property"
+
+[[claim]]
+id        = "CH7-2"
+clause    = "AtomicI8::from_ptr"
+item      = "library/core/src/sync/atomic.rs::AtomicI8::from_ptr"
+statement = "from_ptr on the shipped AtomicI8, given a kani::PointerGenerator any_in_bounds pointer assumed aligned for AtomicI8, produces no enabled Kani default-check violation across from_ptr + one Relaxed load + one Relaxed store; the aligned in-bounds path is witnessed reachable by a terminal kani::cover. align_of::<AtomicI8>() == 1 unconditionally, so the alignment assume excludes nothing and this claim rests on an UNCONTROLLED pass -- no ablation control exists or can exist for this type"
+band      = "A0"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness probe_atomic_i8_from_ptr --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL; 1 of 1 cover properties satisfied"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::probe_atomic_i8_from_ptr"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: PointerGenerator cell of 2 * size_of::<i8>(), one any_in_bounds pointer, single from_ptr call + one Relaxed load + one Relaxed store; no loops in the target; --object-bits 12"
+  semantics = "alignment is tautological for this type (align_of == 1); same reasoning as CH7-1"
+  record    = "../cloud-campaigns/CH-FMTFIX-D0088-2026-08-30/RECEIPT.md"
+
+  [[claim.assumes]]
+  id        = "AS-4"
+  statement = "Under the flag set these harnesses run with, UNINITIALIZED-MEMORY CHECKING IS ABSENT FROM THE ENABLED CHECK SET: uninitialized reads are a class of undefined behavior this claim CANNOT observe. The claim is therefore worded as 'no enabled Kani default-check violation', not 'UB-free'. The harness assumes initialized storage so that its own load() is not UB in the harness source; that assume is not a documented precondition of from_ptr and, because no enabled property observes it, dropping it does not turn the proof red -- which is a fact about the check set, NOT evidence that initialization is unnecessary (measured at Kani 0.67.0, source pin d4df833c8f8f18e632e7b0a7945bb2161f708990, CBMC 6.8.0, under the canonical flag set; a property of that pin, not a permanent fact -- re-measure before relying on it at another version). Lifetime-'a validity and the memory-model clause carry the same non-claims as CH7-1's AS-2/AS-3"
+  void_if   = "this claim is read as covering initialization, lifetime validity, or any concurrency property"
+
+# =====================================================================================================
+# -- alignment load-bearing, ablation-controlled RED -> A2 -------------------------------------------
+# =====================================================================================================
+
+[[claim]]
+id        = "CH7-3"
+clause    = "AtomicI32::from_ptr"
+item      = "library/core/src/sync/atomic.rs::AtomicI32::from_ptr"
+statement = "from_ptr on the shipped AtomicI32, given a kani::PointerGenerator any_in_bounds pointer (which can genuinely be misaligned) assumed aligned for AtomicI32, produces no enabled Kani default-check violation across from_ptr + one Relaxed load + one Relaxed store; the alignment precondition is CONFIRMED LOAD-BEARING by a requires-ablation control that went RED as predicted"
+band      = "A2"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness probe_atomic_i32_from_ptr_requires_ablation --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL; 1 of 1 cover properties satisfied"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::probe_atomic_i32_from_ptr_requires_ablation"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: PointerGenerator cell of 2 * size_of::<i32>(), one any_in_bounds pointer, single from_ptr call + one Relaxed load + one Relaxed store; no loops in the target; --object-bits 12"
+  semantics = "the pointer is symbolic and in-bounds of a live allocation but NOT aligned by construction -- alignment is imposed only by the kani::assume, which is what makes the ablation below meaningful"
+  record    = "../cloud-campaigns/CH-FMTFIX-D0088-2026-08-30/RECEIPT.md"
+
+  # ablation control (assurance-bands.md A2 whitelist: kind in {mutation, ablation}): drop the
+  # alignment kani::assume and re-run -- VM-confirmed RED with
+  # "misaligned pointer to reference cast: address must be a multiple of its type's alignment".
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::control_atomic_i32_from_ptr_align_ablation_expect_red"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: same fixture as the carrier record above, with the alignment assume removed"
+  semantics = "control harness carried on an EARLIER COMMIT of this branch (197729b8f40) and stripped before submission -- no expected-RED harness ships in the diff. NOTE: that control body is the earlier LOAD-ONLY harness, before the terminal kani::cover and the Relaxed store were added, so it is not literally the current carrier with only the alignment assume removed; the RED fires at the from_ptr reference cast, which both bodies share"
+  record    = "../cloud-campaigns/EXTRA5-ch7-VERIFY-2026-08-29/RECEIPT.md"
+
+    [claim.evidence.control]
+    kind        = "ablation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH7-3"
+
+  [[claim.assumes]]
+  id        = "AS-5"
+  statement = "the ablation control establishes that the ALIGNMENT precondition is necessary; it says nothing about the other # Safety clauses. Under the flag set these harnesses run with, UNINITIALIZED-MEMORY CHECKING IS ABSENT FROM THE ENABLED CHECK SET: uninitialized reads are a class of undefined behavior this claim CANNOT observe. The claim is therefore worded as 'no enabled Kani default-check violation', not 'UB-free'. The harness assumes initialized storage so that its own load() is not UB in the harness source; that assume is not a documented precondition of from_ptr and, because no enabled property observes it, dropping it does not turn the proof red -- which is a fact about the check set, NOT evidence that initialization is unnecessary (measured at Kani 0.67.0, source pin d4df833c8f8f18e632e7b0a7945bb2161f708990, CBMC 6.8.0, under the canonical flag set; a property of that pin, not a permanent fact -- re-measure before relying on it at another version). Lifetime-'a validity and the memory-model clause carry the same non-claims as CH7-1's AS-2/AS-3"
+  void_if   = "this claim is read as confirming the full documented # Safety precondition set is load-bearing, rather than the alignment clause alone"
+
+[[claim]]
+id        = "CH7-4"
+clause    = "AtomicU64::from_ptr"
+item      = "library/core/src/sync/atomic.rs::AtomicU64::from_ptr"
+statement = "from_ptr on the shipped AtomicU64, given a kani::PointerGenerator any_in_bounds pointer assumed aligned for AtomicU64, produces no enabled Kani default-check violation across from_ptr + one Relaxed load + one Relaxed store; the alignment precondition is CONFIRMED LOAD-BEARING by a requires-ablation control that went RED as predicted"
+band      = "A2"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness probe_atomic_u64_from_ptr_requires_ablation --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL; 1 of 1 cover properties satisfied"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::probe_atomic_u64_from_ptr_requires_ablation"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: PointerGenerator cell of 2 * size_of::<u64>(), one any_in_bounds pointer, single from_ptr call + one Relaxed load + one Relaxed store; no loops in the target; --object-bits 12"
+  semantics = "same fixture shape as CH7-3, at 8-byte alignment"
+  record    = "../cloud-campaigns/CH-FMTFIX-D0088-2026-08-30/RECEIPT.md"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::control_atomic_u64_from_ptr_align_ablation_expect_red"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: same fixture as the carrier record above, with the alignment assume removed"
+  semantics = "control harness carried on the earlier commit 197729b8f40 and stripped before submission (load-only body, pre-cover/pre-store) -- same provenance caveat as CH7-3"
+  record    = "../cloud-campaigns/EXTRA5-ch7-VERIFY-2026-08-29/RECEIPT.md"
+
+    [claim.evidence.control]
+    kind        = "ablation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH7-4"
+
+  [[claim.assumes]]
+  id        = "AS-6"
+  statement = "same scope caveat as CH7-3's AS-5: the control establishes the alignment clause's necessity only. Under the flag set these harnesses run with, UNINITIALIZED-MEMORY CHECKING IS ABSENT FROM THE ENABLED CHECK SET: uninitialized reads are a class of undefined behavior this claim CANNOT observe. The claim is therefore worded as 'no enabled Kani default-check violation', not 'UB-free'. The harness assumes initialized storage so that its own load() is not UB in the harness source; that assume is not a documented precondition of from_ptr and, because no enabled property observes it, dropping it does not turn the proof red -- which is a fact about the check set, NOT evidence that initialization is unnecessary (measured at Kani 0.67.0, source pin d4df833c8f8f18e632e7b0a7945bb2161f708990, CBMC 6.8.0, under the canonical flag set; a property of that pin, not a permanent fact -- re-measure before relying on it at another version). Lifetime-'a and memory-model non-claims of CH7-1 apply unchanged"
+  void_if   = "this claim is read as confirming the full # Safety precondition set, or as covering initialization, lifetimes, or concurrency"
+
+[[claim]]
+id        = "CH7-5"
+clause    = "AtomicPtr::from_ptr"
+item      = "library/core/src/sync/atomic.rs::AtomicPtr::<u8>::from_ptr"
+statement = "from_ptr on the shipped AtomicPtr<u8>, given a pointer-width kani::PointerGenerator any_in_bounds cell cast to *mut *mut u8 and assumed aligned for AtomicPtr<u8>, produces no enabled Kani default-check violation across from_ptr + one Relaxed load + one Relaxed store of null_mut(); the alignment precondition is CONFIRMED LOAD-BEARING by a requires-ablation control that went RED as predicted"
+band      = "A2"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness probe_atomic_ptr_u8_from_ptr_requires_ablation --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL; 1 of 1 cover properties satisfied"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::probe_atomic_ptr_u8_from_ptr_requires_ablation"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: PointerGenerator cell of 2 * size_of::<usize>() cast to *mut *mut u8, one any_in_bounds pointer, single from_ptr call + one Relaxed load + one Relaxed store; --object-bits 12"
+  semantics = "the storage cell is pointer-width and its atomic alignment is assumed separately rather than derived from T's own layout; the stored value is null_mut() rather than a symbolic *mut T, so the challenge's 'any arbitrary memory address for the pointee' expectation is NOT met by this harness"
+  record    = "../cloud-campaigns/CH-FMTFIX-D0088-2026-08-30/RECEIPT.md"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::control_atomic_ptr_u8_from_ptr_align_ablation_expect_red"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: same fixture as the carrier record above, with the alignment assume removed"
+  semantics = "control harness carried on the earlier commit 197729b8f40 and stripped before submission (load-only body, pre-cover/pre-store) -- same provenance caveat as CH7-3"
+  record    = "../cloud-campaigns/EXTRA5-ch7-VERIFY-2026-08-29/RECEIPT.md"
+
+    [claim.evidence.control]
+    kind        = "ablation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH7-5"
+
+  [[claim.assumes]]
+  id        = "AS-7"
+  statement = "the pointee value is null_mut(), not a symbolic *mut T -- Challenge 7 explicitly asks that AtomicPtr::from_ptr be verified for ANY arbitrary pointee address, and this harness does not range over that space"
+  void_if   = "this claim is read as covering arbitrary pointee pointer values"
+
+  [[claim.assumes]]
+  id        = "AS-8"
+  statement = "same scope caveat as CH7-3's AS-5 on the control. Under the flag set these harnesses run with, UNINITIALIZED-MEMORY CHECKING IS ABSENT FROM THE ENABLED CHECK SET: uninitialized reads are a class of undefined behavior this claim CANNOT observe. The claim is therefore worded as 'no enabled Kani default-check violation', not 'UB-free'. The harness assumes initialized storage so that its own load() is not UB in the harness source; that assume is not a documented precondition of from_ptr and, because no enabled property observes it, dropping it does not turn the proof red -- which is a fact about the check set, NOT evidence that initialization is unnecessary (measured at Kani 0.67.0, source pin d4df833c8f8f18e632e7b0a7945bb2161f708990, CBMC 6.8.0, under the canonical flag set; a property of that pin, not a permanent fact -- re-measure before relying on it at another version). Lifetime-'a and memory-model non-claims of CH7-1 apply unchanged"
+  void_if   = "this claim is read as confirming the full # Safety precondition set, or as covering initialization, lifetimes, or concurrency"
+
+[[claim]]
+id        = "CH7-6"
+clause    = "AtomicPtr::from_ptr"
+item      = "library/core/src/sync/atomic.rs::AtomicPtr::<[u8; 3]>::from_ptr"
+statement = "from_ptr on the shipped AtomicPtr<[u8; 3]> -- the non-power-of-two-T instantiation Challenge 7 explicitly asks for -- given a pointer-width kani::PointerGenerator any_in_bounds cell cast to *mut *mut [u8; 3] and assumed aligned, produces no enabled Kani default-check violation across from_ptr + one Relaxed load + one Relaxed store of null_mut(); the alignment precondition is CONFIRMED LOAD-BEARING by a requires-ablation control that went RED as predicted"
+band      = "A2"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [claim.self_verify]
+  command = "kani verify-std -Z unstable-options ./library -Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --harness probe_atomic_ptr_arr3_from_ptr_requires_ablation --cbmc-args --object-bits 12"
+  expect  = "VERIFICATION:- SUCCESSFUL; 1 of 1 cover properties satisfied"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::probe_atomic_ptr_arr3_from_ptr_requires_ablation"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: PointerGenerator cell of 2 * size_of::<usize>() cast to *mut *mut [u8; 3], one any_in_bounds pointer, single from_ptr call + one Relaxed load + one Relaxed store; --object-bits 12"
+  semantics = "[u8; 3] satisfies the challenge's non-power-of-two-T box, but this harness is LAYOUT-IDENTICAL to CH7-5's: both proxy through the same pointer-width storage cell with alignment assumed separately rather than derived from T, so it adds no further layout diversity over the u8 case"
+  record    = "../cloud-campaigns/CH-FMTFIX-D0088-2026-08-30/RECEIPT.md"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::sync::atomic::verify::control_atomic_ptr_arr3_from_ptr_align_ablation_expect_red"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f (CBMC 6.8.0)"
+  bounds    = "bounded: same fixture as the carrier record above, with the alignment assume removed"
+  semantics = "control harness carried on the earlier commit 197729b8f40 and stripped before submission (load-only body, pre-cover/pre-store) -- same provenance caveat as CH7-3"
+  record    = "../cloud-campaigns/EXTRA5-ch7-VERIFY-2026-08-29/RECEIPT.md"
+
+    [claim.evidence.control]
+    kind        = "ablation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH7-6"
+
+  [[claim.assumes]]
+  id        = "AS-9"
+  statement = "layout-identical to CH7-5 (shared pointer-width storage proxy); counting CH7-5 and CH7-6 as two distinct layout cases would overstate the coverage this manifest provides"
+  void_if   = "this claim is read as adding layout diversity beyond CH7-5"
+
+  [[claim.assumes]]
+  id        = "AS-10"
+  statement = "same pointee-value caveat as AS-7 (null_mut(), not a symbolic *mut T), same control-scope caveat as AS-5. Under the flag set these harnesses run with, UNINITIALIZED-MEMORY CHECKING IS ABSENT FROM THE ENABLED CHECK SET: uninitialized reads are a class of undefined behavior this claim CANNOT observe. The claim is therefore worded as 'no enabled Kani default-check violation', not 'UB-free'. The harness assumes initialized storage so that its own load() is not UB in the harness source; that assume is not a documented precondition of from_ptr and, because no enabled property observes it, dropping it does not turn the proof red -- which is a fact about the check set, NOT evidence that initialization is unnecessary (measured at Kani 0.67.0, source pin d4df833c8f8f18e632e7b0a7945bb2161f708990, CBMC 6.8.0, under the canonical flag set; a property of that pin, not a permanent fact -- re-measure before relying on it at another version). Lifetime-'a and memory-model non-claims of CH7-1 apply unchanged"
+  void_if   = "this claim is read as covering arbitrary pointee values, the full # Safety precondition set, initialization, lifetimes, or concurrency"

@@ -385,7 +385,7 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-6 comment
 id        = "SELF-7"
 clause    = "RUN-ALL-7"
 item      = "gates/check_content_leaks.py tree scan over this repo's git-tracked files"
-statement = "gates/check_content_leaks.py reports zero hits (credentials, absolute paths, hashed private vocabulary) across every git-tracked file in this repo EXCEPT the two the gate skips by exact relpath and names in its own output — gates/check_content_leaks.py and gates/test_check_content_leaks.py, which carry every pattern as source — against the empty baseline gates/leak_baseline.json: 69 of 71 tracked files scanned, 0 hits"
+statement = "gates/check_content_leaks.py reports zero hits (credentials, absolute paths, hashed private vocabulary) across every git-tracked file in this repo EXCEPT the two the gate skips by exact relpath and names in its own output — gates/check_content_leaks.py and gates/test_check_content_leaks.py, which carry every pattern as source — against the empty baseline gates/leak_baseline.json: 75 of 77 tracked files scanned, 0 hits"
 band      = "A1"              # mechanical-family, no-oracle hygiene species — A1 reachable with no
                               # control required (assurance-bands.md), witnessed below.
 status    = "evidenced"
@@ -395,7 +395,7 @@ clause_source = "doc-comment"  # gates/run_all.sh's own step-7 comment
 
   [claim.self_verify]
   command = "python3 gates/check_content_leaks.py"
-  expect  = "PASS check_content_leaks: 69 tracked files scanned; baseline is empty; 2 of 71 tracked file(s) skipped by exact relpath (this gate and its own fixtures, which contain every pattern as source): gates/check_content_leaks.py, gates/test_check_content_leaks.py"
+  expect  = "PASS check_content_leaks: 75 tracked files scanned; baseline is empty; 2 of 77 tracked file(s) skipped by exact relpath (this gate and its own fixtures, which contain every pattern as source): gates/check_content_leaks.py, gates/test_check_content_leaks.py"
 
     [claim.self_verify.watched_fail]
     of_command = "python3 gates/check_content_leaks.py"
