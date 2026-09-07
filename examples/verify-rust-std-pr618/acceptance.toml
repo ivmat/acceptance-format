@@ -2,27 +2,47 @@
 # model-checking/verify-rust-std PR #618 ("Challenge 2 (partial): safety contracts +
 # verification for 15 of 20 raw-pointer core::intrinsics").
 #
-# NOT a generated certificate: hand-authored from the PR's own body plus this control repo's
-# cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md, not the output of a manifest generator.
-# `illustrative = true` (core.md 0.6) makes that a validator-visible fact.
+# REVISION 2 (2026-09-07). Revision 1 (2026-08-29) described PR head e7b1bc12. This revision
+# describes the branch at cf5fd23c45cb38273a314d6229a9b214a16ebf3c -- e7b1bc12 plus four commits that
+# answer the maintainer review of 2026-08-16 (pre-state copy oracle with old(...), an overlapping
+# non-uniform copy witness, u32 pointer-distance fixtures, the bounded arith_offset wrapper renamed
+# to arith_offset_bounded_probe, separated initialization helpers, tightened residual comments).
+# cf5fd23c differs from c35c201b (the commit the new evidence was captured at) by comments only.
 #
-# WHY every intrinsic claim is band = A0 (not A3, "bounded functional contract"): every claim
-# below is a `kani-harness` proof of a functional contract with declared bounds -- the A3 shape
-# -- but no mutation control specific to that claim's oracle is present as a citable record in
-# this control repo (see RECEIPT.md's "No mutation/ablation control" section). Per
-# assurance-bands.md rule 2/5, an oracle-bearing claim with the right evidence species but no
-# matching observed-red control is capped at A0. The PR body itself states, in prose, that a
-# few preconditions were ablation-tested during authoring (see the per-claim `assumes` blocks)
-# -- disclosed, but not counted as evidence here because no machine record for those specific
-# runs is filed in this control repo.
+# NOT a generated certificate: hand-authored from the PR's own body plus the private control repo's
+# receipts, not the output of a manifest generator. `illustrative = true` (core.md 0.6) makes that a
+# validator-visible fact.
 #
-# `record` pointers are repo-relative to the private control repo they live in (not
-# this repo); they will not resolve from here or from a public reader's checkout -- expected, and
-# validator-flagged as a WARN, not a FAIL (same shape as the rs-verified-der example).
+# PROVENANCE OF THE PER-CLAIM RECORDS. The 15 intrinsic claims' evidence records (record =
+# cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md) were captured at e7b1bc12 and carry
+# captured_at_commit accordingly. Every harness they name was re-executed and passed in the
+# whole-module run at c35c201b (intrinsics::verify, CI mode: 374 successfully verified harnesses,
+# 0 failures; record = cloud-campaigns/CH2-FULL-2026-09-03/next-cells/pr618-obligations/carrier/
+# artifacts/proofs/logs/wholemodule/ci.log) and again in the repository's own sharded suite at
+# cf5fd23c (scripts/run-kani.sh, 4 Linux shards, 1436 harnesses, 0 failures). Those two runs are the
+# re-verification that justifies the subject restamp; the per-claim records were NOT re-authored.
+#
+# BANDS. Every intrinsic claim (CH2-001..CH2-015) stays at band A0: each is a `kani-harness` proof of
+# a bounded functional contract -- the A3 shape -- but no mutation control specific to that claim's
+# oracle is filed as a citable machine record against it. Per assurance-bands.md rule 2/5 an
+# oracle-bearing claim without a matching observed-red control is capped at A0. Under-claiming is
+# the intended direction. ONE claim is above A0: CH2-029 (band A3), an ADDITIVE proposition about the
+# copy_wrapper byte-value oracle, whose implementation mutation (the wrapper's forwarding call replaced
+# by write_bytes) was observed red on the postcondition itself, in both dependency-contract modes.
+# That control is the one the PR description's controls table reports. A3-COUNT PARTITION (binding
+# house rule): production-intrinsic A3 = 0; wrapper/model-predicate A3 = 1. The band attaches to the
+# proposition stated in the claim, never to the intrinsic's name: core::intrinsics::copy itself
+# (CH2-004) remains A0. Further controls exist in the private control repo (pointer-distance
+# precondition ablations, read_via_copy/write_via_move wrapper mutants); they are not transcribed here
+# and lift nothing until they are.
+#
+# `record` pointers are repo-relative to the private control repo they live in (not this repo); they
+# will not resolve from here or from a public reader's checkout -- expected, and validator-flagged as
+# a WARN, not a FAIL (same shape as the rs-verified-der example).
 #
 # UNWEIGHTED throughout (house rule 2026-08-29): reduced/unweighted manifests are preferred over
 # inflated ones. Validate with:
-#   python3 tools/check_acceptance.py --strict ch2-acceptance.toml   (at acceptance-format @ c8c00bb)
+#   python3 tools/check_acceptance.py --strict examples/verify-rust-std-pr618/acceptance.toml
 
 [format]
 id            = "acceptance/0"
@@ -34,16 +54,15 @@ spec_sha      = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"       # public accept
                               # a coordinate repin to a publicly resolvable sha, not a re-validation.
 validator_sha = "c8c00bb08ce423e6b4f2403bf2f4f8029393b812"
 generated_by  = "hand-authored"
-generated_at  = "2026-08-29T18:00:00Z"
+generated_at  = "2026-09-07T20:00:00Z"
 illustrative  = true
 
 [subject]
 name   = "rust-lang/rust core::intrinsics (verify-rust-std challenge fork, Challenge 2)"
 kind   = "rust-crate"
-# PR model-checking/verify-rust-std#618's CURRENT head as of this manifest's authoring (confirmed
-# via `gh pr view 618`, state=OPEN, updatedAt=2026-08-27T19:23:58Z -- unmoved since). Branch
-# challenge-2-intrinsics-memory, based on upstream/main at the merge-base below.
-commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
+# The branch as pushed to PR #618 on 2026-09-07: challenge-2-intrinsics-memory at cf5fd23c (= revision-1
+# head e7b1bc12 + 4 commits; see the header). Per-claim records carry their own captured_at_commit.
+commit = "cf5fd23c45cb38273a314d6229a9b214a16ebf3c"
 dirty  = false
 
 [spec]
@@ -55,9 +74,9 @@ axis    = "15 of the 20 raw-pointer core::intrinsics Challenge 2 names (criterio
 
 [coverage]
 clauses_total = 20   # the challenge's own mandated intrinsic count
-claims_total  = 16   # 15 intrinsic claims + 1 explicit gap claim naming the 5 tool-blocked residuals
+claims_total  = 17   # 15 intrinsic claims + 1 explicit gap claim (5 tool-blocked residuals) + 1 additive mutation-controlled wrapper-oracle claim (CH2-029)
 denominator   = "slice"
-slice_note    = "15 bounded, contract-form PROBE claims -- one per counted intrinsic -- plus one explicit gap claim naming the 5 intrinsics the pinned Kani toolchain cannot currently codegen. No claim asserts unbounded (all-input, all-type) coverage; type/size coverage is finite per claim, stated in each claim's own assumes block."
+slice_note    = "15 bounded, contract-form PROBE claims -- one per counted intrinsic -- plus one explicit gap claim naming the 5 intrinsics the pinned Kani toolchain cannot currently codegen, plus one ADDITIVE claim (CH2-029) on the copy_wrapper byte-value oracle that carries the manifest's only observed-red implementation-mutation control (A3 partition: 0 production-intrinsic, 1 wrapper/model-predicate). No claim asserts unbounded (all-input, all-type) coverage; type/size coverage is finite per claim, stated in each claim's own assumes block."
 
 # =====================================================================================================
 # -- typed_swap ---------------------------------------------------------------------------------------
@@ -81,6 +100,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_typed_swap_{u8,char,non_zero}, check_typed_swap_fallback_{u8,char,non_zero}"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: exactly 3 concrete types (u8, char, NonZero<_>); not a generic proof over arbitrary T"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -112,6 +132,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_vtable_size_coerced_wrapper_contract_{arr_u8_8,mixed_align,over_aligned,u32,u64,u8,zst}, check_vtable_size_align_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: 7 concrete erased types, single trait (Debug); coerced *const T wrapper form only (the raw *const () monomorphic probes, check_vtable_size_wrapper_contract[_u64], are kept in-tree, labelled, and deliberately excluded from this claim)"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -139,6 +160,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_vtable_align_coerced_wrapper_contract_{arr_u8_8,mixed_align,over_aligned,u32,u64,u8,zst}"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: 7 concrete erased types, single trait (Debug); coerced *const T wrapper form only (the raw *const () monomorphic probes, check_vtable_align_wrapper_contract[_u64], are kept in-tree, labelled, and deliberately excluded from this claim)"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -170,6 +192,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_copy, check_copy_no_ub, check_copy_overlapping_shift_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: small concrete array size (N=4 typical); overlap coverage uses one fixed representative SHIFT with a symbolic index, not an exhaustive overlap sweep"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -202,6 +225,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_copy_nonoverlapping, check_copy_nonoverlapping_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: single fixed non-overlapping array fixture, small concrete size"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -233,6 +257,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_write_bytes, check_write_bytes_sets_value"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: small concrete region size, symbolic value byte; this run supersedes the prior #[cfg(not(kani))]-gated kani#90 configuration, which now verifies (a kani::cover witnesses the kani#90 trigger as reachable)"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -264,6 +289,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_size_of_val_wrapper_contract, check_size_of_val_u32_no_ub, check_size_of_val_dyn_wrapper_contract_{arr_u8_8,over_aligned,u32,zst}, check_size_of_val_slice_wrapper_contract_{over_aligned,u32,u8,zst_elem}"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: 4 erased types for the trait-object path, 4 concrete element types for the slice path with symbolic length; the extern-type metadata case does not exist on stable and is out of scope entirely (not a gap in this proof, a nonexistent case)"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -295,6 +321,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_arith_offset_unconditional_safety"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: the base pointer is a single fixed representative 8-byte allocation, not varied (only the offset value is unbounded/symbolic). A separate bounded contract-form probe (check_arith_offset_wrapper_contract, check_arith_offset_no_ub) exists in-tree but is a behavioral/pointer-model probe, not this claim's evidence, and is not counted"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -326,6 +353,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_volatile_load_wrapper_contract, check_volatile_load_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: Rust-allocation-backed memory only"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -353,6 +381,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_volatile_store_wrapper_contract, check_volatile_store_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: Rust-allocation-backed memory only"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -384,6 +413,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_ptr_offset_from_wrapper_contract, check_ptr_offset_from_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: instantiated at T=u8 only. At T=u8 the documented byte-distance-divisibility clause reduces to `% 1 == 0`, so it is NOT exercised by this instantiation (a T=u32 instantiation with misaligned pointer pairs would exercise it -- named gap, not claimed)"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -411,6 +441,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_ptr_offset_from_unsigned_wrapper_contract, check_ptr_offset_from_unsigned_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: instantiated at T=u8 only, same divisibility-clause gap as CH2-011"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -442,6 +473,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_compare_bytes_wrapper_contract, check_compare_bytes_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: a fixed tractability byte-length cap, stated in the harness (not the contract, which states only the documented condition)"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -469,6 +501,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_read_via_copy_wrapper_contract, check_read_via_copy_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: small concrete fixed fixture"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -496,6 +529,7 @@ weight    = "unweighted"
   ref       = "core::intrinsics::verify::check_write_via_move_wrapper_contract, check_write_via_move_no_ub"
   result    = "pass"
   tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0)"
+  captured_at_commit = "e7b1bc12407e9dafc744205530057c75b7aac382"
   bounds    = "bounded: small concrete fixed fixture"
   semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
   record    = "cloud-campaigns/CH2-K067-2026-08-29/RECEIPT.md"
@@ -519,3 +553,80 @@ status    = "gap"   # no admissible evidence under the pinned toolchain; disclos
                      # not a claim of impossibility. Upstream fixes are merged (kani#4672, kani#4673)
                      # but not yet in the release this manifest's toolchain pin uses.
 weight    = "unweighted"
+
+# ---------------------------------------------------------------------------------------------
+# ADDITIVE claim (revision 2): the same counted row as CH2-004 ("copy"), a DIFFERENT proposition,
+# about the contract-checked wrapper's byte-value oracle. This is the one claim in this manifest
+# with an observed-red IMPLEMENTATION-mutation control; it is scoped to the wrapper predicate.
+[[claim]]
+id        = "CH2-029"
+clause    = "copy -- ADDITIVE (same counted row as CH2-004, a different proposition)"
+item      = "library/core/src/intrinsics/mod.rs::copy_wrapper (the contract-checked wrapper in mod verify, dead code in shipped builds, whose whole body is a forwarding call to the bodyless #[rustc_intrinsic] core::intrinsics::copy)"
+statement = "For ONE fixed, initialized, non-uniform, right-overlapping u32 fixture (N=4, SHIFT=1, COUNT=3, four distinct non-zero initial words), the contract-checking harness check_copy_wrapper_overlapping_nonuniform_contract establishes copy_wrapper's functional postcondition: after the call, the sampled destination byte equals the value the corresponding SOURCE byte held BEFORE the call, captured through the contract's old(...) history expression -- proved in both the CI-equivalent (--no-assert-contracts) and the dependency-contract-asserting mode, with 1 of 1 cover satisfied in each. The oracle is IMPLEMENTATION-mutation-controlled: replacing the wrapper's forwarding call with write_bytes(dst, 0, count) is observed RED on that same postcondition, in both modes (band A3). This is a bounded WRAPPER-PREDICATE PROBE at one fixture -- NOT a generic forall-T, forall-count contract for core::intrinsics::copy (CH2-004, which stays A0), and NOT an independent check of Kani's own codegen of copy."
+band      = "A3"
+status    = "evidenced"
+grade     = "probe"
+weight    = "unweighted"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_copy_wrapper_overlapping_nonuniform_contract (CI-equivalent mode)"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0), rustc 1.93.0-nightly (c871d09d1 2025-11-24), toolchain nightly-2025-11-25"
+  captured_at_commit = "c35c201b46a8be04daaef874defa438c8a5e945c"
+  bounds    = "bounded contract-checking probe: exactly one fixed fixture (T=u32, N=4, SHIFT=1, COUNT=3, INITIAL = [0x10203040, 0x51627384, 0x95a6b7c8, 0xd9eafb0c]). The postcondition makes two non-deterministic choices -- elem < count and byte < size_of::<T>() -- and verification checks every such choice for this fixture (element in 0..3, byte in 0..4), so the byte relation is established universally over this fixture's bytes, not sampled at one pair. VERIFICATION:- SUCCESSFUL; cover `copy wrapper: nontrivial overlap returns after changing a live source element` SATISFIED (1 SAT / 0 UNSAT)"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-FULL-2026-09-03/next-cells/pr618-obligations/carrier/artifacts/proofs/logs/baseline/ci/check_copy_wrapper_overlapping_nonuniform_contract.log"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_copy_wrapper_overlapping_nonuniform_contract (dependency-contract-asserting mode)"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0), rustc 1.93.0-nightly (c871d09d1 2025-11-24), toolchain nightly-2025-11-25"
+  captured_at_commit = "c35c201b46a8be04daaef874defa438c8a5e945c"
+  bounds    = "bounded probe -- the same single fixed fixture as the record above, re-run with dependency contracts ASSERTED rather than assumed: VERIFICATION:- SUCCESSFUL, same 1 SAT / 0 UNSAT cover"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --cbmc-args --object-bits 12 (dependency contracts ASSERTED: --no-assert-contracts deliberately omitted)"
+  record    = "cloud-campaigns/CH2-FULL-2026-09-03/next-cells/pr618-obligations/carrier/artifacts/proofs/logs/baseline/assert-deps/check_copy_wrapper_overlapping_nonuniform_contract.log"
+
+  # BAND-LIFTING CONTROL (assurance-bands.md rule 6): family bmc, kind mutation, observed red,
+  # of_claim names THIS claim, and this record's own result is "fail" because it describes the
+  # MUTANT run, not the baseline. The mutation edits the implementation the contract is proven
+  # about (the wrapper body), and the property it broke is the functional postcondition itself,
+  # not a UB/safety check.
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "core::intrinsics::verify::check_copy_wrapper_overlapping_nonuniform_contract (control C01: IMPLEMENTATION mutation -- copy_wrapper body changed from copy(src, dst, count) to write_bytes(dst, 0, count); patch cloud-campaigns/CH2-FULL-2026-09-03/next-cells/pr618-obligations/carrier/copy-impl-zero-fill.patch, sha256 d0049e826a947123bbb0394de9f87cc1566e9c809deaf32c927c2cfe91d6129d)"
+  result    = "fail"
+  tool      = "kani@d4df833c8f8f (0.67.0, CBMC 6.8.0), rustc 1.93.0-nightly (c871d09d1 2025-11-24), toolchain nightly-2025-11-25"
+  captured_at_commit = "c35c201b46a8be04daaef874defa438c8a5e945c"
+  bounds    = "bounded probe -- the same single fixed fixture as the target records above, mutated. Failing property: intrinsics::verify::copy_wrapper::<u32>::{closure#2}.assertion.1 -- the #[ensures] postcondition closure itself (the old()-captured source byte vs destination byte relation), the ONLY failing check in the run. Observed RED identically in the dependency-contract-asserting mode; after reverse-applying the patch both modes return to GREEN with the 1 SAT cover"
+  semantics = "-Z function-contracts -Z mem-predicates -Z float-lib -Z c-ffi -Z loop-contracts -Z quantifiers -Z stubbing --no-assert-contracts --cbmc-args --object-bits 12"
+  record    = "cloud-campaigns/CH2-FULL-2026-09-03/next-cells/pr618-obligations/carrier/artifacts/proofs/logs/controls/C01/ci-mutated-check_copy_wrapper_overlapping_nonuniform_contract.log"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "CH2-029"
+
+  [[claim.assumes]]
+  id        = "AS-1"
+  statement = "WRAPPER-BOUNDARY SCOPE. copy_wrapper lives in mod verify, not in shipped code; the control mutates that wrapper body, i.e. it removes the forwarding call to core::intrinsics::copy. The control therefore shows that THIS harness's byte-value oracle discriminates a wrong implementation at the wrapper boundary; it does NOT exercise, and cannot control, Kani's own codegen of the copy intrinsic (which lowers to CBMC's memmove) -- a lower-level control would have to mutate the compiler's codegen of copy. CH2-004's statement about core::intrinsics::copy is unchanged and stays A0"
+  void_if   = "this claim is read as an A3 functional contract for shipped core::intrinsics::copy, as generic over T or count, or as excluding a Kani/CBMC codegen defect for copy"
+  [[claim.assumes]]
+  id        = "AS-2"
+  statement = "MODEL-RELATIVE, initialization caveat: the postcondition reads a byte out of storage the requires clause admits as MaybeUninit<T>, which is justified only under the Kani model with initialization checking OFF at this pin (-Z uninit-checks not enabled, so can_dereference's is_initialized conjunct is a no-op). This claim makes no Rust-semantic initialization statement, and the mixed-initialization relation (initialized source bytes before copy related to initialized destination bytes after) is NOT proved by anything here"
+  void_if   = "this claim is read as a Rust-semantic (rather than model-relative) byte-value guarantee, or as discharging the mixed-initialization residual"
+  [[claim.assumes]]
+  id        = "AS-3"
+  statement = "COVER CAVEAT: in the cover's first conjunct, the overlap condition (SHIFT < COUNT) is a compile-time constant, so the overlap half of the witness is structural rather than observed; the satisfied witness rests on the two value conjuncts (buf[SHIFT] == original[0] and buf[SHIFT] != original[SHIFT]). A pointer-derived overlap predicate is a named next-revision improvement, not something this run performed"
+  void_if   = "the cover is read as an observed (rather than partly structural) overlap witness"
