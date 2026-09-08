@@ -394,7 +394,7 @@ field mandatory needs no format-id break, and until 0.3 lands, an absent `profil
 verification, not "no profile," because a general core with a second profile does not exist yet
 for the field's absence to be genuinely ambiguous about.
 
-
+## `[subject].kind` — five non-code artifact classes, and a fail-closed registry
 
 Five kinds join the registry beside the original four: `ml-model`, `dataset`, `spec`, `design`,
 `agent-output`. **This is `[subject].kind` — the artifact-class field — and is a distinct field

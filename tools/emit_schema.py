@@ -855,7 +855,7 @@ def build_schema() -> dict:
         "NAMING: this file ships as "
         f"'schema/{SCHEMA_FILENAME}' while spec/core.md is UNSTABLE-UNTIL-FROZEN "
         "(spec/format.md 'Stability: acceptance/0 is UNSTABLE-UNTIL-FROZEN'); at freeze it is "
-        "renamed 'acceptance-0.1.0.schema.json' (the '-draft' suffix dropped, no other change) "
+        f"renamed '{SCHEMA_FILENAME_FROZEN}' (the '-draft' suffix dropped, no other change) "
         "and a new '-draft' cycle, if any, starts under the next minor version. "
         "SHAPE vs SEMANTICS: this schema is shape-normative only — table/field presence, field "
         "types, and closed-vocabulary membership. It is NOT semantics-normative: every "

@@ -118,9 +118,19 @@ if [ "$profile_invalid_rc" -eq 0 ]; then
   echo "$profile_invalid_out"
   exit 1
 fi
+# Two separate assertions, not one: the field-name fragment AND the rule-name suffix, so a future
+# edit that drops the "(format.md rule 3)" citation from the diagnostic (leaving a message that
+# still matches on the field-name fragment alone) is itself a gate failure, not a silent pass.
 if ! printf '%s' "$profile_invalid_out" | grep -q "trust field 'lr' present without a nonempty 'calibration' field"; then
   echo "profile conformance: examples/invalid/acceptance.toml failed, but not for the expected"
   echo "profile rule (PROFILE.md constraint 3 / format.md design rule 3):"
+  echo "$profile_invalid_out"
+  exit 1
+fi
+if ! printf '%s' "$profile_invalid_out" | grep -q "(format.md rule 3)"; then
+  echo "profile conformance: examples/invalid/acceptance.toml failed on the right field, but the"
+  echo "diagnostic no longer names the rule (format.md rule 3) -- PROFILE.md's own requirement"
+  echo "that the failure text name the profile rule:"
   echo "$profile_invalid_out"
   exit 1
 fi

@@ -90,8 +90,10 @@ one explicit `A0` gap claim, `kani@d4df833c8f8f` 0.67.0 / CBMC 6.8.0, `VERIFICAT
 on all 5 loop-arm covers, every claim unweighted, with a negative-control mutant and three
 structured disclosed assumptions — see its own `README.md`). Also
 [`profiles/verification/examples/`](profiles/verification/examples/) — the profile's own
-conformance pair: `valid/acceptance.toml` validates cleanly, `invalid/acceptance.toml` fails for a
-named PROFILE reason (not a syntax error), both wired into `gates/run_all.sh`. Also
+conformance pair: `valid/acceptance.toml` PASSes (with one disclosed warning, from its
+illustrative, deliberately-nonexistent evidence `record` pointer — see its own header comment),
+`invalid/acceptance.toml` fails for a named PROFILE reason (not a syntax error), both wired into
+`gates/run_all.sh`. Also
 `maintainers/hooks/pre-commit` + `maintainers/install_hooks.sh` (installs the gate suite as a
 commit hook, §7), and a standard Python `.gitignore` (`__pycache__/`, `*.pyc`).
 
@@ -208,7 +210,7 @@ performed here) — this table is the seed, not the discharge.
 
 Single maintainer today (see "Author & license," below); no CLA/DCO process is in force. Across
 0.x minor versions: only vocabulary ADDITIONS (a new evidence kind, a new closed token, a new
-profile) are compatible changes; no required field is ever REMOVED from an existing profile; and
+profile) are compatible changes; no field — required or optional — is ever REMOVED; and
 the validator's set of refusals may only GROW, never shrink — a manifest that validated under an
 earlier 0.x minor version may start failing under a later one (a tightening, disclosed as such in
 that version's changelog), but a manifest that validates under a later 0.x minor version was never

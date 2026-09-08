@@ -3,7 +3,7 @@
 #
 # Identical to ../valid/acceptance.toml except for one line: the evidence record on claim P-001
 # carries the reserved trust field `lr` with no `calibration` reference. This is a refusal of
-# PROFILE.md's constraint 3 ("No trust numbers without calibration"), which restates
+# PROFILE.md's constraint 3 ("No trust numbers in v0"), which restates
 # spec/format.md design rule 3 by reference rather than copying it — the validator's own error
 # text names that rule directly ("format.md rule 3"). This is well-formed TOML; every field is
 # the right type and every closed-vocabulary token is legal on its own — the failure is a

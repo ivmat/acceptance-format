@@ -437,7 +437,13 @@ def check_format(rep: Reporter, doc: dict) -> bool:
     # names its own closed vocabulary (profiles/verification/PROFILE.md), and a manifest cannot
     # claim membership in a profile this validator does not recognise.
     profile = fmt.get("profile")
-    if profile is not None and profile not in PROFILE_VALUES:
+    if profile is not None and (
+        not isinstance(profile, str) or profile not in PROFILE_VALUES
+    ):
+        # isinstance guard first: an unhashable TOML value (an array or inline table) would
+        # otherwise raise TypeError out of `not in PROFILE_VALUES` (a set-membership check)
+        # instead of a clean `invalid` verdict naming the field -- the one thing this format's
+        # tri-state contract (core.md Sec.8.3) never does is crash instead of refusing.
         rep.error(
             f"[format].profile must be one of {sorted(PROFILE_VALUES)} in this revision, got "
             f"{profile!r} (format.md 'Profiles')"
@@ -5416,6 +5422,19 @@ clause_source = "spec-document"
         "'Profiles')",
         _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
             'id = "acceptance/0"\n', 'id = "acceptance/0"\nprofile = "acceptance/nonexistent"\n'
+        ),
+        expect_pass=False,
+        expect_substr="[format].profile must be one of",
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "CS-25: a non-string [format].profile (an unhashable TOML array) is refused cleanly, "
+        "not a crash",
+        _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
+            'id = "acceptance/0"\n', 'id = "acceptance/0"\nprofile = []\n'
         ),
         expect_pass=False,
         expect_substr="[format].profile must be one of",

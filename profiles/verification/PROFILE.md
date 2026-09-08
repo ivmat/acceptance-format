@@ -64,7 +64,7 @@ reference and not copied, so the rule text lives in exactly one place:
 1. **Gaps are first-class** (design rule 1) — omission is the only forbidden state.
 2. **Evidence is admissible or it is nothing** (design rule 2) — a record missing its required
    provenance fields is an assertion, not evidence.
-3. **No trust numbers without calibration** (design rule 3) — `alpha`/`beta`/`lr` are REJECTED
+3. **No trust numbers in v0** (design rule 3) — `alpha`/`beta`/`lr` are REJECTED
    unless they carry a `calibration` reference; see also "What this profile does not define",
    below.
 4. **The certificate binds to exact content** (design rule 4) — `[subject].commit` is required; a

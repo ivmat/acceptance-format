@@ -1,4 +1,6 @@
-# Conformance example (POSITIVE) for profiles/verification/PROFILE.md — validates cleanly.
+# Conformance example (POSITIVE) for profiles/verification/PROFILE.md — PASSes (one disclosed
+# warning, from the deliberately-nonexistent evidence `record` pointer below — this is an
+# illustrative manifest, CS-21/22, so record-pointer existence is a warning, not an error).
 #
 # This is the smallest honest manifest that declares the profile explicitly and is held to
 # every closed vocabulary and required field the verification profile fixes (PROFILE.md
