@@ -10,11 +10,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-echo "-- 1/9: manifest validator selftest (tools/check_acceptance.py) --"
+echo "-- 1/10: manifest validator selftest (tools/check_acceptance.py) --"
 python3 tools/check_acceptance.py --selftest
 python3 tools/m11.py --selftest
 
-echo "-- 2/9: examples validate --"
+echo "-- 2/10: examples validate --"
 # --strict: record-pointer existence is enforced (core.md §0.6 / CS-21..23: strict applies only
 # to non-illustrative manifests -- the illustrative examples below are marked
 # illustrative = true, so this stays a no-op on record-pointer existence for them; they are also
@@ -28,10 +28,10 @@ python3 tools/check_acceptance.py --strict --strict-weight \
 python3 tools/check_execute.py --yes-run-untrusted-commands \
   --subject-root examples/weighted-toy examples/weighted-toy/acceptance.toml
 
-echo "-- 3/9: row-rule checker selftest (tools/check_ledger.py) --"
+echo "-- 3/10: row-rule checker selftest (tools/check_ledger.py) --"
 python3 tools/check_ledger.py --selftest > /dev/null
 
-echo "-- 4/9: shipped envelopes obey the row rules --"
+echo "-- 4/10: shipped envelopes obey the row rules --"
 shopt -s nullglob
 envelopes=(examples/*/ENVELOPE.md)
 shopt -u nullglob
@@ -42,10 +42,10 @@ else
   echo "no sample envelopes present -- skipping"
 fi
 
-echo "-- 5/9: recipe-execution mode selftest (tools/check_execute.py) --"
+echo "-- 5/10: recipe-execution mode selftest (tools/check_execute.py) --"
 python3 tools/check_execute.py --selftest > /dev/null
 
-echo "-- 6/9: cross-representation parity harness --"
+echo "-- 6/10: cross-representation parity harness --"
 # The two checkers must reach the same VERDICT on the same claim. Nothing else in this suite could
 # notice when they diverged, because every other step exercises one checker at a time -- which is
 # how `out-of-scope` came to grant weight in Markdown and refuse it in TOML for a full day.
@@ -53,26 +53,31 @@ echo "-- 6/9: cross-representation parity harness --"
 # shown able to fail.
 python3 tools/check_parity_selftest.py --quiet
 
-echo "-- 7/9: content-leak gate (empty baseline; any hit is a real failure) --"
+echo "-- 7/10: content-leak gate (empty baseline; any hit is a real failure) --"
 python3 gates/test_check_content_leaks.py
 python3 gates/check_content_leaks.py
 
-echo "-- 8/9: schema artifact (tools/emit_schema.py) -- drift + example validation --"
+echo "-- 8/10: schema artifact (tools/emit_schema.py) -- drift + example validation --"
+# CURRENT schema is 0.2.0-draft (SCHEMA_VERSION, tools/emit_schema.py) -- 0.1.0-draft is the
+# committed, no-longer-regenerated historical artifact (spec/format.md "The schema artifact");
+# this step drift-checks the CURRENT one only, not both.
 python3 tools/emit_schema.py --selftest > /dev/null
 schema_tmp="$(mktemp)"
 trap 'rm -f "$schema_tmp"' EXIT
 python3 tools/emit_schema.py > "$schema_tmp"
-if ! cmp -s "$schema_tmp" schema/acceptance-0.1.0-draft.schema.json; then
-  echo "schema drift: run 'python3 tools/emit_schema.py > schema/acceptance-0.1.0-draft.schema.json'"
+if ! cmp -s "$schema_tmp" schema/acceptance-0.2.0-draft.schema.json; then
+  echo "schema drift: run 'python3 tools/emit_schema.py > schema/acceptance-0.2.0-draft.schema.json'"
   exit 1
 fi
 rm -f "$schema_tmp"
 trap - EXIT
 python3 tools/emit_schema.py --check examples/minimal.acceptance.toml \
   examples/rs-verified-der/acceptance.toml examples/verify-rust-std-pr618/acceptance.toml \
-  examples/verify-rust-std-pr664/acceptance.toml examples/weighted-toy/acceptance.toml
+  examples/verify-rust-std-pr664/acceptance.toml examples/weighted-toy/acceptance.toml \
+  profiles/verification/examples/valid/acceptance.toml \
+  profiles/verification/examples/invalid/acceptance.toml
 
-echo "-- 9/9: self-manifest validates as a CERTIFICATE (acceptance.toml) --"
+echo "-- 9/10: self-manifest validates as a CERTIFICATE (acceptance.toml) --"
 # This gate validates the manifest that DESCRIBES this gate suite, under the same --strict
 # --strict-weight flags a real certificate must clear -- no exemption for being about this repo.
 # The circularity is disclosed, not hidden: acceptance.toml's own [[claim]] "SELF-1"
@@ -94,5 +99,31 @@ python3 tools/check_acceptance.py --strict --strict-weight acceptance.toml
 # (no --require-run: SELF-NOTE is a deliberate unweighted note with no self_verify.command, and
 # the format does not require one for an unweighted row.)
 python3 tools/check_execute.py --yes-run-untrusted-commands --subject-root . acceptance.toml
+
+echo "-- 10/10: profile conformance pair (profiles/verification/examples) -- able to fail --"
+# profiles/verification/PROFILE.md's own required deliverable: one example that validates, one
+# that fails for a PROFILE reason (not a syntax error) -- and the failure is proven live here on
+# every gate run, not merely asserted in prose (the same "shown able to fail" discipline step 6's
+# own comment names for the parity harness).
+python3 tools/check_acceptance.py --strict --strict-weight \
+  profiles/verification/examples/valid/acceptance.toml
+set +e
+profile_invalid_out="$(python3 tools/check_acceptance.py --strict --strict-weight \
+  profiles/verification/examples/invalid/acceptance.toml 2>&1)"
+profile_invalid_rc=$?
+set -e
+if [ "$profile_invalid_rc" -eq 0 ]; then
+  echo "profile conformance: examples/invalid/acceptance.toml unexpectedly PASSED -- the"
+  echo "profile's negative conformance example is not able to fail"
+  echo "$profile_invalid_out"
+  exit 1
+fi
+if ! printf '%s' "$profile_invalid_out" | grep -q "trust field 'lr' present without a nonempty 'calibration' field"; then
+  echo "profile conformance: examples/invalid/acceptance.toml failed, but not for the expected"
+  echo "profile rule (PROFILE.md constraint 3 / format.md design rule 3):"
+  echo "$profile_invalid_out"
+  exit 1
+fi
+echo "$profile_invalid_out"
 
 echo "== acceptance-format gates: PASS =="

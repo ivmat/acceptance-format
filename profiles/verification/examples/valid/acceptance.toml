@@ -1,0 +1,67 @@
+# Conformance example (POSITIVE) for profiles/verification/PROFILE.md — validates cleanly.
+#
+# This is the smallest honest manifest that declares the profile explicitly and is held to
+# every closed vocabulary and required field the verification profile fixes (PROFILE.md
+# "Closed vocabularies this profile fixes" / "Required fields over the core"). It is otherwise
+# the same shape as examples/minimal.acceptance.toml one directory up from the repo root — this
+# pair exists to demonstrate the PROFILE boundary specifically, not to teach the base format
+# again. See ../invalid/acceptance.toml for the paired negative example (same shape, one
+# profile-rule violation).
+
+[format]
+id            = "acceptance/0"
+shape         = "single-file"
+spec_id       = "acceptance-format"
+spec_sha      = "0000000000000000000000000000000000000000"
+validator_sha = "0000000000000000000000000000000000000000"
+generated_by  = "hand-authored"
+generated_at  = "2026-09-08T00:00:00Z"
+profile       = "acceptance/verification"  # declared explicitly (spec/format.md "Profiles");
+                                            # omitting this field defaults to the same profile
+# CS-21 (core.md §0.6): this is a teaching/conformance example, not a certificate for a real
+# subject — it stays shape-only (closed vocabularies + required fields checked; binding,
+# watched-fail witnesses, and epistemic_tier/grade coherence are not enforced against it).
+illustrative  = true
+
+[subject]
+name   = "profile-conformance-example"
+kind   = "rust-crate"
+commit = "0000000000000000000000000000000000000000"
+dirty  = false
+
+[spec]
+path    = "SPEC.md"
+version = "v1"
+
+[coverage]
+clauses_total = 2
+claims_total  = 2
+
+[[claim]]
+id        = "P-001"
+clause    = "S-1"
+item      = "src/lib.rs::add"
+statement = "add never panics on any i32 pair"
+band      = "A1"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"     # in the profile's evidence-kind registry (PROFILE.md; the
+                                  # family/required-fields table lives at evidence-types.md)
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "check_add_no_panic"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f"
+  bounds    = "unbounded: exhaustive over i32"
+  semantics = ""
+  record    = "evidence/kani-add.json"   # illustrative: no recomputation obligation (CS-21/22)
+
+[[claim]]
+id        = "P-002"
+clause    = "S-2"
+item      = "src/lib.rs::div"
+statement = "div returns Err on zero divisor"
+band      = "A3"
+status    = "gap"
