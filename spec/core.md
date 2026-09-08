@@ -985,6 +985,15 @@ accident. **Do not.** The split severity in §7.1 is that deferral, made mechani
 
 ## 8. The weight rules (validator-enforced)
 
+**The numeric rule, stated once (added 0.2, restated from `format.md` design rule 3 as the one
+sentence a profile's "what it does not define" section points at): (i) aggregate trust scores are
+prohibited; (ii) per-record calibrated measurements are permitted as fields; (iii) a calibration
+reference is necessary for weight, never sufficient — W2's five conditions below still bind
+regardless of any calibration a claim or its evidence carries.** No rule changes: (i) is design
+rule 3 (`format.md`) under another name; (ii) is what `alpha`/`beta`/`lr` already do, carrying a
+`calibration` reference; (iii) is W2 itself, unmodified — a calibrated number does not shortcut
+`grade`, `clause_source`, `[spec].axis`, or the watched-fail witness.
+
 **W1 — weight is explicit and defaults to absent.** `weight = "weighted" | "unweighted"`. Omitted
 means unweighted. The format never vouches by silence.
 

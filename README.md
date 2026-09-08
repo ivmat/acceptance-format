@@ -65,8 +65,10 @@ claim falls short — the claim stays visible, honestly unweighted.
 | `tools/acceptance_grammar.py` | shared grammar both checkers import, so a rule cannot drift |
 | `tools/m11.py` | the M11 content-hash implementation (SHA-512, domain-separated); CLI: `python3 tools/m11.py <domain> <file>` prints the `sha-512:<hex>` digest (`--help` lists domains, `--selftest` runs its checks) |
 | `tools/emit_schema.py` | emits `schema/*.schema.json` from live grammar/validator registries; `--check` structurally validates a manifest against it |
-| `schema/acceptance-0.1.0-draft.schema.json` | the generated JSON Schema (draft 2020-12); shape-normative only, never hand-edited (`format.md` "The schema artifact") |
-| `gates/run_all.sh` | the gate suite (9 steps); run it directly, or install it as a pre-commit hook via `maintainers/install_hooks.sh` (§7) — there is no tracked CI configuration in this repo |
+| `schema/acceptance-0.2.0-draft.schema.json` | the CURRENT generated JSON Schema (draft 2020-12); shape-normative only, never hand-edited (`format.md` "The schema artifact") |
+| `schema/acceptance-0.1.0-draft.schema.json` | the PRIOR schema, kept as a historical, no-longer-regenerated artifact (superseded 0.2 by the addition of `[format].profile`) |
+| `profiles/verification/PROFILE.md` | the `acceptance/verification` profile statement (added 0.2): closed vocabularies, required fields, constraints, what it does not define |
+| `gates/run_all.sh` | the gate suite (10 steps); run it directly, or install it as a pre-commit hook via `maintainers/install_hooks.sh` (§7) — there is no tracked CI configuration in this repo |
 | `gates/check_content_leaks.py` | private-vocabulary leak gate, against `gates/leak_baseline.json` (kept empty; any hit fails) |
 | `gates/test_check_content_leaks.py` | the leak gate's own selftest |
 
@@ -87,6 +89,9 @@ submission: [`model-checking/verify-rust-std` PR #664](https://github.com/model-
 one explicit `A0` gap claim, `kani@d4df833c8f8f` 0.67.0 / CBMC 6.8.0, `VERIFICATION SUCCESSFUL`
 on all 5 loop-arm covers, every claim unweighted, with a negative-control mutant and three
 structured disclosed assumptions — see its own `README.md`). Also
+[`profiles/verification/examples/`](profiles/verification/examples/) — the profile's own
+conformance pair: `valid/acceptance.toml` validates cleanly, `invalid/acceptance.toml` fails for a
+named PROFILE reason (not a syntax error), both wired into `gates/run_all.sh`. Also
 `maintainers/hooks/pre-commit` + `maintainers/install_hooks.sh` (installs the gate suite as a
 commit hook, §7), and a standard Python `.gitignore` (`__pycache__/`, `*.pyc`).
 
@@ -136,7 +141,7 @@ generated artifact, and the refusal of a `[[note]]` construct.
 `gates/run_all.sh` runs both checkers' selftests, validates the shipped examples and envelope, runs
 the cross-representation parity harness, runs the leak gate, checks the generated schema for
 drift, and validates the format's own self-manifest (`acceptance.toml`) as a
-certificate — nine steps, all must pass before a commit. Re-run that last step yourself with
+certificate, and validates the profile conformance pair (`profiles/verification/examples/`) — ten steps, all must pass before a commit. Re-run that last step yourself with
 
 ```sh
 python3 tools/check_acceptance.py --strict --strict-weight acceptance.toml
@@ -157,7 +162,63 @@ ledger or envelope.
 Every term of art — claim, grade, band, `epistemic_tier`, watched-fail, and the rest — is defined in
 [`docs/GLOSSARY.md`](docs/GLOSSARY.md).
 
+## Status and scope note
+
+**0.2 is the verification profile of a general acceptance format (planned; extracted after two
+internal domains use it).** `acceptance/0`'s manifest shape is, as of 0.2, named a **profile**
+(`acceptance/verification`, `profiles/verification/PROFILE.md`) of a general core that does not
+ship yet — nothing about a claim, an evidence record, or a validator verdict changes; 0.1's rules
+are exactly what the profile names. The general core is extracted later, once two domains other
+than verification have each independently exercised the same shared Claim/Evidence/Acceptance
+semantics on their own carriers — extracting a core from one demonstrated use is a guess at what is
+actually shared; extracting it from two is a generalization. Until then, this repository ships one
+profile, and every manifest in it validates identically to how it always did.
+
+## Adopters
+
+An adopter is placed on a ladder, not given a name-drop — each rung is a stronger form of use than
+the one below it (owner-controlled use < a proposed upstream PR < a merged upstream use < an
+independent implementation), and every named consumer states which rung it is on, with the format
+revision it targets:
+
+| consumer | rung | format revision |
+|---|---|---|
+| rs-verified-der | owner-controlled use (`examples/rs-verified-der/`; repo visibility not asserted here — T1, not checked) | `0.1.0-draft` |
+| [autoprover-core](https://github.com/ivmat/autoprover-core) | owner-controlled use (its ADR-005 states the projection) | `0.1.0-draft` |
+| [`model-checking/verify-rust-std` PR #618](https://github.com/model-checking/verify-rust-std/pull/618) | proposed upstream — **OPEN**, not merged (checked via `gh pr view`, 2026-09-08) | `0.1.0-draft` (`examples/verify-rust-std-pr618/`) |
+| [`model-checking/verify-rust-std` PR #664](https://github.com/model-checking/verify-rust-std/pull/664) | proposed upstream — **OPEN**, not merged (checked via `gh pr view`, 2026-09-08) | `0.1.0-draft` (`examples/verify-rust-std-pr664/`) |
+| — | independent implementations | none |
+
+## Similar formats
+
+Owner rule: name similar formats at publication and say why this one exists anyway; a
+requirement-by-requirement, clause-level comparison is a separate, later check (**PENDING**, not
+performed here) — this table is the seed, not the discharge.
+
+| similar format | why this format exists anyway |
+|---|---|
+| SARIF | a results-interchange format for tool findings, not a certificate of what a producer verified, under what assumptions, and how a reader re-checks it — out of scope by design (`WHY.md`) |
+| OSCAL assessment results / POA&M | models remediation and accepted risk over an assessment; it does not refuse to weight an under-evidenced claim, and it has no per-claim watched-fail-witness or evidence-subject-binding check |
+| in-toto Statement v1 | already binds a subject by digest with typed predicates — the useful part this format keeps in spirit; it has no closed epistemic-tier vocabulary, no calibration-reference gate on trust numbers, and no observed-red control block |
+| CycloneDX 1.6 attestations | closest in shape (claims + evidence + conformance); whether it carries a refusal-to-weight with an able-to-fail witness, counted first-class gaps, or exact-content binding checked at validation time is the clause-level comparison marked PENDING, above |
+| RATS (RFC 9334) | a real evidence-vs-attestation-results and appraisal-policy vocabulary; the same PENDING comparison applies — it is not yet checked, requirement by requirement, against this format's refusal/gap/binding machinery |
+| GSN/SACM | models claim–argument–evidence graphs, well suited to HUMAN-authored, design-time assurance cases; this format targets mechanically re-checkable, per-claim weight refusal instead, which is a different job even where the vocabulary looks similar |
+
+## Maintenance and compatibility
+
+Single maintainer today (see "Author & license," below); no CLA/DCO process is in force. Across
+0.x minor versions: only vocabulary ADDITIONS (a new evidence kind, a new closed token, a new
+profile) are compatible changes; no required field is ever REMOVED from an existing profile; and
+the validator's set of refusals may only GROW, never shrink — a manifest that validated under an
+earlier 0.x minor version may start failing under a later one (a tightening, disclosed as such in
+that version's changelog), but a manifest that validates under a later 0.x minor version was never
+silently permitted to skip a check an earlier version enforced. `acceptance/0`'s own id does not
+bump on a tightening (`spec/format.md` "Stability"); pin to the validator's git sha, not to the id
+string, for the only real stability guarantee this format offers pre-freeze.
+
 ## Author & license
 
 Ivo Matijasevic ([@ivmat](https://github.com/ivmat)). Dual-licensed under either of
-[LICENSE-APACHE](LICENSE-APACHE) or [LICENSE-MIT](LICENSE-MIT), at your option.
+[LICENSE-APACHE](LICENSE-APACHE) or [LICENSE-MIT](LICENSE-MIT), at your option. See
+[LICENSE-NOTES.md](LICENSE-NOTES.md) for the license rationale by material type (code, schemas,
+prose, examples) and the excluded-material boundary.

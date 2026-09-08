@@ -8,9 +8,9 @@ reserved hooks. What a claim must carry to be *weighted* is `core.md`; evidence-
 admissibility is `evidence-types.md`.
 
 **Map.** Design rules 1–7 · stability of `acceptance/0` · the schema block (the whole data model in
-one listing) · the generated schema artifact · `shape` · `[subject].kind` · `[subject].record_root`
-· tagged number-XOR-null values · `[format]` self-location · content-hashing (M11) · reserved hooks
-H1–H8 · what v0 deliberately does not do.
+one listing) · the generated schema artifact · `shape` · Profiles · `[subject].kind` ·
+`[subject].record_root` · tagged number-XOR-null values · `[format]` self-location ·
+content-hashing (M11) · reserved hooks H1–H8 · what v0 deliberately does not do.
 
 **Read first:** the design rules, then the schema block. Each section after them does one of five
 things: constrains a single field, states a construction over several (the M11 content-hash), rules
@@ -371,7 +371,30 @@ nonzero, distinct exit code from `invalid`) for the file as a whole, uncondition
 validation lands. This reserves the door with no later format-id break, without shipping unproven
 multi-file machinery. `single-file` is unaffected by this rule.
 
-## `[subject].kind` — five non-code artifact classes, and a fail-closed registry
+## Profiles
+
+**Added 0.2.** A **profile** is a closed vocabulary plus required fields, constraints, a version
+id, and at least one conformance example that validates and one that fails — the shape every
+domain extension of this format's general core has. 0.2 ships exactly one:
+`acceptance/verification`, stated in full at `profiles/verification/PROFILE.md`; this section
+states only the one field that names it.
+
+**Every `acceptance/0` manifest IS the verification profile in 0.1 — nothing is retroactively
+narrower.** 0.1 shipped no `[format].profile` field and no general core to be a profile OF; every
+0.1.0-draft manifest already conforms to what `profiles/verification/PROFILE.md` names, whether or
+not it says so, because that document names the rules 0.1 already enforced (see that document's
+own "What is new in 0.2 is the *name*, not the rule").
+
+`[format].profile = "acceptance/verification"` — **OPTIONAL in 0.2**, defaulting to
+`acceptance/verification` when absent (`tools/check_acceptance.py` CS-25); any other value is a
+hard error naming the profile it does not recognise, exactly like an out-of-vocabulary `grade`
+token. **REQUIRED at 0.3** — this document reserves that requirement now, in the same
+never-yet-enforced sense as the reserved hooks H1–H8, below: a future minor version making the
+field mandatory needs no format-id break, and until 0.3 lands, an absent `profile` field means
+verification, not "no profile," because a general core with a second profile does not exist yet
+for the field's absence to be genuinely ambiguous about.
+
+
 
 Five kinds join the registry beside the original four: `ml-model`, `dataset`, `spec`, `design`,
 `agent-output`. **This is `[subject].kind` — the artifact-class field — and is a distinct field
