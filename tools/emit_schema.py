@@ -61,8 +61,18 @@ import m11  # noqa: E402
 import acceptance_grammar as grammar  # noqa: E402
 import check_acceptance as ca  # noqa: E402
 
-SCHEMA_VERSION = "0.1.0-draft"
+# SCHEMA_VERSION tracks this manifest schema's OWN document revision, bumped 0.1.0-draft ->
+# 0.2.0-draft when 0.2 named the verification profile and added [format].profile (spec/format.md
+# "Profiles") -- distinct from the wire [format].id constant, "acceptance/0", which does not bump
+# on every tightening (spec/format.md "Stability: acceptance/0 is UNSTABLE-UNTIL-FROZEN"). The
+# PRIOR schema file (acceptance-0.1.0-draft.schema.json) stays committed as a historical, no-
+# longer-regenerated artifact; this generator emits exactly one CURRENT schema at a time.
+SCHEMA_VERSION = "0.2.0-draft"
 SCHEMA_FILENAME = f"acceptance-{SCHEMA_VERSION}.schema.json"
+# The freeze-time rename this schema's own header text describes below, computed once so it can
+# never drift from SCHEMA_VERSION the way a hand-typed literal would.
+SCHEMA_VERSION_FROZEN = SCHEMA_VERSION.removesuffix("-draft")
+SCHEMA_FILENAME_FROZEN = f"acceptance-{SCHEMA_VERSION_FROZEN}.schema.json"
 
 # ---------------------------------------------------------------------------
 # Patterns derived LIVE from the modules that own them — never hand-copied.
@@ -281,6 +291,14 @@ def _build_format() -> dict:
             "Defaults to false. true = a teaching example, not a certificate (core.md §0.6, "
             "CS-21/22) — several semantic rules below are not enforced against an illustrative "
             "manifest."
+        ),
+        "profile": _enum(
+            ca.PROFILE_VALUES,
+            "OPTIONAL, added 0.2 (spec/format.md 'Profiles'); defaults to "
+            "'acceptance/verification' when absent (SEMANTIC default, not expressible as a "
+            "schema default — x-semantic-only-rules 'profile-default-verification'). Exactly one "
+            "value is legal in this revision because exactly one profile ships "
+            "(profiles/verification/PROFILE.md).",
         ),
     }
     required = ["id", "shape", "spec_id", "spec_sha", "validator_sha", "generated_by",
@@ -812,6 +830,12 @@ def _build_semantic_rules() -> list[dict]:
          "evidence's `ref` (format.md design rule 4b) — explicitly NOT mechanically checkable, "
          "reviewer work only.",
          "spec/format.md design rule 4b"),
+        ("profile-default-verification",
+         "[format].profile, when ABSENT, defaults to 'acceptance/verification' (format.md "
+         "'Profiles', added 0.2) — a semantic default over a field this schema otherwise leaves "
+         "OPTIONAL; not expressible as a JSON Schema `default` keyword, which this schema does "
+         "not use (see the two-keyword-budget note at the top of this file).",
+         "check_acceptance.check_format"),
     ]
     return [
         {"id": rid, "description": desc, "enforced_by": enforcer}

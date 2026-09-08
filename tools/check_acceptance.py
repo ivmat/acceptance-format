@@ -71,6 +71,13 @@ BANDS = {"A0", "A1", "A2", "A3", "A3.5", "A4"}
 # CS-10 (format.md): `[format].shape` -- REQUIRED from this revision. `bundle` ships as a shape
 # with no validator behind it yet (CS-11): a manifest declaring it is `indeterminate` as a whole.
 SHAPE_VALUES = {"single-file", "bundle"}
+# CS-25 (format.md "Profiles", added 0.2): `[format].profile` -- OPTIONAL in 0.2, defaults to
+# `acceptance/verification` when absent. Exactly one value is legal in this revision because
+# exactly one profile ships; any other value is a hard error naming the profile it does not
+# recognise (never silently accepted, never `indeterminate` -- a profile identifier, unlike
+# `[subject].kind`, has no fail-closed-to-indeterminate registry to open per-profile, because
+# there is no second profile yet for an unrecognised token to plausibly belong to).
+PROFILE_VALUES = {"acceptance/verification"}
 # CS-1 (evidence-types.md): the closed, core, artifact-agnostic epistemic-tier vocabulary.
 EPISTEMIC_TIERS = {"T1", "T2", "T3", "T4", "T5"}
 # CS-2/CS-3: the FV profile's `method -> epistemic_tier` table (evidence-types.md's registry
@@ -422,6 +429,18 @@ def check_format(rep: Reporter, doc: dict) -> bool:
         rep.indet(
             "[format].shape = 'bundle' -- bundle validation has not shipped; this manifest is "
             "validated only as far as its own file reaches (format.md CS-11)"
+        )
+
+    # CS-25 (format.md "Profiles", added 0.2): `[format].profile` -- OPTIONAL, defaults to
+    # `acceptance/verification` when absent. A present value outside PROFILE_VALUES is a hard
+    # error naming the profile, exactly like an out-of-vocabulary `grade` token -- this profile
+    # names its own closed vocabulary (profiles/verification/PROFILE.md), and a manifest cannot
+    # claim membership in a profile this validator does not recognise.
+    profile = fmt.get("profile")
+    if profile is not None and profile not in PROFILE_VALUES:
+        rep.error(
+            f"[format].profile must be one of {sorted(PROFILE_VALUES)} in this revision, got "
+            f"{profile!r} (format.md 'Profiles')"
         )
 
     # CS-16: `[format]` self-location. REQUIRED, hard error on absence -- illustrative (CS-21/22)
@@ -5366,6 +5385,40 @@ clause_source = "spec-document"
         ),
         expect_pass=False,
         expect_substr="[format].shape must be one of",
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "CS-25: [format].profile absent defaults to acceptance/verification (no error)",
+        _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM),
+        expect_pass=True,
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "CS-25: [format].profile = 'acceptance/verification' (declared explicitly) validates "
+        "cleanly",
+        _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
+            'id = "acceptance/0"\n', 'id = "acceptance/0"\nprofile = "acceptance/verification"\n'
+        ),
+        expect_pass=True,
+    )
+    if r:
+        failures.append(r)
+
+    count += 1
+    r = _run_case(
+        "CS-25: an unrecognised [format].profile is refused, naming the profile (format.md "
+        "'Profiles')",
+        _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
+            'id = "acceptance/0"\n', 'id = "acceptance/0"\nprofile = "acceptance/nonexistent"\n'
+        ),
+        expect_pass=False,
+        expect_substr="[format].profile must be one of",
     )
     if r:
         failures.append(r)
