@@ -1,7 +1,12 @@
-$ bash -c 'diff -q <(python3 tools/emit_schema.py) schema/acceptance-0.1.0-draft.schema.json && python3 tools/emit_schema.py --check examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml'
-(run at 2026-08-30T08:19:34Z, from repo root, HEAD=5701c476a344448626c90e4e34f52ad6695b4ad4)
+$ bash -c 'diff -q <(python3 tools/emit_schema.py) schema/acceptance-0.2.0-draft.schema.json && python3 tools/emit_schema.py --check examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml examples/verify-rust-std-pr618/acceptance.toml examples/verify-rust-std-pr664/acceptance.toml examples/weighted-toy/acceptance.toml profiles/verification/examples/valid/acceptance.toml profiles/verification/examples/invalid/acceptance.toml'
+(run at 2026-09-08T23:59:59Z, from repo root, HEAD=e7c7e3fa05c2d980486d7e9ed86f9336aaf8456d)
 ---
 PASS examples/minimal.acceptance.toml
 PASS examples/rs-verified-der/acceptance.toml
+PASS examples/verify-rust-std-pr618/acceptance.toml
+PASS examples/verify-rust-std-pr664/acceptance.toml
+PASS examples/weighted-toy/acceptance.toml
+PASS profiles/verification/examples/valid/acceptance.toml
+PASS profiles/verification/examples/invalid/acceptance.toml
 ---
 exit: 0
