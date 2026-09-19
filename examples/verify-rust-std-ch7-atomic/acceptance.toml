@@ -1,9 +1,9 @@
 # Hand-authored acceptance/0 manifest for the Challenge-7 atomic `from_ptr` PROBE set
 # (AtomicBool / AtomicI8 / AtomicI32 / AtomicU64 / AtomicPtr<u8> / AtomicPtr<[u8; 3]>).
-# NOT a generated certificate: built by hand from the receipts in the sibling private
-# control repo's `cloud-campaigns/` tree, not the output of a manifest generator.
+# NOT a generated certificate: built by hand from the receipts in the producer's private
+# repository's `cloud-campaigns/` tree, not the output of a manifest generator.
 # `illustrative = true` per core.md 0.6 makes that a validator-visible fact.
-# `record` pointers are repo-relative to the private control repo they live in
+# `record` pointers are repo-relative to the producer's private repository they live in
 # (not this repo); they will not resolve from a public reader's checkout -- expected, and
 # validator-flagged as a WARN, not a FAIL (same shape as the ch20/ch21/ch22/ch4 examples this
 # manifest is modeled on). Everything here is UNWEIGHTED.
@@ -31,18 +31,18 @@
 #     control for them -- not merely "not run". Other control shapes are conceivable in principle;
 #     none was run. No observed-red control -> A0, per the one-sentence gate
 #     ("an oracle-bearing claim cannot exceed A0 without an observed-red control whose `of_claim`
-#     names it"). This follows the estate's existing conservative precedent for control-less
+#     names it"). This follows an existing conservative precedent for control-less
 #     UB-freedom probes (ch4's *_no_ub claims and all four ch20 claims are A0).
 #
-#     *** FORMAT-SEMANTICS QUESTION FOR THE CONTROL SEAT (not self-ruled) ***
+#     *** OPEN FORMAT-SEMANTICS QUESTION (deliberately left undecided in this example) ***
 #     assurance-bands.md rule 6 carves out an exception: no-oracle hygiene / panic- and UB-freedom
 #     claims "reach A1 without a control ... there is no postcondition oracle to mutate". CH7-1 and
 #     CH7-2 are exactly that shape (UB-freedom only, no postcondition oracle) AND they carry a
 #     terminal `kani::cover` non-vacuity witness, which is the thing A1's "non-vacuous but not
 #     state-exhaustive" wording asks for. So a defensible reading puts them at A1, not A0.
 #     They are recorded here at A0 because under-claiming is safe and over-claiming is not, and
-#     because A0 matches existing estate precedent. If the control seat rules rule 6 applies, these
-#     two lift to A1 with no other change. Routed, deliberately not decided by this lane.
+#     because A0 matches the existing conservative precedent. If rule 6 is later ruled to apply, these
+#     two lift to A1 with no other change. Left open, deliberately not decided in this example.
 #
 # HARNESS-NAME NOTE: the EXTRA5-ch7-VERIFY-2026-08-29 receipt logs the bool and i8 probes under
 # their OLD names (`probe_atomic_bool_from_ptr_requires_ablation` /
@@ -69,7 +69,7 @@ name   = "verify-rust-std (core::sync::atomic, Challenge 7 from_ptr PROBE set)"
 kind   = "rust-crate"
 # Branch HEAD after the 2026-08-30 rustfmt fix (formatting-only: the repo's `upstream_test` CI job
 # runs `./x fmt --check` inside a rust-lang/rust tree, which the pre-fix sha 2c43bd330d5 failed --
-# see the private control repo's session-prompts-2026-08-29/664-CI-FORENSICS-2026-08-30.md). The fix changed only
+# see the producer's private forensics notes). The fix changed only
 # import ordering in the verify module; every predicate, assume, assertion, cover expression and
 # target call is byte-for-byte identical to the sha the VM evidence below was gathered at
 # (2c43bd330d5). NOTE: the sha that ships in the upstream PR may differ (cherry-pick onto the

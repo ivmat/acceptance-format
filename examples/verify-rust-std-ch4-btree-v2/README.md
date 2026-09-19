@@ -35,7 +35,7 @@ happened."* See "Validate it yourself" below for what that means for a reader of
   `VERIFICATION SUCCESSFUL`, 83/83 `kani::cover` properties satisfied, at `kani@d4df833c8f8f`
   (0.67.0) / CBMC 6.8.0 — the tool string every claim's evidence entry in `acceptance.toml` also
   states individually.
-- Honest framing, stated the way the estate requires: this is a bounded **PROBE** set, not a
+- Honest framing, stated conservatively: this is a bounded **PROBE** set, not a
   discharge of Challenge 4. It harnesses seven of the eight functions the challenge doc's second
   success-criteria list names directly (`new_internal`, `do_merge`, `merge_tracking_child_edge`,
   `steal_left`, `steal_right`, `bulk_steal_left`, `bulk_steal_right`) — an improvement on an earlier
@@ -59,15 +59,15 @@ a PR number assigned.
 This manifest pins the **public** spec/validator commit `2788bbfdb7b01c1fdd0013ce5bd4714166301ddf`
 directly — no repin was needed to assemble this example, unlike the sibling `ch7-atomic` and
 `ch25-vecdeque` examples in this directory. A pin in a public artifact has to be resolvable by a
-public reader (ruling R-1, already cited in `examples/verify-rust-std-pr664/README.md`). Before
-copying this manifest in, its private working-repo pin was checked for byte-identity against this
+public reader (the public-resolvability rule, already cited in `examples/verify-rust-std-pr664/README.md`). Before
+copying this manifest in, its producer's-private-repository pin was checked for byte-identity against this
 public commit's `spec/core.md`, `spec/assurance-bands.md` and `tools/check_acceptance.py`: all
 three hash identically. The two name the same spec and the same validator; only the coordinate
 system a reader can resolve differs.
 
 ## Why the `record` pointers do not resolve here — and why that makes `--strict` FAIL, not WARN
 
-Each claim's `record` field points into the private control repo that produced this manifest, the
+Each claim's `record` field points into the producer's private repository that produced this manifest, the
 same as `examples/verify-rust-std-pr664/`, `examples/verify-rust-std-pr618/` and
 `examples/rs-verified-der/`. Those pointers will not resolve from this checkout or from any public
 reader's clone.
@@ -79,8 +79,8 @@ that the format does not hold to full evidentiary account. A non-`illustrative` 
 such waiver — under `--strict`, a dangling `record` pointer is an ERROR, and the run FAILs. That is
 by design, and it is exactly what this manifest's own header comment predicts and asks for: a
 mechanical guard against the manifest asserting a pass before its evidence run actually happened.
-From this checkout, with the private control repo's `logs/` tree absent, that guard fires. It
-would resolve, and `--strict` would PASS, only from the private control repo this manifest was
+From this checkout, with the producer's private `logs/` tree absent, that guard fires. It
+would resolve, and `--strict` would PASS, only from the producer's private repository this manifest was
 authored in, where `record_root` and every `record` path actually exist on disk.
 
 ## Validate it yourself
@@ -97,7 +97,7 @@ FAIL examples/verify-rust-std-ch4-btree-v2/acceptance.toml (23 errors) [weighted
 ```
 
 — 23 dangling-`record`-pointer errors, one per evidence entry, all naming paths that live in the
-private control repo, not here. That FAIL is expected and correct, per the note above; it is not a
+producer's private repository, not here. That FAIL is expected and correct, per the note above; it is not a
 defect in this example. Dropping `--strict` shows the same 23 findings downgraded to warnings and a
 `PASS`:
 

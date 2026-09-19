@@ -47,7 +47,7 @@ generated_by  = "hand-authored"
 generated_at  = "2026-08-30T09:30:00Z"
 illustrative  = false
 
-# record_root is relative to this manifest's location in the PRIVATE control repo and must be
+# record_root is relative to this manifest's location in the producer's private repository and must be
 # re-rooted to a public evidence layout before publication (owner-gated; not invented here).
 [subject]
 name        = "verify-rust-std (alloc::collections::btree::node, Challenge 4 strengthened v2)"

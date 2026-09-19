@@ -57,17 +57,17 @@ not re-run there: the mutation control, which executed against the pre-formattin
 ## A note on the pinned `spec_sha` / `validator_sha`
 
 This example pins the **public** spec/validator commit `c8c00bb08ce4`, because a pin in a public
-artifact has to be resolvable by a public reader (ruling R-1). Earlier revisions of this example —
-and, at the time of writing, the sibling `examples/verify-rust-std-pr618/` — pin
-`bd1c995bd9ae`, which is a commit in the *private working repo* and does not resolve against
+artifact has to be resolvable by a public reader (the public-resolvability rule). Earlier revisions
+of this example — and, at the time of writing, the sibling `examples/verify-rust-std-pr618/` — pin
+`bd1c995bd9ae`, which is a commit in the producer's private repository and does not resolve against
 `github.com/ivmat/acceptance-format`. The two name the same spec and the same validator: their
 `spec/core.md`, `spec/assurance-bands.md` and `tools/check_acceptance.py` are byte-identical. Only
 the coordinate system differs, so nothing about the version being cited changed here.
 
 ## Why the `record` pointers do not resolve here
 
-Each claim's `record` field points into the private control repo that produced this manifest
-(a receipt file, not this repo). Those pointers will not resolve from this checkout or from any
+Each claim's `record` field points into the producer's private repository that produced this
+manifest (a receipt file, not this repo). Those pointers will not resolve from this checkout or from any
 public reader's clone — expected, and the validator flags it as a WARN, not a FAIL (the same shape
 as `examples/rs-verified-der/` and `examples/verify-rust-std-pr618/`). This is the
 honest-disclosure shape: the manifest states plainly where its evidence lives, even though a

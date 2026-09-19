@@ -203,6 +203,61 @@ class HyphenatedCompoundTokenIsCaught(unittest.TestCase):
         self.assertIn("NEW leak beyond", err)
 
 
+class PlantedPhrasesRefused(unittest.TestCase):
+    """PHRASE_PATTERNS: the hardening added 2026-09-19 after a lens review found exactly this class
+    of private-process phrase leaked into tracked example prose/comments (acceptance-format). Every
+    pattern gets its own fixture proving the gate now flags it -- the hardening is demonstrably able
+    to catch exactly what just leaked."""
+
+    PHRASE_FIXTURES = [
+        ("private-control-or-working-repo", "built from the private control repo's receipts"),
+        ("private-control-or-working-repo", "hand-authored from the private working repo notes"),
+        ("control-repo", "the sibling control repo's cloud-campaigns tree"),
+        ("the-estate", "stated the way the estate requires"),
+        ("estate-precedent-or-requires", "matches existing estate precedent for this shape"),
+        ("estate-precedent-or-requires", "stated the way the estate requires honesty"),
+        ("ruling-r-n", "repinned per ruling R-1, already cited elsewhere"),
+        ("control-seat", "routed to the control seat, not self-ruled"),
+        ("self-ruled", "routed, deliberately not self-ruled by this lane"),
+        ("this-lane", "deliberately not decided by this lane"),
+    ]
+
+    def test_each_phrase_pattern_is_flagged(self):
+        for name, sentence in self.PHRASE_FIXTURES:
+            with self.subTest(pattern=name, sentence=sentence):
+                with repo_fixture({"notes.md": f"{sentence}\n"}):
+                    rc, _out, err = run_tree()
+                self.assertEqual(rc, 1, f"expected a FAIL for {name!r} ({sentence!r}); got: {err}")
+                self.assertIn(f"phrase:{name}", err)
+                self.assertIn("NEVER baseline-eligible", err)
+
+    def test_phrase_hit_survives_a_baseline_entry(self):
+        # like credentials, a phrase match must NOT be suppressible by baselining it.
+        with repo_fixture(
+            {"notes.md": "this was decided by the control seat\n"},
+            baseline={"notes.md": {"phrase:control-seat": 1}},
+        ):
+            rc, _out, err = run_tree()
+        self.assertEqual(rc, 1)
+        self.assertIn("phrase:control-seat", err)
+        self.assertIn("NEVER baseline-eligible", err)
+
+    def test_update_baseline_refuses_over_a_phrase_hit(self):
+        with repo_fixture({"notes.md": "the estate requires this framing\n"}):
+            buf_err = io.StringIO()
+            with contextlib.redirect_stderr(buf_err):
+                rc = gate.update_baseline()
+            self.assertEqual(rc, 1)
+            self.assertIn("REFUSED", buf_err.getvalue())
+            self.assertIn("phrase:the-estate", buf_err.getvalue())
+            self.assertFalse(gate.BASELINE_PATH.exists())
+
+    def test_phrase_in_commit_message_fails(self):
+        rc, _out, err = run_message("fix: routed per ruling R-2, not self-ruled here\n")
+        self.assertEqual(rc, 1)
+        self.assertIn("phrase:", err)
+
+
 class ScopeIsTrackedFilesOnly(unittest.TestCase):
     def test_untracked_violation_passes_scope_documented(self):
         with repo_fixture({"src/lib.rs": "pub fn f() {}\n"}) as root:

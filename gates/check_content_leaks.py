@@ -3,8 +3,9 @@
 repo whose baseline starts, and must stay, empty.
 
 Every other gate in this repo checks proof/doc structure; none of them would notice a hard-coded
-credential, a private absolute path, or a private working-vocabulary word sitting in tracked
-source. This gate closes that class, in three layers, plus a commit-message mode (`--message`):
+credential, a private absolute path, a private working-vocabulary word, or a private-process PHRASE
+sitting in tracked source. This gate closes that class, in four layers, plus a commit-message mode
+(`--message`):
 
   1. credentials  — key-material / token patterns; scanned in EVERY tracked file, no exemptions,
      NEVER baseline-eligible (see BASELINE below — a credential match always fails, period).
@@ -15,6 +16,11 @@ source. This gate closes that class, in three layers, plus a commit-message mode
      would itself be a leak vector if this file were ever copied out of a repo that still carried
      those names — so, deliberately, THIS docstring does not restate the words). Add a token with
      `--hash <token>` (prints the hash to embed, never writes the word anywhere).
+  4. phrase vocabulary (PHRASE_PATTERNS, near PATH_PATTERNS below) — generic, common-word,
+     MULTI-WORD process phrases (e.g. "control repo", "the estate"), kept as PLAINTEXT
+     case-insensitive regexes rather than hashes, because — unlike layer 3's tokens — they are
+     ordinary English incriminating only in combination, not distinctive private codenames; see the
+     comment at PHRASE_PATTERNS for the full rationale. Like credentials, NEVER baseline-eligible.
 
 BASELINE — why this repo starts, and stays, at `{}`:
 
@@ -82,6 +88,28 @@ PATH_PATTERNS = [
 # is one line to revive if a genuinely exempt directory ever appears.
 PATH_EXEMPT_DIRS = ()
 
+# PHRASE_PATTERNS -- generic, MULTI-WORD private-process vocabulary (2026-09-19, added after a lens
+# review found exactly this class of phrase leaked into tracked example prose/comments). These are
+# PLAINTEXT case-insensitive regexes, deliberately NOT hashed like VOCAB_HASHES above: each phrase
+# ("control repo", "the estate", "this lane", ...) is made of ordinary English words that are
+# incriminating only in COMBINATION, as markers of a specific private-process vocabulary -- not
+# because any single one is a distinctive private codename the way a VOCAB_HASHES token is (a real
+# repo/project name). Publishing the plaintext regex here is therefore not itself a meaningful leak
+# vector: there is nothing to reconstruct from `\bcontrol seat\b` that is not already common
+# English, unlike a hashed bare name, which exists specifically so the word itself never appears in
+# this file. Scanned in the tree scan over decoded text, same per-file loop as PATH_PATTERNS -- but,
+# like credentials, a hit here is NEVER baseline-eligible: a match always fails the gate, full stop.
+PHRASE_PATTERNS = [
+    ("private-control-or-working-repo", re.compile(r"private (?:control|working) repo", re.IGNORECASE)),
+    ("control-repo", re.compile(r"\bcontrol repo\b", re.IGNORECASE)),
+    ("the-estate", re.compile(r"\bthe estate\b", re.IGNORECASE)),
+    ("estate-precedent-or-requires", re.compile(r"\bestate (?:precedent|requires|require)\b", re.IGNORECASE)),
+    ("ruling-r-n", re.compile(r"\bruling R-\d", re.IGNORECASE)),
+    ("control-seat", re.compile(r"\bcontrol seat\b", re.IGNORECASE)),
+    ("self-ruled", re.compile(r"\bself-ruled\b", re.IGNORECASE)),
+    ("this-lane", re.compile(r"\bthis lane\b", re.IGNORECASE)),
+]
+
 # SHA-256 of normalized (strip+lowercase) private-vocabulary tokens -- see module docstring for the
 # seed list and rationale. Regenerate/extend with `--hash <token>`.
 VOCAB_HASHES = {
@@ -145,6 +173,11 @@ def scan_text(text, relpath=None, path_exempt=False, include_credentials=True):
             m = rx.search(text)
             if m:
                 findings.append((relpath, f"path:{name}", m.group(0)))
+    # PHRASE_PATTERNS are not path-shaped, so they are not gated on path_exempt.
+    for name, rx in PHRASE_PATTERNS:
+        m = rx.search(text)
+        if m:
+            findings.append((relpath, f"phrase:{name}", m.group(0)))
     # TOKEN_RE keeps `-` IN the token class, so a hyphenated compound (e.g. "foo-bar-2026-08")
     # matches as ONE run, not four -- a hashed bare name never matches its own hyphenated/dotted
     # compounds unless each run is also split and its sub-tokens checked. `.` is never inside a
@@ -182,12 +215,16 @@ def load_baseline():
 
 
 def _collect(files):
-    """Returns (credential_hits, counts, scanned, unreadable):
+    """Returns (credential_hits, phrase_hits, counts, scanned, unreadable):
 
       credential_hits  [(relpath, layer, evidence)] -- matched over RAW BYTES, so a binary file is
-                       still credential-checked.
-      counts           counts[relpath][layer] = n, for the non-credential layers, which need real
-                       text (a token list, an absolute path) and so run on the decoded content.
+                       still credential-checked. NEVER baseline-eligible.
+      phrase_hits      [(relpath, layer, evidence)] -- PHRASE_PATTERNS matches, pulled out of
+                       `counts` below for the same reason credential_hits is: NEVER
+                       baseline-eligible (a hit always fails, full stop).
+      counts           counts[relpath][layer] = n, for the remaining (baseline-eligible) layers --
+                       path and hashed-vocabulary -- which need real text and so run on the
+                       decoded content.
       scanned          the relpaths actually examined on every layer -- what the PASS line reports.
       unreadable       [(relpath, reason)] -- tracked files that could not be decoded or read at
                        all. A FAILURE, never a silent skip: these used to `continue` while still
@@ -195,6 +232,7 @@ def _collect(files):
                        precisely the files whose content nobody could see.
     """
     credential_hits = []
+    phrase_hits = []
     counts = collections.defaultdict(collections.Counter)
     scanned = []
     unreadable = []
@@ -229,8 +267,13 @@ def _collect(files):
         for _rel, layer, evidence in scan_text(
             text, rel, path_exempt=exempt, include_credentials=False
         ):
-            counts[rel][layer] += 1
-    return credential_hits, counts, scanned, unreadable
+            if layer.startswith("phrase:"):
+                # PHRASE_PATTERNS: same per-file loop as the path layer above, but pulled out of
+                # `counts` -- never baseline-eligible, same as credentials.
+                phrase_hits.append((rel, layer, evidence))
+            else:
+                counts[rel][layer] += 1
+    return credential_hits, phrase_hits, counts, scanned, unreadable
 
 
 def check_tree():
@@ -240,7 +283,7 @@ def check_tree():
         print(f"FAIL check_content_leaks: cannot list tracked files ({e})", file=sys.stderr)
         return 1
 
-    credential_hits, counts, scanned, unreadable = _collect(files)
+    credential_hits, phrase_hits, counts, scanned, unreadable = _collect(files)
     baseline = load_baseline()
 
     over_baseline = []
@@ -253,10 +296,12 @@ def check_tree():
                 over_baseline.append((rel, layer, n, b))
             baselined_total += min(n, b)
 
-    if credential_hits or over_baseline or unreadable:
+    if credential_hits or phrase_hits or over_baseline or unreadable:
         lines = []
         for rel, layer, ev in credential_hits:
             lines.append(f"{rel}: {layer}" + (f" ({ev})" if ev else "") + " [credentials are NEVER baseline-eligible]")
+        for rel, layer, ev in phrase_hits:
+            lines.append(f"{rel}: {layer}" + (f" ({ev})" if ev else "") + " [phrase matches are NEVER baseline-eligible]")
         for rel, layer, n, b in over_baseline:
             lines.append(f"{rel}: {layer} -- {n} hit(s) found, {b} baselined (NEW leak beyond gates/leak_baseline.json)")
         for rel, reason in unreadable:
@@ -313,11 +358,13 @@ def update_baseline():
     except (subprocess.CalledProcessError, OSError) as e:
         print(f"FAIL check_content_leaks --update-baseline: cannot list tracked files ({e})", file=sys.stderr)
         return 1
-    credential_hits, counts, _scanned, unreadable = _collect(files)
-    if credential_hits:
-        lines = "\n  ".join(f"{rel}: {layer}" for rel, layer, _ev in credential_hits)
+    credential_hits, phrase_hits, counts, _scanned, unreadable = _collect(files)
+    if credential_hits or phrase_hits:
+        lines = "\n  ".join(
+            f"{rel}: {layer}" for rel, layer, _ev in (*credential_hits, *phrase_hits)
+        )
         print(
-            "REFUSED --update-baseline: credential hit(s) present -- fix these, never baseline them:\n  "
+            "REFUSED --update-baseline: credential/phrase hit(s) present -- fix these, never baseline them:\n  "
             + lines,
             file=sys.stderr,
         )

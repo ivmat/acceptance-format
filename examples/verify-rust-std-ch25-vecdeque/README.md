@@ -14,7 +14,7 @@ As `examples/verify-rust-std-pr664/README.md` explains, `illustrative = true` do
 manifest's own header comment for its specific rationale). This manifest's header gives the same
 two-part reason as the sibling `ch7-atomic` example:
 
-1. It is hand-built from receipts in the private control repo's campaign tree, no automated capture
+1. It is hand-built from receipts in the producer's private campaign tree, no automated capture
    pipeline behind it.
 2. Challenge 25's own success criteria require **unbounded** verification (arbitrary length) and
    **genericity over T** (no monomorphization) across 43 listed items (13 unsafe-contract functions
@@ -81,9 +81,9 @@ corroborates it was not disturbed in the process.
 
 ## A note on the pinned `spec_sha` / `validator_sha`
 
-This copy repins `spec_sha` / `validator_sha` from the private working repo's coordinate
+This copy repins `spec_sha` / `validator_sha` from the producer's private repository's coordinate
 (`8849330e943446907a12f67c7d2c0cceb226ad05`) to the **public** commit
-`2788bbfdb7b01c1fdd0013ce5bd4714166301ddf`, following the same ruling R-1 rationale as
+`2788bbfdb7b01c1fdd0013ce5bd4714166301ddf`, following the same public-resolvability rationale as
 `examples/verify-rust-std-pr664/`: a pin in a public artifact has to be resolvable by a public
 reader. The repin was verified byte-identical first — `spec/core.md`, `spec/assurance-bands.md` and
 `tools/check_acceptance.py` hash the same at both commits — so nothing about the spec or validator
@@ -91,8 +91,8 @@ version being cited changed, only the coordinate a reader can resolve it at.
 
 ## Why the `record` pointers do not resolve here
 
-Each claim's `record` field points into the private control repo that produced this manifest (a
-receipt file, not this repo). Those pointers will not resolve from this checkout or from any public
+Each claim's `record` field points into the producer's private repository that produced this
+manifest (a receipt file, not this repo). Those pointers will not resolve from this checkout or from any public
 reader's clone — expected, and the validator flags it as a WARN, not a FAIL, the same shape as
 `examples/verify-rust-std-pr664/`, `examples/verify-rust-std-pr618/`,
 `examples/verify-rust-std-ch7-atomic/` and `examples/rs-verified-der/`.

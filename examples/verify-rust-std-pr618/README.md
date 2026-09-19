@@ -42,13 +42,13 @@ from `c35c201b` by comments only.
   with the right evidence species for a stronger band, but no mutation/ablation control is filed
   against it as a citable machine record. The header comment explains why A0 is the honest floor per
   `spec/assurance-bands.md` rule 2/5 — not a shortfall in the proof work itself. Further controls
-  exist in the private control repo and lift nothing here until transcribed.
+  exist in the producer's private repository and lift nothing here until transcribed.
 - Verified on `kani@d4df833c8f8f` (0.67.0), CBMC 6.8.0.
 
 ## Why the `record` pointers do not resolve here
 
-Each claim's `record` field points into the private control repo that produced this manifest
-(a receipt file, not this repo). Those pointers will not resolve from this checkout or from any
+Each claim's `record` field points into the producer's private repository that produced this
+manifest (a receipt file, not this repo). Those pointers will not resolve from this checkout or from any
 public reader's clone — expected, and the validator flags it as a WARN, not a FAIL (the same shape
 as `examples/rs-verified-der/`). This is the honest-disclosure shape: the manifest states plainly
 where its evidence lives, even though a reader here cannot fetch it directly.
