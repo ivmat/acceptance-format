@@ -100,11 +100,12 @@ def run() -> list[tuple[str, bool, object]]:
     cases = Cases()
 
     # --- PASS: the whole chain, end to end, with a profile floor the claim meets -------------
-    # dir=str(_REPO_ROOT), NOT the system tempdir: the C-T5 record-schema check (row 4) opens
-    # the evidence's `record` pointer via the core's own repository-root resolution, which needs a
-    # `.git` ancestor -- a bare system tempdir has none.
-    with tempfile.TemporaryDirectory(dir=str(_REPO_ROOT)) as tdstr:
+    # The C-T5 record-schema check (row 4) opens the evidence's `record` pointer via the core's
+    # own repository-root resolution, which needs a `.git` ancestor: give the tempdir an isolated
+    # marker rather than borrowing the enclosing checkout's, which a source archive does not have.
+    with tempfile.TemporaryDirectory() as tdstr:
         td = Path(tdstr)
+        (td / ".git").mkdir()  # isolated B6 repository-root marker; no real git metadata
         contract_id = "AC-TEST-TS-1"
         contract_path = write(td, "acceptance-contract.toml", _contract_toml(contract_id, "isolate_fault_domain"))
         contract_hash = m11.digest_file("contract", contract_path)
@@ -159,8 +160,9 @@ basis       = ["TS-EX-1"]
         )
 
     # --- FAIL: same package, a profile floor (§6.2 cond 9) the claim's outcome cannot reach ----
-    with tempfile.TemporaryDirectory(dir=str(_REPO_ROOT)) as tdstr:
+    with tempfile.TemporaryDirectory() as tdstr:
         td = Path(tdstr)
+        (td / ".git").mkdir()  # isolated B6 repository-root marker; no real git metadata
         contract_id = "AC-TEST-TS-FLOOR-1"
         # TS-EX-1's outcome is "isolate_fault_domain" (rank 1 of 4); "identify_root_cause" (rank 3,
         # the ladder's top) is a real, higher token from the SAME closed OUTCOMES vocabulary the

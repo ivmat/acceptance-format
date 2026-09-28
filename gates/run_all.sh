@@ -32,12 +32,12 @@ run python3 protocol_acceptance/tools/acceptance_protocol.py check-states
 rd=protocol_acceptance/examples/rust-delivery
 run python3 format_acceptance/tools/check_acceptance.py --root . --strict --strict-weight "$rd/acceptance.toml"
 run python3 protocol_acceptance/tools/acceptance_protocol.py check-contract "$rd/acceptance-contract.toml"
-run python3 protocol_acceptance/tools/acceptance_protocol.py check-package "$rd/acceptance.toml" --contract "$rd/acceptance-contract.toml"
-run python3 protocol_acceptance/tools/acceptance_protocol.py check-decision "$rd/acceptance-decision.toml" --contract "$rd/acceptance-contract.toml" --package "$rd/acceptance.toml"
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-package "$rd/acceptance.toml" --contract "$rd/acceptance-contract.toml" --root .
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-decision "$rd/acceptance-decision.toml" --contract "$rd/acceptance-contract.toml" --package "$rd/acceptance.toml" --root .
 # The shipped decision must also be EFFECT-eligible
 # on a date inside its validity window (not merely VALID) -- a regression gate the earlier
 # one-day UTC-drift defect would have failed.
-run python3 protocol_acceptance/tools/acceptance_protocol.py check-decision "$rd/acceptance-decision.toml" --contract "$rd/acceptance-contract.toml" --package "$rd/acceptance.toml" --effect --allow-conditions --now 2026-09-28
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-decision "$rd/acceptance-decision.toml" --contract "$rd/acceptance-contract.toml" --package "$rd/acceptance.toml" --effect --allow-conditions --now 2026-09-28 --root .
 run python3 gates/check_decision_expiry.py
 # Minimal is a fictional producer-only shape example; strict evidence-pointer checks
 # apply to the real weighted certificate below, whose records must exist.
@@ -45,7 +45,7 @@ run python3 format_acceptance/tools/check_acceptance.py --root . format_acceptan
 run python3 format_acceptance/tools/check_acceptance.py --root . --strict --strict-weight examples/weighted-toy/acceptance.toml
 run python3 format_acceptance/tools/check_execute.py --yes-run-untrusted-commands --subject-root examples/weighted-toy examples/weighted-toy/acceptance.toml
 run python3 protocol_acceptance/tools/acceptance_protocol.py check-contract examples/weighted-toy/acceptance-contract.toml
-run python3 protocol_acceptance/tools/acceptance_protocol.py check-package examples/weighted-toy/acceptance.toml --contract examples/weighted-toy/acceptance-contract.toml
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-package examples/weighted-toy/acceptance.toml --contract examples/weighted-toy/acceptance-contract.toml --root .
 conf=format_acceptance/profiles/conformance/examples
 run python3 format_acceptance/tools/check_core.py --root . --strict "$conf/valid/acceptance.toml"
 run python3 format_acceptance/tools/profiles/conformance.py --root . "$conf/valid/acceptance.toml"
@@ -60,8 +60,5 @@ run python3 gates/check_assumptions.py --selftest
 run python3 gates/check_build_inputs.py
 run python3 gates/check_adoption_templates.py
 run python3 gates/check_export_closure.py
-run python3 gates/test_check_content_leaks.py
-run python3 gates/check_public_leaks.py --selftest
-run python3 gates/check_public_leaks.py
 if [ "$fail" -ne 0 ]; then echo 'PUBLIC SUITE RED'; exit 1; fi
 echo 'PUBLIC SUITE GREEN'

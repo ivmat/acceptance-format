@@ -443,6 +443,19 @@ def producer_identity_set(contract: dict, package: dict) -> set[str]:
     return names
 
 
+# B6 repository-root override, set once from the CLI's --root (the same override
+# check_acceptance.py --root offers). None keeps the core's own rule: the nearest `.git` ancestor.
+# A copy without git metadata (a source archive) has no such ancestor, so every record pointer is
+# INDETERMINATE there unless the caller names the root explicitly.
+_ROOT_OVERRIDE: Path | None = None
+
+
+def _run_package_validator(validator, package_path: Path, strict: bool):
+    if _ROOT_OVERRIDE is None:
+        return validator(package_path, strict=strict, strict_weight=False)
+    return validator(package_path, strict=strict, strict_weight=False, root=_ROOT_OVERRIDE)
+
+
 def claim_weight_grants(
     package_path: Path, claims: list[dict], profile: dict | None = None,
 ) -> tuple[dict[str, bool], object]:
@@ -465,7 +478,7 @@ def claim_weight_grants(
     AND did not refuse it outright (a "WEIGHT REFUSED" error naming this claim, or the
     document-wide `[spec].axis` refusal that blocks every weighted claim in the file)."""
     validator = (profile or {}).get("package_validator") or check_core.validate
-    ca_rep = validator(package_path, strict=False, strict_weight=False)
+    ca_rep = _run_package_validator(validator, package_path, False)
     # `pending` is read via getattr with a `{}`
     # fallback, which fails OPEN for a profile-bound validator that does not expose the attribute.
     # Dormant today — the in-repo check_acceptance.Reporter always constructs `pending` — so this
@@ -3048,7 +3061,7 @@ def check_package(
         )
         ca_rep = None
     else:
-        ca_rep = profile["package_validator"](package_path, strict, strict_weight=False)
+        ca_rep = _run_package_validator(profile["package_validator"], package_path, strict)
         rep.merge(ca_rep, prefix="[package validator] ")
         constraints_check = profile.get("package_constraints")
         if constraints_check is not None:
@@ -6475,12 +6488,16 @@ def build_argparser() -> argparse.ArgumentParser:
                      help="a directory of predecessor contracts, each resolved by its own [document].id (§3.3, Finding 4)")
     sp.add_argument("--strict", action="store_true")
     sp.add_argument("--json", action="store_true")
+    sp.add_argument("--root", type=Path, default=None,
+                     help="B6 repository root for evidence pointers when the tree has no .git (e.g. a source archive)")
     sp.set_defaults(func=cmd_check_package)
 
     sp = sub.add_parser("coverage")
     sp.add_argument("package")
     sp.add_argument("--contract", required=True)
     sp.add_argument("--json", action="store_true")
+    sp.add_argument("--root", type=Path, default=None,
+                     help="B6 repository root for evidence pointers when the tree has no .git (e.g. a source archive)")
     sp.set_defaults(func=cmd_coverage)
 
     sp = sub.add_parser("decide")
@@ -6489,6 +6506,8 @@ def build_argparser() -> argparse.ArgumentParser:
     sp.add_argument("--issuer", required=True)
     sp.add_argument("--out", required=True)
     sp.add_argument("--mode", choices=VERIFICATION_MODES, default=None)
+    sp.add_argument("--root", type=Path, default=None,
+                     help="B6 repository root for evidence pointers when the tree has no .git (e.g. a source archive)")
     sp.set_defaults(func=cmd_decide)
 
     sp = sub.add_parser("check-decision")
@@ -6504,6 +6523,8 @@ def build_argparser() -> argparse.ArgumentParser:
     sp.add_argument("--effect", action="store_true", help="also evaluate §5.0a effect eligibility (Finding 12); exit reflects effect eligibility, not mere validity")
     sp.add_argument("--now", default=None, help="YYYY-MM-DD; default today (UTC) — used only by --effect's unexpired check")
     sp.add_argument("--allow-conditions", action="store_true", help="--effect: accepted-with-conditions is also eligible (the gate's own policy)")
+    sp.add_argument("--root", type=Path, default=None,
+                     help="B6 repository root for evidence pointers when the tree has no .git (e.g. a source archive)")
     sp.set_defaults(func=cmd_check_decision)
 
     sp = sub.add_parser("check-states")
@@ -6533,6 +6554,8 @@ def build_argparser() -> argparse.ArgumentParser:
     sp.add_argument("package")
     sp.add_argument("decision", nargs="?", default=None)
     sp.add_argument("--out", default=None)
+    sp.add_argument("--root", type=Path, default=None,
+                     help="B6 repository root for evidence pointers when the tree has no .git (e.g. a source archive)")
     sp.set_defaults(func=cmd_render)
 
     sp = sub.add_parser("check-amendment")
@@ -6593,6 +6616,8 @@ def main(argv: list[str]) -> int:
 
     parser = build_argparser()
     args = parser.parse_args(argv[1:])
+    global _ROOT_OVERRIDE
+    _ROOT_OVERRIDE = getattr(args, "root", None)
     return args.func(args)
 
 

@@ -70,8 +70,8 @@ def _run_closure_pipeline(export_root, expect_commit, td, provenance):
     commands = [
         ('format_acceptance/tools/check_acceptance.py', ['--root', str(ROOT), '--strict', '--strict-weight', str(rd / 'acceptance.toml')]),
         ('protocol_acceptance/tools/acceptance_protocol.py', ['check-contract', str(rd / 'acceptance-contract.toml')]),
-        ('protocol_acceptance/tools/acceptance_protocol.py', ['check-package', str(rd / 'acceptance.toml'), '--contract', str(rd / 'acceptance-contract.toml')]),
-        ('protocol_acceptance/tools/acceptance_protocol.py', ['check-decision', str(rd / 'acceptance-decision.toml'), '--contract', str(rd / 'acceptance-contract.toml'), '--package', str(rd / 'acceptance.toml')]),
+        ('protocol_acceptance/tools/acceptance_protocol.py', ['check-package', str(rd / 'acceptance.toml'), '--contract', str(rd / 'acceptance-contract.toml'), '--root', str(ROOT)]),
+        ('protocol_acceptance/tools/acceptance_protocol.py', ['check-decision', str(rd / 'acceptance-decision.toml'), '--contract', str(rd / 'acceptance-contract.toml'), '--package', str(rd / 'acceptance.toml'), '--root', str(ROOT)]),
     ]
     for script, args in commands:
         subprocess.run([sys.executable, str(dest / script), *args], cwd=td, check=True)

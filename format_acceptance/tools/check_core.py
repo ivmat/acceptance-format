@@ -1326,7 +1326,7 @@ def _resolve_pointer(rep, value, label, *, legacy=False):
         if legacy:
             rep.warn(f"B6: legacy {label}: repository root unresolvable; pointer remains unevaluated")
         if not legacy:
-            rep.unknowns.append(f"B6: {label}: repository root unresolvable")
+            rep.unknowns.append(f"B6: {label}: repository root unresolvable (no .git ancestor; pass --root DIR)")
         return None
     try:
         target = (rep.context.path.parent / path).resolve()

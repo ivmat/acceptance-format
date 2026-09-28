@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- The README opens with a plain-language introduction and a tiny worked example.
+- The publication leak gates no longer ship in this repository. They must list the vocabulary
+  they search for, so shipping them published that list. They now run before each export
+  instead.
+- The gate suite and the README quickstart now also run in a copy without git metadata
+  (a source archive or "Download ZIP"): the protocol tool takes `--root`, like the format
+  validator already did.
+
 ## 0.3.x — locked, not ratified
 
 ### 0.3.2 — 2026-09-27
