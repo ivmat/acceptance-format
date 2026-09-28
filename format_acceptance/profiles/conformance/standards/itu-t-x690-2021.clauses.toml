@@ -1,0 +1,490 @@
+# Clause numbers and original short titles only; see README.md for limits and copyright.
+# Sources: ENVELOPE.md section 5, the DER crate's source citations, and standard structure.
+
+[standard]
+id = "itu-t-x690-2021"
+title = "ITU-T X.690 (02/2021) — BER/CER/DER encoding rules"
+edition = "2021-02"
+provenance = "external"
+slice = true
+slice_note = """\
+Selected clauses in §8.1–§8.14, §8.19–§8.20, §8.23, §10.1–§10.3, §11.1–§11.3, §11.5–§11.8; \
+§9 is CER context only.\
+"""
+numbering = "the standard's own clause numbers"
+
+[[clause]]
+id = "X690-8.1"
+ref = "§8.1"
+title = "Shared encoding structure"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.1"
+ref = "§8.1.1"
+title = "Layout of an encoded value"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.1.1"
+ref = "§8.1.1.1"
+title = "Encoding components and their order"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2"
+ref = "§8.1.2"
+title = "Identifier representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.1"
+ref = "§8.1.2.1"
+title = "Tag information carried by identifiers"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.2"
+ref = "§8.1.2.2"
+title = "Low-tag identifier fields"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.4"
+ref = "§8.1.2.4"
+title = "Identifiers for larger tag numbers"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.4.1"
+ref = "§8.1.2.4.1"
+title = "Leading octet of a high-tag identifier"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.4.2"
+ref = "§8.1.2.4.2"
+title = "Remaining octets of a high-tag identifier"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.4.2a"
+ref = "§8.1.2.4.2 a)"
+title = "Continuation markers in high-tag octets"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.4.2b"
+ref = "§8.1.2.4.2 b)"
+title = "Tag-number bit groups and their significance"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.2.4.2c"
+ref = "§8.1.2.4.2 c)"
+title = "Minimal high-tag representation"
+force = "shall-not"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.3"
+ref = "§8.1.3"
+title = "Length-field representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.3.1"
+ref = "§8.1.3.1"
+title = "Available length forms"
+force = "definition"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.3.2"
+ref = "§8.1.3.2"
+title = "Length-form choice by encoding construction"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.3.3"
+ref = "§8.1.3.3"
+title = "Definite-length forms and payload size"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.3.4"
+ref = "§8.1.3.4"
+title = "Short definite-length representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.3.5"
+ref = "§8.1.3.5"
+title = "Long definite-length representation and reserved prefix"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.3.6"
+ref = "§8.1.3.6"
+title = "Indefinite-length representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.4"
+ref = "§8.1.4"
+title = "Value payload within the encoding"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.1.5"
+ref = "§8.1.5"
+title = "End marker for indefinite encodings"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.2"
+ref = "§8.2"
+title = "BOOLEAN payload representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.3"
+ref = "§8.3"
+title = "Signed INTEGER representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.3.1"
+ref = "§8.3.1"
+title = "INTEGER primitive form and nonempty payload"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.3.2"
+ref = "§8.3.2"
+title = "No redundant INTEGER sign extension"
+force = "shall-not"
+side = "both"
+
+[[clause]]
+id = "X690-8.4"
+ref = "§8.4"
+title = "ENUMERATED integer representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.5"
+ref = "§8.5"
+title = "REAL value representations"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.6"
+ref = "§8.6"
+title = "BIT STRING payload and unused-bit count"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.6.2"
+ref = "§8.6.2"
+title = "Primitive BIT STRING payload layout"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.6.2.1"
+ref = "§8.6.2.1"
+title = "Initial BIT STRING octet records unused-bit count"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.6.2.3"
+ref = "§8.6.2.3"
+title = "Empty BIT STRING uses only a zero initial octet"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.7"
+ref = "§8.7"
+title = "OCTET STRING payload representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.8"
+ref = "§8.8"
+title = "NULL primitive form and empty payload"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.9"
+ref = "§8.9"
+title = "SEQUENCE component encodings"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.9.1"
+ref = "§8.9.1"
+title = "SEQUENCE uses constructed form"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.10"
+ref = "§8.10"
+title = "SEQUENCE OF member encodings"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.11"
+ref = "§8.11"
+title = "SET component encodings"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.12"
+ref = "§8.12"
+title = "SET OF member encodings"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.13"
+ref = "§8.13"
+title = "CHOICE selected alternative representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.14"
+ref = "§8.14"
+title = "Tagged-type representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.14.2"
+ref = "§8.14.2"
+title = "Explicit tags wrap the underlying encoding"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.14.3"
+ref = "§8.14.3"
+title = "Implicit tags replace the underlying identifier"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.19"
+ref = "§8.19"
+title = "OBJECT IDENTIFIER arc representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.19.2"
+ref = "§8.19.2"
+title = "Minimal variable-length OID subidentifiers"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.19.4"
+ref = "§8.19.4"
+title = "Combining the first two OID arcs"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.20"
+ref = "§8.20"
+title = "Relative OID arc representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-8.23"
+ref = "§8.23"
+title = "Restricted character-string representations"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-9"
+ref = "§9"
+title = "CER context outside DER"
+force = "informative"
+side = "both"
+
+[[clause]]
+id = "X690-10.1"
+ref = "§10.1"
+title = "Shortest definite lengths for DER"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-10.2"
+ref = "§10.2"
+title = "Primitive string forms for DER"
+force = "shall-not"
+side = "both"
+
+[[clause]]
+id = "X690-10.3"
+ref = "§10.3"
+title = "DER SET components ordered by tag"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.1"
+ref = "§11.1"
+title = "Canonical BOOLEAN true octet"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.2"
+ref = "§11.2"
+title = "BIT STRING padding and named-bit canonicalization"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.2.1"
+ref = "§11.2.1"
+title = "Zero padding for unused bits"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.2.2"
+ref = "§11.2.2"
+title = "NamedBitList trailing-zero removal"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.3"
+ref = "§11.3"
+title = "Canonical REAL representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.5"
+ref = "§11.5"
+title = "Omission of components matching DEFAULT"
+force = "shall-not"
+side = "both"
+
+[[clause]]
+id = "X690-11.6"
+ref = "§11.6"
+title = "SET OF ordering by complete member encodings"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.7"
+ref = "§11.7"
+title = "Canonical GeneralizedTime representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.7.1"
+ref = "§11.7.1"
+title = "GeneralizedTime UTC termination"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.7.2"
+ref = "§11.7.2"
+title = "GeneralizedTime seconds field presence"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.7.3"
+ref = "§11.7.3"
+title = "GeneralizedTime fractional-second minimality"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.7.4"
+ref = "§11.7.4"
+title = "GeneralizedTime decimal-point choice"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.8"
+ref = "§11.8"
+title = "Canonical UTCTime representation"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.8.1"
+ref = "§11.8.1"
+title = "UTCTime UTC termination"
+force = "shall"
+side = "both"
+
+[[clause]]
+id = "X690-11.8.2"
+ref = "§11.8.2"
+title = "UTCTime seconds field presence"
+force = "shall"
+side = "both"
+
+# §11.2.2.1 does not exist in X.690; ENVELOPE rev01 row DER-C-BITS-3 mis-cites it;
+# the rule is §8.6.2.3.
+
+# UNVERIFIED: §8.1.2.3: precise subject not established; no row admitted.
+# UNVERIFIED: §8.9.2 / §8.9.3: component-order subdivision not established here;
+# no additional SEQUENCE subclause row admitted.
+# UNVERIFIED: §8.25 / §8.26 time-type assignment: both crate time modules cite §8.25.
+# No base time-type row admitted until that numbering is resolved.
+# UNVERIFIED: ENVELOPE DER-C-BITS-1/2 and bit_string.rs attach different rules to
+# §11.2.1 / §11.2.2 than the titles above; their rule-to-clause mapping needs review.
+# UNVERIFIED: §11.4 (X690-11.4): proposed GeneralString-family escape-state subject
+# is not established; no row admitted.
+# UNVERIFIED: §11.7 midnight sub-rule: precise subclause not established; no separate row.

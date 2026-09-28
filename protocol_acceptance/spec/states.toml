@@ -1,0 +1,277 @@
+# CLASS TEXT LOCKED at 0.3.2 (2026-09-27): frozen; a change needs a new [[lock]] entry in CLASS-LOCK.toml
+# (gates/check_class_lock.py). Locked is not ratified.
+# states.toml — the acceptance protocol's lifecycles as machine-checkable state tables.
+#
+# This file is the SOURCE OF TRUTH for the lifecycle; protocol.md §3.2, §5.3 restate it in prose.
+# `tools/acceptance_protocol.py check-states` proves, per machine: every state reachable from
+# `initial`; every non-terminal state has an outgoing transition; a terminal is reachable from
+# every state; no two transitions share (from, name, guard); every `by` is a declared role; every
+# `requires` field is declared. `transition` proves a named transition is legal from a state.
+#
+# Shape (the survey's recommended minimal protocol description): roles, states, initial, terminal,
+# [[transition]] with name/from/to/by/guard/requires. `by = "clock"` is a timeout actor; `by = "any"`
+# means any declared role. Extensions live under [ext] with critical = true|false.
+
+protocol = "acceptance-protocol/0"
+minor    = 0
+
+# ---------------------------------------------------------------------------------------------
+[machine.contract]
+roles    = ["consumer", "producer"]
+states   = ["draft", "issued", "ratified", "superseded", "withdrawn"]
+initial  = "draft"
+terminal = ["superseded", "withdrawn"]
+
+[[machine.contract.transition]]
+name = "issue"
+from = "draft"
+to = "issued"
+by = "consumer"
+requires = ["requirement[]", "acceptance.authority", "parties.consumer"]
+
+[[machine.contract.transition]]
+name = "propose"
+from = "draft"
+to = "issued"
+by = "producer"
+guard = "document.issued_by == producer"
+requires = ["requirement[]", "acceptance.authority", "parties.consumer"]
+
+[[machine.contract.transition]]
+name = "ratify"
+from = "issued"
+to = "ratified"
+by = "consumer"
+guard = "document.issued_by == producer"
+requires = ["ratification.by", "ratification.at"]
+
+[[machine.contract.transition]]
+name = "supersede"
+from = ["issued", "ratified"]
+to = "superseded"
+by = "consumer"
+requires = ["successor.id"]
+
+[[machine.contract.transition]]
+name = "tighten"
+from = ["issued", "ratified"]
+to = "superseded"
+by = "consumer"
+guard = "successor floors >= predecessor floors for every carried requirement unless successor.requirement.relaxed; dropped listed; phase not backwards unless reopened  (protocol.md §3.5, P12)"
+requires = ["successor.id", "successor.phase"]
+
+[[machine.contract.transition]]
+name = "withdraw"
+from = ["draft", "issued", "ratified"]
+to = "withdrawn"
+by = "consumer"
+
+# ---------------------------------------------------------------------------------------------
+[machine.amendment]
+roles    = ["consumer", "producer", "verifier"]
+states   = ["proposed", "accepted", "rejected", "stale", "superseded"]
+initial  = "proposed"
+terminal = ["superseded"]
+
+[[machine.amendment.transition]]
+name = "accept"
+from = "proposed"
+to = "accepted"
+by = "consumer"
+guard = "binds.contract.hash == current contract version hash"
+requires = ["successor.id"]
+
+[[machine.amendment.transition]]
+name = "reject"
+from = "proposed"
+to = "rejected"
+by = "consumer"
+requires = ["reason"]
+
+[[machine.amendment.transition]]
+name = "base-moved"
+from = "proposed"
+to = "stale"
+by = "any"
+guard = "binds.contract.hash != current contract version hash"
+
+[[machine.amendment.transition]]
+name = "reissue"
+from = ["stale", "rejected"]
+to = "superseded"
+by = "any"
+requires = ["successor.id"]
+
+[[machine.amendment.transition]]
+name = "applied"
+from = "accepted"
+to = "superseded"
+by = "consumer"
+guard = "the successor contract lists this amendment in document.amendments"
+
+# ---------------------------------------------------------------------------------------------
+[machine.package]
+roles    = ["producer", "consumer", "verifier"]
+states   = ["prepared", "submitted", "assessed", "superseded"]
+initial  = "prepared"
+terminal = ["superseded"]
+
+[[machine.package.transition]]
+name = "submit"
+from = "prepared"
+to = "submitted"
+by = "producer"
+guard = "contract.status in {issued, ratified} and check_acceptance == PASS and check_package == PASS"
+requires = ["contract.hash", "subject"]  # subject carries one B1 identity: commit, digest
+
+[[machine.package.transition]]
+name = "assess"
+from = "submitted"
+to = "assessed"
+by = "consumer"
+requires = ["decision.id"]
+
+[[machine.package.transition]]
+name = "supersede"
+from = ["submitted", "assessed"]
+to = "superseded"
+by = "producer"
+requires = ["successor.hash"]
+
+# ---------------------------------------------------------------------------------------------
+[machine.decision]
+roles    = ["consumer", "producer", "verifier", "clock"]
+states   = ["assessing", "accepted", "accepted-with-conditions", "rejected", "evidence-requested",
+            "stale", "invalidated", "lapsed", "superseded"]
+initial  = "assessing"
+terminal = ["superseded"]
+
+# Every accept* transition under a contract whose phase != final yields a PROVISIONAL decision
+# (document.provisional = true): same state names, but the effect gate treats it as not accepted.
+[[machine.decision.transition]]
+name = "accept"
+from = "assessing"
+to = "accepted"
+by = "consumer"
+guard = "all mandatory dispositions == satisfied and no conditions"
+requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]"]  # binds.subject: commit or digest
+
+[[machine.decision.transition]]
+name = "accept-conditionally"
+from = "assessing"
+to = "accepted-with-conditions"
+by = "consumer"
+guard = "all mandatory dispositions in {satisfied, satisfied-with-conditions, waived} and conditions >= 1"
+requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]", "condition[]"]  # binds.subject: commit or digest
+
+[[machine.decision.transition]]
+name = "reject"
+from = "assessing"
+to = "rejected"
+by = "consumer"
+guard = "some mandatory disposition == unsatisfied"
+requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]"]  # binds.subject: commit or digest
+
+[[machine.decision.transition]]
+name = "request-evidence"
+from = "assessing"
+to = "evidence-requested"
+by = "consumer"
+guard = "some disposition == insufficient-evidence"
+requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]", "condition[]"]  # binds.subject: commit or digest
+
+[[machine.decision.transition]]
+name = "discharge-conditions"
+from = "accepted-with-conditions"
+to = "superseded"
+by = "consumer"
+guard = "every condition's obligation == discharged AND a NEW decision (successor) binding the discharging package passes check-decision with verdict accepted (protocol.md §5.3) — promotion is never in place"
+requires = ["successor.id"]
+
+[[machine.decision.transition]]
+name = "condition-expired"
+from = "accepted-with-conditions"
+to = "lapsed"
+by = "clock"
+guard = "some condition's obligation == expired"
+
+# §5.5 (plan choice 1): a second, direct path into the SAME 'lapsed' state — a
+# decision that never renders a merits judgment at all (an external process closed the item for a
+# reason outside the delivered artifact). Reuses the existing state name rather than adding a new
+# verdict; see protocol.md §5.5 for why 'lapsed' was judged not misleading enough to need one.
+[[machine.decision.transition]]
+name = "close-without-merits"
+from = "assessing"
+to = "lapsed"
+by = "consumer"
+guard = "document.merits == false"
+requires = ["reason"]
+
+[[machine.decision.transition]]
+name = "contract-superseded"
+from = ["accepted", "accepted-with-conditions", "rejected", "evidence-requested"]
+to = "stale"
+by = "consumer"
+guard = "document.provisional == true and the bound contract was superseded (next iteration)"
+
+[[machine.decision.transition]]
+name = "subject-changed"
+from = ["accepted", "accepted-with-conditions"]
+to = "stale"
+by = "any"
+guard = "presented subject identity != binds.subject (same form: commit or digest) or contract.hash != binds.contract.hash or package.hash != binds.package.hash"
+
+[[machine.decision.transition]]
+name = "expire"
+from = ["accepted", "accepted-with-conditions"]
+to = "stale"
+by = "clock"
+guard = "now > validity.stale_after"
+
+[[machine.decision.transition]]
+name = "defeat"
+from = ["accepted", "accepted-with-conditions"]
+to = "invalidated"
+by = "consumer"
+requires = ["defeater.statement", "defeater.requirement"]
+
+[[machine.decision.transition]]
+name = "reassess"
+from = ["stale", "invalidated", "lapsed", "rejected", "evidence-requested"]
+to = "superseded"
+by = "consumer"
+requires = ["successor.id"]
+
+# ---------------------------------------------------------------------------------------------
+# Verdict ↔ disposition coherence (protocol.md §5.1) as STRUCTURED, EXECUTABLE rows: first match
+# wins, evaluated over MANDATORY dispositions only. The decision checker evaluates these rows
+# (never a second copy in code); check-states enumerates mandatory-status subsets × optional
+# subsets × {0, ≥1 conditions} against expected outcomes written independently of the evaluator.
+#   mandatory_any     : matches if any mandatory disposition has one of these statuses
+#   mandatory_all_in  : matches if every mandatory disposition is in this set
+#   mandatory_not_all : and not every mandatory disposition equals this status
+#   conditions        : "none" | "some" | "any"
+[[verdict_rule]]
+row = 1
+mandatory_any = ["unsatisfied"]
+conditions = "any"
+verdict = "rejected"
+
+[[verdict_rule]]
+row = 2
+mandatory_any = ["insufficient-evidence"]
+conditions = "some"
+verdict = "evidence-requested"
+
+[[verdict_rule]]
+row = 3
+mandatory_all_in = ["satisfied", "satisfied-with-conditions", "waived"]
+mandatory_not_all = "satisfied"
+conditions = "some"
+verdict = "accepted-with-conditions"
+
+[[verdict_rule]]
+row = 4
+mandatory_all_in = ["satisfied"]
+conditions = "none"
+verdict = "accepted"

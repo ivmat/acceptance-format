@@ -1,0 +1,15 @@
+{
+  "note": "synthetic blind-diagnosis evidence for the acceptance/troubleshooting example pair; not a real run",
+  "rows": [
+    {
+      "fault_class": "example-fault",
+      "id": "s1",
+      "outcome": "isolate_fault_domain"
+    },
+    {
+      "fault_class": "example-fault",
+      "id": "s2",
+      "outcome": "isolate_fault_domain"
+    }
+  ]
+}

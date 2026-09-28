@@ -1,0 +1,457 @@
+{
+  "family_version": "0.3.2",
+  "files": {
+    ".gitignore": {
+      "sha256": "32346fe2d347b392243164173413168fba6e3f02e364c37bc425913866368afe"
+    },
+    "ASSUMPTIONS.md": {
+      "sha256": "8f29c5619009ea1d9cfff11c5f66d39c97368b8dd5233108119ff37ba186bfe5"
+    },
+    "CHANGELOG.md": {
+      "sha256": "d07379a9a6c3cae3e1f42a10ad13c2b1024270f51043f03caad09cb14588b454"
+    },
+    "CLASS-LOCK.toml": {
+      "sha256": "7a2c8cdf4e95816c20daf0bd00429482d0d6e7f4df4e1cdcadaf4abf80ef7bef"
+    },
+    "KNOWN-LIMITS.md": {
+      "sha256": "58d7b1f42055e40cc2513407db7470e67a8b2f8cd228750b98ed317a3cc9013e"
+    },
+    "LICENSE-NOTES.md": {
+      "sha256": "e08c3c751db79dcc92bc48720340cc9c48d2f1c3d03c2c1f2ec9ededf4f4e676"
+    },
+    "README.md": {
+      "sha256": "2b9af17c889df6669ad87a49ef7639747a1063fe196a4707f9318eb97e00116b"
+    },
+    "ROADMAP.md": {
+      "sha256": "541dcc5d13175cabc4480e0fcebfbeb56e235b2cc060ed0b8b4d24ad84f1994f"
+    },
+    "WHY.md": {
+      "sha256": "2f55b05c4369d50ea378f439a82f6893c503b044b031a88cb4d81fe320efcd70"
+    },
+    "docs/CASE-STUDY.md": {
+      "sha256": "492741513f6d911c8233f23f0cb28383341626e5e7506909e2e9c513acd0cac1"
+    },
+    "examples/weighted-toy/README.md": {
+      "sha256": "a011dd8cf0876d6266a70746477ad070954e477e3c8044d61bc8d1dbd595baf0"
+    },
+    "examples/weighted-toy/SPEC.md": {
+      "sha256": "ca11e38941ebdc0ccc7a85a759fba178dfb540f7e21a8021e55d405b3f86df16"
+    },
+    "examples/weighted-toy/acceptance-contract.toml": {
+      "sha256": "e654d2ff8416ac6881f8d7c21105e442388a334d8b1e4a6b83f5d59210d746db"
+    },
+    "examples/weighted-toy/acceptance.toml": {
+      "sha256": "a9a68440db31ee17581d77a2ddadda74f3ee20f4dad337a169db989cea86e163"
+    },
+    "examples/weighted-toy/evidence/test-slug-run.txt": {
+      "sha256": "bec5e6f215998adc4689c053db64cd0811fe82ce1ebfd8829d1bed832a057bda"
+    },
+    "examples/weighted-toy/slug.py": {
+      "sha256": "8b443b7ebc288ea8c78930bd3e60a7442df2201ad8c9eb695afe3d4c35f446f5"
+    },
+    "examples/weighted-toy/test_slug.py": {
+      "sha256": "f44f71598aec2633c702329503c735328e910a54aff48caa135cbccb05de0bc3"
+    },
+    "format_acceptance/examples/SPEC.md": {
+      "sha256": "c94d4da2bbe191e2ecd395a41979039ad685b3e43a8c32537501ac178dbc0d0b"
+    },
+    "format_acceptance/examples/minimal.acceptance.toml": {
+      "sha256": "c1c669c1defbbaa93ec9e27c529b916c2cb3ef18177eb695437c15d3578687e7"
+    },
+    "format_acceptance/profiles/bindings/README.md": {
+      "sha256": "62117a8d961db80e7696978329e8bcb7c89d9178070da7537684d3854ca78b47"
+    },
+    "format_acceptance/profiles/bindings/built-artifact.md": {
+      "sha256": "8f82fedac006b0b7b6b6519f920f8112349e40a99fb0a80e4470850ee304befc"
+    },
+    "format_acceptance/profiles/bindings/code.md": {
+      "sha256": "7eec61de6bbf4360c730b0466d5407d686d4b2a060a43505a6591f85148406e0"
+    },
+    "format_acceptance/profiles/bindings/code/rust.md": {
+      "sha256": "8738d5c67f53d9281ede539621ef734d989c71045e94820742534ad757d1c844"
+    },
+    "format_acceptance/profiles/bindings/document.md": {
+      "sha256": "dd0eb75229d961ac3a11f213140454bb3dee68f6a6f8003e7fcff776bfc7df04"
+    },
+    "format_acceptance/profiles/bindings/estate-element.md": {
+      "sha256": "71ef6c62e651d158aaf5ba2cca68e6808fbb90be5f191a4bc1f9b015accc7234"
+    },
+    "format_acceptance/profiles/bindings/tool.md": {
+      "sha256": "50806f355e2dbca9f66752c1322562019d2d3c58100d1c6416f9566b6cc24397"
+    },
+    "format_acceptance/profiles/conformance/PROFILE.md": {
+      "sha256": "d3c88174a1b492c718ae3bbf98b46d2e8cf0da3ce51067bfd39c3d4ba8873469"
+    },
+    "format_acceptance/profiles/conformance/code/rust.md": {
+      "sha256": "5337cf981fbbcb5dad19c58796fbb217c6771244263dea049fe78265d1e4d8fd"
+    },
+    "format_acceptance/profiles/conformance/examples/README.md": {
+      "sha256": "8f8d8befa8976da1ad777991659a1c24c4cc6aead753f396f2cba155761c8ad1"
+    },
+    "format_acceptance/profiles/conformance/examples/invalid/acceptance.toml": {
+      "sha256": "010d0a06671b15b1676e9a773584e254323bb9425b03875dc0c9a58854d2f5c8"
+    },
+    "format_acceptance/profiles/conformance/examples/invalid/applicability.toml": {
+      "sha256": "b2927c95bca574254704595176d886a8828c36fab7c464d2e67ed16bdb30e220"
+    },
+    "format_acceptance/profiles/conformance/examples/invalid/evidence/clause-1.json": {
+      "sha256": "ffcc3b4cef4b80d7a815d9dcf2e14bbc4605bace0d2e9074d4ea69c5678c5e04"
+    },
+    "format_acceptance/profiles/conformance/examples/invalid/evidence/clause-5.json": {
+      "sha256": "195b1a5aa552b6d917359414116c1c306dece7a968c16b59451a55fd1b0b5e98"
+    },
+    "format_acceptance/profiles/conformance/examples/invalid/standard.clauses.toml": {
+      "sha256": "975c9d437ab2ae7557bf4c3d1845d9743c03a2cadf552685cf69f7bb6099317d"
+    },
+    "format_acceptance/profiles/conformance/examples/valid/acceptance.toml": {
+      "sha256": "153e12b0a8850253ae4ee861785e21f79af2193f7b4dffb50b1030ad888e2420"
+    },
+    "format_acceptance/profiles/conformance/examples/valid/applicability.toml": {
+      "sha256": "b2927c95bca574254704595176d886a8828c36fab7c464d2e67ed16bdb30e220"
+    },
+    "format_acceptance/profiles/conformance/examples/valid/evidence/clause-1.json": {
+      "sha256": "ffcc3b4cef4b80d7a815d9dcf2e14bbc4605bace0d2e9074d4ea69c5678c5e04"
+    },
+    "format_acceptance/profiles/conformance/examples/valid/evidence/clause-5.json": {
+      "sha256": "195b1a5aa552b6d917359414116c1c306dece7a968c16b59451a55fd1b0b5e98"
+    },
+    "format_acceptance/profiles/conformance/examples/valid/standard.clauses.toml": {
+      "sha256": "975c9d437ab2ae7557bf4c3d1845d9743c03a2cadf552685cf69f7bb6099317d"
+    },
+    "format_acceptance/profiles/conformance/standards/README.md": {
+      "sha256": "6ed0bf9e4d37d4a0f14d6e40fd3cb0aa772a12fe008b065112bc26071c62d0fa"
+    },
+    "format_acceptance/profiles/conformance/standards/itu-t-x680-2021.clauses.toml": {
+      "sha256": "3a194f504818d7f4236b9ba54b99890807a8e00520012a0757dd0ce6c7c97ab6"
+    },
+    "format_acceptance/profiles/conformance/standards/itu-t-x690-2021.clauses.toml": {
+      "sha256": "970a5dd74b2f8908c9c68561454bbdd15a7f82f3c6e7d339cde148cd2307d921"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc3279.clauses.toml": {
+      "sha256": "64d9ae6123df0a8ada5813808d985e799314f40a71e6b69c086913210b7d8532"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc5208.clauses.toml": {
+      "sha256": "b373b73c05b3098789e270414ade9caccfe2faa44427bae4ebbd7fe5814c30a0"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc5280.clauses.toml": {
+      "sha256": "20b13c755a6fbf2e79137b040cb3392f21fca51d84020123f3cdfccb27f5cede"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc5480.clauses.toml": {
+      "sha256": "d29cd806c0380300b69817d11ae50bdde33bf4735dc90d60270d9a1ae9bcbcec"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc5915.clauses.toml": {
+      "sha256": "6cdc1864c1a55c752ba4d2afbbb36f6183219fcf2f2991dd07a21e1dda399cc0"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc5958.clauses.toml": {
+      "sha256": "db83a5ea650c784fce4d44005248cb43316b595a2453d95f2e4cb15c80684819"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc8017.clauses.toml": {
+      "sha256": "cbd57c819d93577b74684df821c69b8afd3c5aa0d4494a12d2320725f4796c59"
+    },
+    "format_acceptance/profiles/conformance/standards/rfc8410.clauses.toml": {
+      "sha256": "d3201acb0c2abd55118c8afaaa3aaf03f6e8baecc06debd2a2d1f45fbe4fe518"
+    },
+    "format_acceptance/profiles/troubleshooting/PROFILE.md": {
+      "sha256": "3629ff114ec98380971acceb7f8c8a1a15aaf4484435734c19571546f1e70c95"
+    },
+    "format_acceptance/profiles/troubleshooting/examples/SPEC.md": {
+      "sha256": "83205490e98a0bfc048980984ecce3792575a2d7c1016e738ae3a2ead5e16d82"
+    },
+    "format_acceptance/profiles/troubleshooting/examples/evidence/results.json": {
+      "sha256": "8a1d7444ad790ef665f06d4eaeefe357f7acfe96599f1d2ea0caf5c75565958c"
+    },
+    "format_acceptance/profiles/troubleshooting/examples/invalid.acceptance.toml": {
+      "sha256": "cc87f2988c5de9c6776ab621ee79d4e47d147fa3be82eba300f29417e5e3eb5a"
+    },
+    "format_acceptance/profiles/troubleshooting/examples/valid.acceptance.toml": {
+      "sha256": "1ddaa038316f3c87cb363d9674a8c285a9496b37b4b6934684e1a2eeb8855099"
+    },
+    "format_acceptance/profiles/verification/PROFILE.md": {
+      "sha256": "21fab45409cfcae0a7f1fc49916c97c1b713e83f80337e2f8891ae3944d05eed"
+    },
+    "format_acceptance/profiles/verification/code/rust.md": {
+      "sha256": "ba6fc32bd0bded73effc262336e8de6894e116f062dda08d8a6622327f20cd83"
+    },
+    "format_acceptance/spec/0.1-DRAFT.md": {
+      "sha256": "28c0180bdd309cea3676db33f2b72d09ab780f6bd8e063410cefeca6f49f8092"
+    },
+    "format_acceptance/spec/assurance-bands.md": {
+      "sha256": "10daec1c593a653ae0ff3118d8d05a48c8c419fa39f630254acf8e4dd6d0951a"
+    },
+    "format_acceptance/spec/core.md": {
+      "sha256": "1cfa1725d2e515aa609e5a190d8f5746567525bf43b86ca0bc77119822476c73"
+    },
+    "format_acceptance/spec/coverage-ledger.md": {
+      "sha256": "5dc3c4e1897607cd77405ea568f78bc243341d305cd2224f740ed01738ec8b3d"
+    },
+    "format_acceptance/spec/evidence-types.md": {
+      "sha256": "008755ebee8c5cb64388145bb4e61e882a1204948872fa556ef939960088b946"
+    },
+    "format_acceptance/spec/format.md": {
+      "sha256": "f13a2ba8dc02c076a3fb3a5a30b0426e0159c4df6f356a5b4fe6efe2c70c1a62"
+    },
+    "format_acceptance/spec/hash-domains.md": {
+      "sha256": "8be5a51e09ee8932e24ebbf71219a8962b6f41623d6e111e74068a16ee09b40f"
+    },
+    "format_acceptance/spec/profiles.md": {
+      "sha256": "ec8a49a383b77e6b984450d54f737cd9be062edee89933109200b976faec0b3b"
+    },
+    "format_acceptance/tools/OBLIGATIONS.md": {
+      "sha256": "be0e0a39f686cb0f44305159b48b688d8a3316142944f6cccc35a410cde19d65"
+    },
+    "format_acceptance/tools/acceptance_grammar.py": {
+      "sha256": "2dda7a695766029e96ae4aaf20a7c2c61be87bbc91d1e27885c9d2baf76e12d1"
+    },
+    "format_acceptance/tools/bindings/__init__.py": {
+      "sha256": "1c20dc0a311069219fffd2b41ed3561364d1c21679640c04597d4573f9c24787"
+    },
+    "format_acceptance/tools/bindings/code.py": {
+      "sha256": "65eeb7f7f370cb1be99c56180096e4917b13fedf32eeef9e75e3bde1bdbdc5dd"
+    },
+    "format_acceptance/tools/bindings/code_rust.py": {
+      "sha256": "f9b17ea1982fa26527ee828e54138346460bdf7b61ad4a5b76d3b41287b00fb8"
+    },
+    "format_acceptance/tools/check_acceptance.py": {
+      "sha256": "c62cac8c0a60ce408f660793012bca4ee8f38fdd43c7e020d2fd768731a291d0"
+    },
+    "format_acceptance/tools/check_core.py": {
+      "sha256": "533229b3d64331dde96e363860512e6d503b3a9086a968dad8e825bcf42be0dd"
+    },
+    "format_acceptance/tools/check_execute.py": {
+      "sha256": "a4a1b42a85bc0272cc935d5908387e2bde6933187c35e561caebb619fc78abd9"
+    },
+    "format_acceptance/tools/check_ledger.py": {
+      "sha256": "15ef9fa9ff7e961e9e88f8d7e9701b4f756505a251e0ebf7144dbd24b561db37"
+    },
+    "format_acceptance/tools/check_parity_selftest.py": {
+      "sha256": "e2d4173c1473675b04ce7c6753b4f8dc218b30c549b57ecfa55950c22f3bcc62"
+    },
+    "format_acceptance/tools/fixtures/binding_cases.py": {
+      "sha256": "8ff4a9aff200508eed687e648d3cec481c81c86fa8b7ebd04019ce4eb2af3f18"
+    },
+    "format_acceptance/tools/fixtures/core_cases.py": {
+      "sha256": "8fb119ec4fee6f7663b0bc1bb827257fccd89778ff37def54f229fca2c639394"
+    },
+    "format_acceptance/tools/fixtures/legacy.py": {
+      "sha256": "c61fbe18fbaae4e2db66efbd25dacc81bd7ec1e45a6fa8dfd0d6b9b26fc8bbc7"
+    },
+    "format_acceptance/tools/fixtures/r2_cases.py": {
+      "sha256": "93b4a380eabd48c030538382cc97ef46a7faa8feca49b1154611fc063e3c7f66"
+    },
+    "format_acceptance/tools/fixtures/r3_cases.py": {
+      "sha256": "4663c63c2cd64ac2a62a266a7b9d1f429f739263dabb8fea4f066356fbdadf87"
+    },
+    "format_acceptance/tools/fixtures/review_cases.py": {
+      "sha256": "c719890b9cae14386c5bc0a2dfd47edb893eb776f663d4ea556b494498da6346"
+    },
+    "format_acceptance/tools/fixtures/troubleshooting_cases.py": {
+      "sha256": "ca9ad05b9e818faf0a9c44b1f4a94402a3d1ec88baacd5b9fd546d2d8990321a"
+    },
+    "format_acceptance/tools/fixtures/troubleshooting_record.py": {
+      "sha256": "758bf70b51efebce3ba7e2605a412b66918639d4f7bdb4923e1d09da2ea3002f"
+    },
+    "format_acceptance/tools/hashdomains.py": {
+      "sha256": "7b3d3d0a8bdee2af59d30ca35f648b3728a8723cd8d898d1ac6c561cf0a7024b"
+    },
+    "format_acceptance/tools/profiles/__init__.py": {
+      "sha256": "98811913fcfc6e07091f38196df1712d350c7df3b00f1c008821b9a58c3657a0"
+    },
+    "format_acceptance/tools/profiles/conformance.py": {
+      "sha256": "0a0494367a2141347b8f83d7b16668153471eaa27dd804a38c3b937dcd65a80f"
+    },
+    "format_acceptance/tools/profiles/troubleshooting.py": {
+      "sha256": "0fe29309b0982f7d05a5abfb8f8ec1387b7b8ca76d194100fb509180d8d21248"
+    },
+    "format_acceptance/tools/profiles/verification.py": {
+      "sha256": "08899022cc6f4a979fa791c1638ebb04bb900a2dfcd8cee06eadaf257fe7f61d"
+    },
+    "format_acceptance/tools/spec_inventory.py": {
+      "sha256": "ffa2c5f1f96890c9caa8656890c1d41e71c37b7d1364cf8c26c9ddb95a2d53ba"
+    },
+    "gates/check_adoption_templates.py": {
+      "sha256": "9554bf361296a4f3e05fed999e990d1768b02f9d2d7c18abc3d7d509cb9032ab"
+    },
+    "gates/check_assumptions.py": {
+      "sha256": "94424dd31469b6c125e9e427aacc795ad3eb625fa738b21242c95ae532271083"
+    },
+    "gates/check_build_inputs.py": {
+      "sha256": "2ca2c1a91e417cbddb29e88955b1393c612e9f61e13ef54878a34af6ddc6dd51"
+    },
+    "gates/check_class_lock.py": {
+      "sha256": "8ba52f56ed3e6344a09635d15c594941336fa69e23a0456a3fbb2d4f9daab3bd"
+    },
+    "gates/check_content_leaks.py": {
+      "sha256": "4fb9cb31ac34abdebc1304cc4c8ed59fadd033c8a476c72957fce2faac9d32b5"
+    },
+    "gates/check_decision_expiry.py": {
+      "sha256": "352956a8ecf70ddba49ff4f71d7b3bb7d1e7b32ac9ab64f7d638fd9081877637"
+    },
+    "gates/check_export_closure.py": {
+      "sha256": "7a0f555292d570b450a8620cd33734dde26e393e3f6ace016b6e6e46159291ca"
+    },
+    "gates/check_public_leaks.py": {
+      "sha256": "ccecd15e3799e02a0ca6d8b3cb3a04ccab2a8f1009642313e27821f76c33ba42"
+    },
+    "gates/leak_baseline.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    "gates/run_all.sh": {
+      "sha256": "8a2e2b7f03092f852809705762d4a56f986175a014a8afef65a8d1db33d58442"
+    },
+    "gates/test_check_content_leaks.py": {
+      "sha256": "31ed1e33934e0a1ab79d2f22f7e50dea66f9a7441a1ad5d30917b2a2a46b5711"
+    },
+    "protocol_acceptance/adoption/KANI-FV-ADOPTION.md": {
+      "sha256": "535422b8e0a53bf5047eccb4775705abf18ee6f2ad730325d76e3d7d44813209"
+    },
+    "protocol_acceptance/adoption/templates/kani-crate.acceptance.toml": {
+      "sha256": "3e258daeef9f5ea3139a4965d2337227f5830729e217ef10257e0abeaaa098e2"
+    },
+    "protocol_acceptance/adoption/templates/kani-crate.contract.toml": {
+      "sha256": "31e071b48428b251292e6d24724152ebf48490c640a763e6db7ca4f0eefe079c"
+    },
+    "protocol_acceptance/adoption/templates/selftest_templates.py": {
+      "sha256": "2ce51f9d2d02d535be59dfc109bed7f4c573eea622743b8e7fe055908c1e4104"
+    },
+    "protocol_acceptance/examples/rust-delivery/Cargo.lock": {
+      "sha256": "30cd2e063e99ab3ef574e4e0b689f47d5bc2be53d63bb7c0049742ab05d6202d"
+    },
+    "protocol_acceptance/examples/rust-delivery/README.md": {
+      "sha256": "70e23663c5640737264c939e29cb9fbb564cb4002890ca8da893365855c6f48f"
+    },
+    "protocol_acceptance/examples/rust-delivery/acceptance-contract.toml": {
+      "sha256": "6308dac08add13a38776e6b8076e3636a061176e89f6775e3105736d4909a3b4"
+    },
+    "protocol_acceptance/examples/rust-delivery/acceptance-decision.toml": {
+      "sha256": "7e8926b903257b396779b7deaa138e30cc07d90a2040f5c99fcf841c25f09b25"
+    },
+    "protocol_acceptance/examples/rust-delivery/acceptance.toml": {
+      "sha256": "c69502e3d985aa3854790e3bc7889d6c83e9f9bf5c71c8ff8bf04f86eece4ef8"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/cargo-doc.txt": {
+      "sha256": "366f01861c43a72ab01137d3960993bd5a5e32f146d4d1851c08ebb665de9704"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/checksum-test.txt": {
+      "sha256": "9d7b586e270d416fd4ad7c9b99ed2dc29df90645bc65835fd2c4ae6c0e11b667"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/clippy.txt": {
+      "sha256": "01455c00e1683ec8cb39875af03aa02aafa66d0306f7f87f63adf2a593886a40"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/kani-validate-never-panics.txt": {
+      "sha256": "5cc65a30cffe72462e4ff856be149f48f2a456e0ae83aadc726ed513b92013d7"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/malformed-test.txt": {
+      "sha256": "87b046c2c5994ff0fd3682f1debbbd04ffa62787eed634daf63920c35acacdb2"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/no-panic-test.txt": {
+      "sha256": "8dad54fa3c695ee2e9cff6f124f762bd80e986ca0ac22643e909423ebb932eb8"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/r1-mutation-control.txt": {
+      "sha256": "5f7b72cd5dd2af467f29646e7708e99e15dfc8c58954fc3d1b1353da57cc5892"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/r2-mutation-control.txt": {
+      "sha256": "d8595df5c700ac6731dfebe8f6f81d8e31a77d7179d52f4e5e406c7782b51a95"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/r3-mutation-control.txt": {
+      "sha256": "b946b5c1a98dfe7e2a43c405b4053b0b02383d3377525c4bcd832caf9b148d6c"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/r4-mutation-control.txt": {
+      "sha256": "34cb0e857b3e418d992d9a105aff3028156a98157fc79a9808a810f2c8afbc84"
+    },
+    "protocol_acceptance/examples/rust-delivery/evidence/r6-mutation-control.txt": {
+      "sha256": "4fef03ad87ce6158067d0b8e566cc444fe4d4d77b69c197f13faf15cef9d9b8a"
+    },
+    "protocol_acceptance/examples/rust-delivery/gen_package.py": {
+      "sha256": "2983ae7688895154ebffda4452a7951200b7b442c82b7c9f7df97dbf9dba1e00"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/.gitignore": {
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/Cargo.lock": {
+      "sha256": "30cd2e063e99ab3ef574e4e0b689f47d5bc2be53d63bb7c0049742ab05d6202d"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/Cargo.toml": {
+      "sha256": "3c19063a584f2f174764cade5857d7867fafa16ba6c982b56d58dc55e947a80b"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/src/checksum.rs": {
+      "sha256": "11fb9d711414fe31bf7a0c96e2b03275b709eb521acc01333ecdae4246eb08d6"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/src/lib.rs": {
+      "sha256": "b815fcf39d47698bbaf0a1e5de4c875cf1bf268bf832accaf425af5139a92216"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/src/syntax.rs": {
+      "sha256": "e28498fc9447428be53e92dc25ec8d499633fa353d1c7c52fa01998dc0cc5624"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/tests/checksum.rs": {
+      "sha256": "700c630c14526adee302bcf3534dceceef00bac1535eaa3d8d0b7128a8446a28"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/tests/malformed.rs": {
+      "sha256": "c0ce589a824f8ad94bba74bd065702edbadf76a0c378f470bba46621866eca24"
+    },
+    "protocol_acceptance/examples/rust-delivery/iban-check/tests/no_panic.rs": {
+      "sha256": "a7b5e7975f2b3022bb7ace4a1263431ce25e6bbd363b68ebf76a7f10c0536385"
+    },
+    "protocol_acceptance/examples/rust-delivery/impact-events.jsonl": {
+      "sha256": "7c06c47a2a1da2b0045368489050d4ba86bd9506365aa35924fd40ede62c485b"
+    },
+    "protocol_acceptance/examples/rust-delivery/make_decision.py": {
+      "sha256": "077291360b686e3813744587b32897f190eb612ed7b2b4a367651ea40fefd7c5"
+    },
+    "protocol_acceptance/examples/rust-delivery/run_example.sh": {
+      "sha256": "033ac4d90dec7271d6545377f529e227d2fea5020333cfd1469ef3ee6f70a498"
+    },
+    "protocol_acceptance/examples/rust-delivery/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/spec/adapters/worker-brief.md": {
+      "sha256": "a9f4b2bb3bf89c11b7ee615cb1619631fb8ad42a651672f6d178f0b3555c3c34"
+    },
+    "protocol_acceptance/spec/assurance-classes.toml": {
+      "sha256": "9c2c0ad6f5db2ab1b0639a68dcc5b6390af3e1f29e5ed779a5db4033adc73b2d"
+    },
+    "protocol_acceptance/spec/protocol.md": {
+      "sha256": "740f841fd6ed7bad5a631d087b5f059e265444136ddd51ed32abc36c05207eb3"
+    },
+    "protocol_acceptance/spec/stack.md": {
+      "sha256": "1eefb70bc6c9c44e7bfedfd83bc5b8d2497b4713753bac9c5bae9e06e244edfa"
+    },
+    "protocol_acceptance/spec/states.toml": {
+      "sha256": "e536de5f8941e38b2e55b592d8885556a6f9fc2444aee756053e2acfc97ccc31"
+    },
+    "protocol_acceptance/tools/acceptance_protocol.py": {
+      "sha256": "6beb6ad251f133c84548100c1c09d1ac0049fa55b3f429fb10f583c6fc382305"
+    },
+    "protocol_acceptance/tools/export_closure.py": {
+      "sha256": "d9816491da50b9870a23d1c478c11345195639ea5cd67cd3a3dd5a2e435047d4"
+    },
+    "protocol_acceptance/tools/fixtures/__init__.py": {
+      "sha256": "f93dc3bbb19824ac0947f8ea5d26a87deb6afc97080f05d60f34a98c42aa175f"
+    },
+    "protocol_acceptance/tools/fixtures/_support.py": {
+      "sha256": "8b325716418dba54c126578c918637e70a242d1456aa14bfff04922841dcbfa0"
+    },
+    "protocol_acceptance/tools/fixtures/assurance_class_chain.py": {
+      "sha256": "efde970fd0a11b5f8d3ee966afae50e69fd63d6354d9f362f076e281e2a4798b"
+    },
+    "protocol_acceptance/tools/fixtures/conformance_chain.py": {
+      "sha256": "2b193a9fcd2d02de6f51d94a2f3c987bfa992f0c55e07640e5852bd574024be8"
+    },
+    "protocol_acceptance/tools/fixtures/troubleshooting_chain.py": {
+      "sha256": "88a036d3884c80851b8af65a1806c2ae17c01b4e7645b6d87deaff1cc2dfe78f"
+    },
+    "protocol_acceptance/tools/fixtures/verification_chain.py": {
+      "sha256": "1ed21f8195049184d976a77207d345da68bbb813174f9359cd878cda6a6b9cec"
+    },
+    "protocol_acceptance/tools/m11.py": {
+      "sha256": "7ed2989b869ab4a0be9a8c2a72c9ba663fe19cadbe27ffc15c5fbbde37c9080a"
+    },
+    "protocol_acceptance/tools/profiles.py": {
+      "sha256": "e432f9ccf286fe56d60074ea7252f0adedb8b5b0b42b98929dc464befdfd2de9"
+    }
+  },
+  "source_commit": "5007576e1fcb17d4b2749afb5b163707c0910cd2",
+  "source_dirty": false
+}

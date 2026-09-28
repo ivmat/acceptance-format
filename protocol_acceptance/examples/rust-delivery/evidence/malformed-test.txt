@@ -1,0 +1,17 @@
+   Compiling iban-check v0.1.0 (<crate>)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.75s
+     Running tests/malformed.rs (target/debug/deps/malformed-a9d6891aeef87441)
+
+running 9 tests
+test bad_character_is_reported_for_lowercase ... ok
+test bad_character_is_reported_for_a_symbol ... ok
+test bad_checksum_on_otherwise_well_formed_input ... ok
+test bad_length_too_long_for_country ... ok
+test bad_length_too_short_for_country ... ok
+test each_error_kind_is_independently_reachable ... ok
+test unknown_country_not_in_table ... ok
+test unknown_country_numeric_prefix ... ok
+test unknown_country_on_short_input ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

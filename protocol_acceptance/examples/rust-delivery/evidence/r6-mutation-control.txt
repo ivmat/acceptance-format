@@ -1,0 +1,11 @@
+ Documenting iban-check v0.1.0 (<crate>)
+error: unresolved link to `totally::bogus::path`
+  --> src/lib.rs:31:11
+   |
+31 | //! See [`totally::bogus::path`] for details.
+   |           ^^^^^^^^^^^^^^^^^^^^ no item named `totally` in scope
+   |
+   = note: `-D rustdoc::broken-intra-doc-links` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(rustdoc::broken_intra_doc_links)]`
+
+error: could not document `iban-check`

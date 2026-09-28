@@ -1,0 +1,3 @@
+ Documenting iban-check v0.1.0 (<crate>)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.26s
+   Generated <crate>/target/doc/iban_check/index.html

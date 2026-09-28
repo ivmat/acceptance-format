@@ -1,0 +1,152 @@
+# CLASS TEXT LOCKED at 0.3.2 (2026-09-27): frozen; a change needs a new [[lock]] entry in CLASS-LOCK.toml
+# (gates/check_class_lock.py). Locked is not ratified.
+# assurance-classes.toml — the "baseline" assurance-class table (protocol.md §3.7).
+#
+# CLASS-RUNG DATA, read generically by `acceptance_protocol.py` (protocol.md P11: the core reads
+# only core fields). This file names no profile as a *requirement*: `required_meaning.profile`
+# values are profile ids, which is the one place profile vocabulary is allowed to appear IN DATA
+# (protocol.md P11's own carve-out: "a package's claim vocabulary ... the core never interprets
+# except through the profile's published mapping" — this table is that published mapping for
+# `required_meaning`, never a hard-coded profile check in the tool itself).
+#
+# One scheme, "baseline", five ordinal levels 0..4. Each level is the MINIMUM floor set a
+# `firm` requirement of a `final`-phase contract declaring this class (or a stricter
+# per-requirement override) must reach (protocol.md §3.7, the maturity rule).
+# Anchor: `baseline/1` is the reference BOTTOM case (the
+# radio app / a game — not sold, a bug is cheap); `baseline/4` is the reference TOP case (an
+# investing application — money moves or is advised on). `baseline/0` sits below the bottom
+# anchor (a smoke-tested prototype, not yet at "shippable game" strength).
+#
+# Field meaning, per level:
+#   min_tier                    - the WEAKEST `epistemic_tier` a firm requirement's floor may set
+#                                  (protocol.md §6.1: T1 strongest .. T5 weakest)
+#   weighted_required            - `[requirement.evidence].weighted_required` floor, minimum
+#   control_required             - `[requirement.evidence].control_required` floor, minimum
+#   recipe_required              - `[requirement.evidence].recipe_required` floor, minimum
+#   independence                 - `[requirement.evidence].independence` floor, minimum, on the
+#                                   4-value ordering `none < author-not-producer < consumer-run <
+#                                   third-party` (protocol.md §3.7 -- the fourth value)
+#   freshness                    - `[requirement.evidence].freshness` floor, minimum, on
+#                                   `any < delivered-revision`
+#   build_inputs_required        - `[requirement.evidence].build_inputs_required` floor, minimum
+#                                   (B20's build_inputs guard is opt-in at the format; this floor
+#                                   makes it MANDATORY on a
+#                                   weighted claim's relied-on evidence at the level that sets it)
+#   tool_qualification_required  - `[requirement.evidence].tool_qualification_required` floor,
+#                                   minimum (the checking tool itself is qualified,
+#                                   declared only in 0.3 -- shape, not qualification content)
+#   coverage_min                 - OPTIONAL `{ metric, value }` floor, minimum (a
+#                                   structural/proof-coverage metric floor); absent = no coverage
+#                                   floor at this level. `metric` is one of the format's B21
+#                                   registry (statement, branch, decision, mcdc, proof-obligation,
+#                                   roughly DO-178C-inspired ordering, weakest to strongest);
+#                                   `value` is a fraction in [0, 1] (never named `percent` --
+#                                   format.md rule 3 / core.md B7 bans that field name on every
+#                                   assertion surface).
+#   bounds                       - DOCUMENTARY per-level value ("any" | "bounded" | "unbounded"),
+#                                   carried for a reader and for a future generic mechanism.
+#                                   RESIDUAL ("not a gap in the format" -- bounds is
+#                                   profile vocabulary today, reached only through a cross-cutting
+#                                   requirement's `demands.fields`, protocol.md §6.4; there is no
+#                                   generic per-item core field for it without breaking P11's
+#                                   profile-blindness). NOT mechanically compared by the 0.3
+#                                   maturity rule -- documented here, enforced later if a generic
+#                                   mechanism lands.
+#   required_meaning             - list of `{ profile, when_kind? }`. `profile` MUST appear in the
+#                                   contract's `[acceptance].profiles_required` whenever the
+#                                   level applies; `when_kind`, if present, is a list of
+#                                   `[subject].kind` tokens -- the requirement applies only when
+#                                   the contract's subject kind is in that list (e.g.
+#                                   troubleshooting for application-delivery kinds);
+#                                   absent `when_kind` = unconditional. Checked at the
+#                                   CONTRACT level (profiles_required is not a per-requirement
+#                                   field), not per firm requirement.
+#
+# The table is designed MONOTONIC: every axis is at least as strict at level N+1 as at level N,
+# so a per-requirement override "may only RAISE" (protocol.md §3.7) can be checked axis-by-axis
+# and always agrees with a plain level-integer comparison. A future edit that breaks monotonicity
+# still gets the CORRECT (axis-by-axis) answer -- the tool never assumes the integer ordering.
+# `required_meaning` is covered by the same monotonicity check: every profile a
+# level requires, unconditionally or scoped by `when_kind`, must still be required at least as
+# broadly one level up -- checked by `check_assurance_table_monotonic`.
+
+[document]
+kind    = "assurance-class-table"
+scheme  = "baseline"
+version = 1
+
+[[level]]
+level                        = 0
+summary                      = "smoke-tested only: a claim exists and was looked at once, nothing else is asked."
+min_tier                     = "T5"
+weighted_required            = false
+control_required             = false
+recipe_required              = false
+independence                 = "none"
+freshness                    = "any"
+build_inputs_required        = false
+tool_qualification_required  = false
+bounds                       = "any"
+required_meaning             = []
+
+[[level]]
+level                        = 1
+summary                      = "automated tests exist and run, unweighted, over a fixed (bounded) suite -- the radio-app / game floor."
+min_tier                     = "T4"
+weighted_required            = false
+control_required             = false
+recipe_required              = false
+independence                 = "none"
+freshness                    = "any"
+build_inputs_required        = false
+tool_qualification_required  = false
+bounds                       = "bounded"
+required_meaning             = []
+
+[[level]]
+level                        = 2
+summary                      = "tests plus an independent review, delivered-revision fresh."
+min_tier                     = "T3"
+weighted_required            = true
+control_required             = false
+recipe_required              = false
+independence                 = "author-not-producer"
+freshness                    = "delivered-revision"
+build_inputs_required        = false
+tool_qualification_required  = false
+bounds                       = "bounded"
+required_meaning             = []
+
+[[level]]
+level                        = 3
+summary                      = "mechanical/structural evidence, consumer-run, a named re-run recipe, structural coverage floored, troubleshooting required for deployed artifacts."
+min_tier                     = "T2"
+weighted_required            = true
+control_required             = true
+recipe_required              = true
+independence                 = "consumer-run"
+freshness                    = "delivered-revision"
+build_inputs_required        = false
+tool_qualification_required  = false
+bounds                       = "bounded"
+coverage_min                 = { metric = "decision", value = 0.8 }
+required_meaning             = [
+  { profile = "acceptance/troubleshooting", when_kind = ["application-delivery", "deployed-application", "service", "tool"] },
+]
+
+[[level]]
+level                        = 4
+summary                      = "proof-grade, third-party independence, mandatory typed build inputs and a declared tool qualification -- the investing-app / money floor."
+min_tier                     = "T1"
+weighted_required            = true
+control_required             = true
+recipe_required              = true
+independence                 = "third-party"
+freshness                    = "delivered-revision"
+build_inputs_required        = true
+tool_qualification_required  = true
+bounds                       = "unbounded"
+coverage_min                 = { metric = "mcdc", value = 1.0 }
+required_meaning             = [
+  { profile = "acceptance/troubleshooting", when_kind = ["application-delivery", "deployed-application", "service", "tool"] },
+]

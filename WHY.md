@@ -1,6 +1,6 @@
 # Why this format exists
 
-*Role: motivation/context — indexed from README §1 and §3.*
+*Role: motivation/context, supplementing the README's overview and Known limits section.*
 
 This page distinguishes this format from related formats.
 
@@ -145,13 +145,14 @@ decide it.
 a claim. The layers can be combined.**
 
 An SBOM enumerates components. Build provenance and signed attestations establish that an artifact
-came from given sources and a given build without intermediate tampering. In SCITT (RFC 9943), an
-issuer signs an artifact statement, a transparency service applies a registration policy and adds
-it to an append-only log, and a receipt travels with it. in-toto's signed statement-and-predicate
-envelope has the same role. None checks artifact behavior.
+came from given sources and a given build without intermediate tampering. In SCITT (the IETF
+Supply Chain Integrity, Transparency, and Trust architecture), an issuer signs an artifact
+statement, a transparency service applies a registration policy and adds it to an append-only log,
+and a receipt travels with it. in-toto's signed statement-and-predicate envelope has the same role.
+None checks artifact behavior.
 
-The SCITT RFC separates registration from endorsement: issuers can make false statements, and
-registration proves only which issuer produced one. The standard therefore provides admission
+SCITT separates registration from endorsement: issuers can make false statements, and
+registration proves only which issuer produced one. The architecture therefore provides admission
 without vouching. Refusal concerns syntax and identity, including signatures, required headers, and
 issuer trust anchors, rather than whether claim content is checkable.
 
@@ -175,8 +176,8 @@ An audit is reviewed human judgment with provenance, equivalent to an admitted r
 criteria are ecosystem trust policies ("is this safe to deploy?"), not per-claim falsifiability.
 They require no deciding recipe, bounds, observed-failure witness, or declared specification axis. A
 crate enters `exemptions` because nobody audited it, not because a validator refused weight, though
-an exemption resembles a not-covered row. cargo-crev is further away: its documentation permits a
-review without an actual code review.
+an exemption resembles a not-covered row. cargo-crev is further away: a crev proof self-declares a
+`thoroughness` level, and its lower levels do not require reading the code.
 
 A vet audit can support an unweighted row. cargo-vet supplies cross-organization audit import with
 criteria translation, and crev supplies signed distributed proofs; this format supplies neither.

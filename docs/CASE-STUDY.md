@@ -1,13 +1,13 @@
 # Witness envelopes and coverage ledgers: case study
 
-*Role: quality evidence — indexed from README §10.*
+*Role: historical quality evidence — retained as an account of an earlier release.*
 
 For an overview, start with [`README.md`](../README.md).
 
-> **Status: working draft.** This format is neither frozen nor a standard. Current subjects are a
-> verified DER library, an open Rust standard-library verification challenge, and a model-checker
-> patch. Freezing requires demonstrated use in verification work *without overclaiming*. The
-> usefulness ledger records the criteria and supporting or opposing evidence.
+> **Historical status.** This account describes an earlier working draft, before the 0.3.2 locked
+> (not ratified) release. Its then-current subjects were a verified DER library, an open Rust
+> standard-library verification challenge, and a model-checker patch. The usefulness ledger and
+> freeze criteria described below are historical context, not statements about this release.
 
 ## Admit any claim; require evidence for weight
 
@@ -117,18 +117,17 @@ no gate derives it, so it is marked as judgement rather than derivation.
 
 ## Samples
 
-One envelope ships with this repo:
-[`examples/rs-verified-der/ENVELOPE.md`](../examples/rs-verified-der/ENVELOPE.md). It covers a verified
+The earlier repository shipped an envelope at
+`examples/rs-verified-der/ENVELOPE.md`; it is omitted from this release. It covered a verified
 DER decoder with 80 rows, both tiers in one table, and counts wired into the subject's gate.
 
-Planned unpublished samples include a **mostly unweighted** case reflecting its underlying work and a
-proof-free, pure-test-evidence case supported entirely by **mutation-controlled** tests, pending their
-subjects' disclosure sequence; both will be added after publication. Until then, the repository
-contains only its most mature subject and does not demonstrate the full maturity range.
+The earlier plan discussed a **mostly unweighted** case reflecting its underlying work and a
+proof-free, pure-test-evidence case supported entirely by **mutation-controlled** tests. Neither is
+part of this release.
 
 ## Quickstart
 
-[`QUICKSTART.md`](../QUICKSTART.md) gives the validation command and a worked example against a small
+[`README.md`](../README.md) gives the current validation command and a worked example against a small
 real subject.
 
 ## Design rules
@@ -170,8 +169,8 @@ vocabulary would absorb that pressure as new tokens. Separate axes record **the 
 
 ## Status, and what would change it
 
-This working draft is not a standard, has no version guarantee, and will change as samples provide
-evidence. The spec records the freeze criteria. The usefulness ledger records what building
-envelopes found and will provide the case for freezing.
+At the time of this case study, the working draft was not a standard, had no version guarantee,
+and was expected to change as samples provided evidence. The spec then recorded freeze criteria,
+and the usefulness ledger recorded what building envelopes found.
 
 Scaling from one library's claim surface to an entire tool remains an unproven design goal.

@@ -1,0 +1,104 @@
+# GENERATED FILE — DO NOT HAND-EDIT. Produced by make_decision.py, which RE-EXECUTED
+# every basis claim's self_verify.command for real (re-execute-all mode) and recorded the
+# actual observed tail below, rather than trusting the package's own say-so about itself.
+
+[document]
+protocol   = "acceptance-protocol/0"
+minor      = 0
+kind       = "decision"
+id         = "AD-2026-0001"
+issued_at  = "2026-09-28T09:35:35Z"
+issuer     = "Acme Payments Ltd / platform-lead"
+verdict    = "accepted-with-conditions"
+# provisional omitted: the bound contract's [acceptance].phase = "final",
+# so provisional must be absent or false (protocol.md §3.5) — omitted here.
+
+[binds]
+contract = { id = "AC-2026-0001", hash = "contract:sha-512:b3e147ff6b3ab30c5e2181f74f26e0bf8025261689d986ffd790b6e1116102e377e31e02d3f39eb52c393147ac9ac17515a0154de96be4002c15990f3c110bd3" }
+package  = { hash = "manifest:sha-512:fd3cb60a5574a64a334fa120cba8a67fe6fe8b3c2e2f0f48e575e1c088197ace8d5a1728863cc154fdeefaa5773869c641c6e33896f9842835e44c2eb758fdf7" }
+subject  = { commit = "d0692787f245f770d00b0f987b8df77d81b0bc27" }
+
+[verification]
+mode = "re-execute-all"
+
+[[verification.run]]
+claim    = "IB-001"
+command  = "cargo test --test malformed"
+observed = "test bad_length_too_short_for_country ... ok | test unknown_country_not_in_table ... ok | test each_error_kind_is_independently_reachable ... ok | test unknown_country_numeric_prefix ... ok | test unknown_country_on_short_input ... ok | test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+result   = "pass"
+at       = "2026-09-28T09:29:18Z"
+
+[[verification.run]]
+claim    = "IB-002"
+command  = "cargo test --test checksum"
+observed = "     Running tests/checksum.rs (target/debug/deps/checksum-4977eb0ec9bddc47) | running 3 tests | test a_wrong_checksum_is_rejected ... ok | test all_known_valid_ibans_pass ... ok | test flipping_one_digit_of_a_valid_iban_always_changes_the_verdict ... ok | test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+result   = "pass"
+at       = "2026-09-28T09:29:18Z"
+
+[[verification.run]]
+claim    = "IB-003"
+command  = "cargo kani --harness validate_never_panics"
+observed = "SUMMARY: |  ** 0 of 385 failed (19 unreachable) | VERIFICATION:- SUCCESSFUL | Verification Time: 374.8129s | Manual Harness Summary: | Complete - 1 successfully verified harnesses, 0 failures, 1 total."
+result   = "pass"
+at       = "2026-09-28T09:35:34Z"
+
+[[verification.run]]
+claim    = "IB-004"
+command  = "cargo clippy -- -D warnings"
+observed = "Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s"
+result   = "pass"
+at       = "2026-09-28T09:35:35Z"
+
+[[verification.run]]
+claim    = "IB-006"
+command  = "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps"
+observed = "Documenting iban-check v0.1.0 (<crate>) |     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.38s |    Generated <crate>/target/doc/iban_check/index.html"
+result   = "pass"
+at       = "2026-09-28T09:35:35Z"
+
+[[disposition]]
+requirement = "R1"
+status      = "satisfied"
+basis       = ["IB-001"]
+
+[[disposition]]
+requirement = "R2"
+status      = "satisfied"
+basis       = ["IB-002"]
+
+[[disposition]]
+requirement = "R3"
+status      = "satisfied"
+basis       = ["IB-003"]
+
+[[disposition]]
+requirement = "R4"
+status      = "satisfied"
+basis       = ["IB-004"]
+
+[[disposition]]
+requirement = "R5"
+status      = "waived"
+basis       = []
+conditions  = ["C1"]
+note        = "unbounded verification not yet available; bounded evidence accepted for this release under condition C1"
+  [disposition.waiver]
+  reason    = "bounded verification (dynamic samples for R1/R2, a 20-byte Kani proof for R3) accepted for this release; an unbounded argument is due before v2"
+  code      = "deferred"
+  authority = "Acme Payments Ltd / platform-lead"
+
+[[disposition]]
+requirement = "R6"
+status      = "satisfied"
+basis       = ["IB-006"]
+
+[[condition]]
+id            = "C1"
+requirement   = "R5"
+statement     = "Deliver an unbounded (or substantially extended-bound) verification argument for R1, R2 and R3 — a Lean/Aeneas extraction, or a Kani proof at or near the crate real 34-byte maximum, whichever lands first."
+due           = "2026-11-30"
+owner         = "producer"
+discharged_by = "a superseding package in which coverage(R5) = satisfied"
+
+[validity]
+stale_after = "2027-03-27"

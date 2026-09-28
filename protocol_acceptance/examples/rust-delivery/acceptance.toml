@@ -1,0 +1,554 @@
+# GENERATED FILE — DO NOT HAND-EDIT.
+#
+# Produced by protocol_acceptance/examples/rust-delivery/gen_package.py, which actually ran `cargo test`,
+# `cargo clippy`, `cargo doc`, `cargo kani`, and five real mutation controls (R1/R2/R3/R4/R6)
+# against protocol_acceptance/examples/rust-delivery/iban-check/ — apply patch, run, require the expected
+# verdict, restore the file byte-exactly, verify the restoration. Transcripts are in evidence/.
+#
+# SELF-REFERENCE (one-commit lag): [subject].commit names this repo's HEAD at generation time;
+# this file and evidence/ necessarily land in the commit AFTER that one. This run found that
+# iban-check/ was already committed, on its own, before this ran (the two-commit
+# re-stamp this example's README documents) — hence [subject].dirty = false below. Generated: 2026-09-28T09:28:54Z
+#
+# Kani tool identity: `cargo kani --version` on this install prints a bare semantic version
+# ('cargo-kani 0.67.0'), not a build/commit sha — evidence-types.md asks for "tool identity AT
+# BUILD GRANULARITY (commit, not version)" for kani-harness records; this install cannot supply
+# that, so `tool` below says so explicitly rather than inventing a commit. See README Friction.
+#
+# TRANSCRIPT NORMALIZATION (a disclosed transform, before persistence and record hashing): absolute
+# crate-root paths become <crate>; absolute repository-root paths become <repo>; any
+# macOS-user Rustup-toolchain prefixes become <rustup>/<toolchain>/; every other macOS-user prefix
+# becomes <users>/<name>/; and a remaining current-home prefix becomes ~. Thus each record_hash is
+# over the normalized evidence bytes exactly as delivered, never over machine-local transcript bytes.
+#
+# Re-run: python3 gen_package.py
+
+
+[format]
+id       = "acceptance/0"
+protocol = "acceptance-protocol/0"
+profile  = "acceptance/verification/code/rust"
+
+[subject]
+name   = "iban-check"
+kind   = "rust-crate"
+commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+dirty  = false
+
+[contract]
+id                 = "AC-2026-0001"
+hash               = "contract:sha-512:b3e147ff6b3ab30c5e2181f74f26e0bf8025261689d986ffd790b6e1116102e377e31e02d3f39eb52c393147ac9ac17515a0154de96be4002c15990f3c110bd3"
+requirements_total = 6
+
+[spec]
+path    = "acceptance-contract.toml"
+version = "AC-2026-0001@v1"
+axis    = "the requirements of contract AC-2026-0001"
+
+[coverage]
+clauses_total = 6
+claims_total  = 6
+
+# ===================================================================
+# IB-001 -- R1: malformed input is rejected
+# ===================================================================
+[[claim]]
+id            = "IB-001"
+clause        = "R1"
+item          = "iban-check/tests/malformed.rs"
+statement     = "Malformed IBAN values are rejected cleanly, with the specific IbanError variant matching the specific defect (charset, unknown country, bad length, bad checksum), in the fixed check order validate documents, and without a panic or crash on any of the fixtures below."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+bounds        = "bounded: 9 named malformed fixtures spanning all 4 IbanError variants"
+captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+  [claim.self_verify]
+  command = "cargo test --test malformed"
+  expect  = "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+
+    [claim.self_verify.watched_fail]
+    of_command = "cargo test --test malformed"
+    perturbed  = "neutered the charset-rejection branch in validate (changed `if !syntax::is_iban_byte(buf[i])` to `if false && !syntax::is_iban_byte(buf[i])`, so no input is ever rejected for its character set)"
+    observed   = "  left: 3\n right: 4\n\n\nfailures:\n    bad_character_is_reported_for_a_symbol\n    bad_character_is_reported_for_lowercase\n    each_error_kind_is_independently_reachable\n\ntest result: FAILED. 6 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `--test malformed`"
+    date       = "2026-09-28"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "tests/malformed.rs (9 named fixtures covering BadCharacter/UnknownCountry/BadLength/BadChecksum)"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 9
+  record      = "evidence/malformed-test.txt"
+  record_hash = "record:sha-512:92cd49a8d30f254ca34869060fef2a59a9e598915ca565adb962659d7a5c4e091abf2f53143b842c73a976fdca8748810a403698c2d32285e8e76d09d910e562"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:2183581e684d32f55fe04496f0756a6866c331e2d40ef98854732f16bed99e1d572c587595acd04b238407113803dc2587557cba97e53d4d9e36a23df091a688"
+    [[claim.evidence.inputs]]
+    path   = "src/syntax.rs"
+    digest = "subject:sha-512:d448a9f259496950174071e2f912d5c29750476745c91d5f93bb526ef248d7ae89215365b3f6fea329f18c9075f56519610f3adb3850beee653f28b39206115d"
+    [[claim.evidence.inputs]]
+    path   = "src/checksum.rs"
+    digest = "subject:sha-512:40f7a188df236707fba2dce497fbac971548b3baca16bb9e7c69d98413542315ca5778098793bc69d05f311a7a7080fd0dcc0f3ef23bc89e29d19b8491ab9785"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:b59bc67ca290673fe79eef2a1031b5b70668e1ddbfab4509e389aa46574fce2d26cce203a5f6d3c1b70ca31cddb36488986413ebca1c30e5036e132d3243e183"
+    [[claim.evidence.inputs]]
+    path   = "tests/malformed.rs"
+    digest = "subject:sha-512:9006aab31946e140dfba16c067dc3bc165bf5980f3fd01c926b45522c9a6dfb6d17d99520b067fa2a3c622b66864a5966b2a81d6d436a65ca2a83002c4d9ba0d"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:026337d136cd517ba24ae19f7bdd4cb85365f9851c7ffda9a928d8ad9101d718c4b8cc439c18d98840cda74271568549159f70292901e16e30ed96ccdedc7261"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "tests/malformed.rs (mutant: charset-rejection branch neutered)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (1-line mutation, reverted)"
+  cases       = 9
+  record      = "evidence/r1-mutation-control.txt"
+  record_hash = "record:sha-512:949d7d4a48173d7d2e8d9c73561c4fc7bd767e66bfcc6cb94b25e46e11e2ed6a7aa21b37979eec44ed1f012955ae388b3ee12b949488ce31586d5080eed9c261"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "IB-001"
+
+
+# ===================================================================
+# IB-002 -- R2: ISO 7064 mod-97-10 checksum is computed correctly
+# ===================================================================
+[[claim]]
+id            = "IB-002"
+clause        = "R2"
+item          = "iban-check/tests/checksum.rs"
+statement     = "The ISO 7064 mod-97-10 checksum is computed correctly, with no panic or crash on any tested input: 10 known-valid IBANs (one per supported country) pass, a corrupted check-digit pair is rejected, and flipping one digit of any known-valid IBAN always changes the verdict (200 LCG-driven trials)."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+bounds        = "bounded: 10 known-valid IBANs + LCG-perturbed sample of 200 (seed 0xC0FFEE)"
+captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+  [claim.self_verify]
+  command = "cargo test --test checksum"
+  expect  = "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+
+    [claim.self_verify.watched_fail]
+    of_command = "cargo test --test checksum"
+    perturbed  = "changed the ISO 7064 modulus in checksum::mod97_is_valid from 97 to 96 at all three reduction sites"
+    observed   = "all_known_valid_ibans_pass and flipping_one_digit_of_a_valid_iban_always_changes_the_verdict FAILED: assertion left==right failed, left: Err(BadChecksum), right: Ok(()) — the mutated modulus rejects every real IBAN"
+    date       = "2026-09-28"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "tests/checksum.rs::{all_known_valid_ibans_pass, a_wrong_checksum_is_rejected}"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 2
+  record      = "evidence/checksum-test.txt"
+  record_hash = "record:sha-512:aa1bb9860a8a8925d14fe7514985275e317b1a7d60691947750298b95248fe0113ca7f31948af74730c72e89cc5e825765db02eba443c9ee6ea34dfba60eba9f"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:2183581e684d32f55fe04496f0756a6866c331e2d40ef98854732f16bed99e1d572c587595acd04b238407113803dc2587557cba97e53d4d9e36a23df091a688"
+    [[claim.evidence.inputs]]
+    path   = "src/syntax.rs"
+    digest = "subject:sha-512:d448a9f259496950174071e2f912d5c29750476745c91d5f93bb526ef248d7ae89215365b3f6fea329f18c9075f56519610f3adb3850beee653f28b39206115d"
+    [[claim.evidence.inputs]]
+    path   = "src/checksum.rs"
+    digest = "subject:sha-512:40f7a188df236707fba2dce497fbac971548b3baca16bb9e7c69d98413542315ca5778098793bc69d05f311a7a7080fd0dcc0f3ef23bc89e29d19b8491ab9785"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:b59bc67ca290673fe79eef2a1031b5b70668e1ddbfab4509e389aa46574fce2d26cce203a5f6d3c1b70ca31cddb36488986413ebca1c30e5036e132d3243e183"
+    [[claim.evidence.inputs]]
+    path   = "tests/checksum.rs"
+    digest = "subject:sha-512:21c425504001e3477c10c626be9598175da815eb1b3f07852f0e124a3778e4d6dfa71b13109b38667590e5d13e099d7db9eaffb290981fab53a9f7f6608ae9ff"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:026337d136cd517ba24ae19f7bdd4cb85365f9851c7ffda9a928d8ad9101d718c4b8cc439c18d98840cda74271568549159f70292901e16e30ed96ccdedc7261"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind        = "property-test"
+  family      = "dynamic"
+  method      = "property-test"
+  epistemic_tier = "T3"
+  ref         = "tests/checksum.rs::flipping_one_digit_of_a_valid_iban_always_changes_the_verdict"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 200
+  generator   = "hand-rolled LCG (Numerical Recipes constants 6364136223846793005/1442695040888963407), seed 0xC0FFEE, 20 trials x 10 known-valid IBANs, each flipping one randomly LCG-chosen digit position to a different digit"
+  record      = "evidence/checksum-test.txt"
+  record_hash = "record:sha-512:aa1bb9860a8a8925d14fe7514985275e317b1a7d60691947750298b95248fe0113ca7f31948af74730c72e89cc5e825765db02eba443c9ee6ea34dfba60eba9f"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:2183581e684d32f55fe04496f0756a6866c331e2d40ef98854732f16bed99e1d572c587595acd04b238407113803dc2587557cba97e53d4d9e36a23df091a688"
+    [[claim.evidence.inputs]]
+    path   = "src/syntax.rs"
+    digest = "subject:sha-512:d448a9f259496950174071e2f912d5c29750476745c91d5f93bb526ef248d7ae89215365b3f6fea329f18c9075f56519610f3adb3850beee653f28b39206115d"
+    [[claim.evidence.inputs]]
+    path   = "src/checksum.rs"
+    digest = "subject:sha-512:40f7a188df236707fba2dce497fbac971548b3baca16bb9e7c69d98413542315ca5778098793bc69d05f311a7a7080fd0dcc0f3ef23bc89e29d19b8491ab9785"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:b59bc67ca290673fe79eef2a1031b5b70668e1ddbfab4509e389aa46574fce2d26cce203a5f6d3c1b70ca31cddb36488986413ebca1c30e5036e132d3243e183"
+    [[claim.evidence.inputs]]
+    path   = "tests/checksum.rs"
+    digest = "subject:sha-512:21c425504001e3477c10c626be9598175da815eb1b3f07852f0e124a3778e4d6dfa71b13109b38667590e5d13e099d7db9eaffb290981fab53a9f7f6608ae9ff"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "tests/checksum.rs (mutant: ISO 7064 modulus 97 -> 96)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (1-line mutation x3 sites, reverted)"
+  cases       = 3
+  record      = "evidence/r2-mutation-control.txt"
+  record_hash = "record:sha-512:1cfcde3afb5f13f6ffb5d187e4a8e866908ff1fa152766cea78ac530da974ce29cdc055c74ec64ea0f2755b1c6cc0392b27dea29b9db84b6d959d654d013ebff"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "IB-002"
+
+
+# ===================================================================
+# IB-003 -- R3: validate never panics on any input
+# ===================================================================
+[[claim]]
+id            = "IB-003"
+clause        = "R3"
+item          = "iban-check/src/lib.rs::validate (verification::validate_never_panics)"
+statement     = "validate never panics: proved by Kani for all ASCII inputs up to 20 bytes (bounded model check), and tested over 20,000+ random byte-string samples up to 128 bytes including non-ASCII/invalid-UTF-8-adjacent content (dynamic fuzz-style loop)."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "probe"
+clause_source = "spec-document"
+bounds        = "bounded: Kani KANI_BOUND=20 ASCII bytes, unwind=24 (crate real MAX_LEN stays 34 — only the harness input is bounded); dynamic sample up to 128 bytes, full byte range"
+captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+  [claim.self_verify]
+  command = "cargo kani --harness validate_never_panics"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  method    = "kani-harness"
+  epistemic_tier = "T2"
+  ref       = "verification::validate_never_panics"
+  result    = "pass"
+  tool      = "kani@cargo-kani 0.67.0 (commit unknown — `cargo kani --version` on this install reports only a semantic version, not a build sha; see the example README's Friction section)"
+  bounds    = "unwind=24, KANI_BOUND=20 ASCII bytes (< 0x80)"
+  semantics = ""
+  record    = "evidence/kani-validate-never-panics.txt"
+  record_hash = "record:sha-512:628e5bcf12057a880769fcfefb28105dd79d7e6cbf723a783f87c74c17da59c4ce719edde7f15859f833c5059477f0663c43fb2b7ccfe44e9d40fdadd658c322"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:2183581e684d32f55fe04496f0756a6866c331e2d40ef98854732f16bed99e1d572c587595acd04b238407113803dc2587557cba97e53d4d9e36a23df091a688"
+    [[claim.evidence.inputs]]
+    path   = "src/syntax.rs"
+    digest = "subject:sha-512:d448a9f259496950174071e2f912d5c29750476745c91d5f93bb526ef248d7ae89215365b3f6fea329f18c9075f56519610f3adb3850beee653f28b39206115d"
+    [[claim.evidence.inputs]]
+    path   = "src/checksum.rs"
+    digest = "subject:sha-512:40f7a188df236707fba2dce497fbac971548b3baca16bb9e7c69d98413542315ca5778098793bc69d05f311a7a7080fd0dcc0f3ef23bc89e29d19b8491ab9785"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:b59bc67ca290673fe79eef2a1031b5b70668e1ddbfab4509e389aa46574fce2d26cce203a5f6d3c1b70ca31cddb36488986413ebca1c30e5036e132d3243e183"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "tests/no_panic.rs (3 #[test] fns: 20,000-trial hand-rolled xorshift64 fuzz loop up to 128 bytes; 123 adversarial near-miss-length trials; 5 edge cases)"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 3
+  record      = "evidence/no-panic-test.txt"
+  record_hash = "record:sha-512:e7403fee2a7038ca751249440015f661dac347fa45d6144d74d5ba1273224d0c45571c5bd9ae92e9568f441157143328ec3d0fde004918cbb7840435f4b70887"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:2183581e684d32f55fe04496f0756a6866c331e2d40ef98854732f16bed99e1d572c587595acd04b238407113803dc2587557cba97e53d4d9e36a23df091a688"
+    [[claim.evidence.inputs]]
+    path   = "src/syntax.rs"
+    digest = "subject:sha-512:d448a9f259496950174071e2f912d5c29750476745c91d5f93bb526ef248d7ae89215365b3f6fea329f18c9075f56519610f3adb3850beee653f28b39206115d"
+    [[claim.evidence.inputs]]
+    path   = "src/checksum.rs"
+    digest = "subject:sha-512:40f7a188df236707fba2dce497fbac971548b3baca16bb9e7c69d98413542315ca5778098793bc69d05f311a7a7080fd0dcc0f3ef23bc89e29d19b8491ab9785"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:b59bc67ca290673fe79eef2a1031b5b70668e1ddbfab4509e389aa46574fce2d26cce203a5f6d3c1b70ca31cddb36488986413ebca1c30e5036e132d3243e183"
+    [[claim.evidence.inputs]]
+    path   = "tests/no_panic.rs"
+    digest = "subject:sha-512:1b50ccdb5b31d3a06856e12a1ccb14595a2c7edb58430f5ea5b8c5bc99dd6e29f18642af6e12ae47c258d617b07123d88cd1fe824ccf6383f9075f3e4be51fbc"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:026337d136cd517ba24ae19f7bdd4cb85365f9851c7ffda9a928d8ad9101d718c4b8cc439c18d98840cda74271568549159f70292901e16e30ed96ccdedc7261"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind        = "unit-test"
+  family      = "dynamic"
+  method      = "unit-test"
+  epistemic_tier = "T3"
+  ref         = "tests/checksum.rs (mutant: `rearranged` buffer in validate shrunk from MAX_LEN=34 to 2 bytes) -- fast dynamic witness in place of a second ~7-minute Kani run; see README Friction"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (1-line mutation, reverted)"
+  cases       = 3
+  record      = "evidence/r3-mutation-control.txt"
+  record_hash = "record:sha-512:20335a8d742d34d271bcc7f58a92c8a1688b901697e45458989056851253bf3d307234ebb0fae9fafad2e858bfe576c0c1a702b4cb820ce2e0b35ebb8b141931"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "IB-003"
+
+
+# ===================================================================
+# IB-004 -- R4: no unsafe code
+# ===================================================================
+[[claim]]
+id            = "IB-004"
+clause        = "R4"
+item          = "iban-check/src/lib.rs (#![forbid(unsafe_code)]) + cargo clippy"
+statement     = "The crate contains no unsafe code: #![forbid(unsafe_code)] makes any `unsafe` block a hard compile error, and cargo clippy runs clean under -D warnings."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "mechanical"
+clause_source = "spec-document"
+captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+  [claim.self_verify]
+  command = "cargo clippy -- -D warnings"
+  expect  = "Finished"
+
+    [claim.self_verify.watched_fail]
+    of_command = "cargo clippy -- -D warnings"
+    perturbed  = "inserted an empty `unsafe {}` block at the top of validate's body"
+    observed   = "error: usage of an `unsafe` block --> src/lib.rs:104:5 (forbid(unsafe_code) makes this a hard compile error, not merely a lint warning); could not compile `iban-check` (lib) due to 2 previous errors"
+    date       = "2026-09-28"
+
+  [[claim.evidence]]
+  kind      = "lint"
+  family    = "mechanical"
+  method    = "lint"
+  epistemic_tier = "T4"
+  ref       = "#![forbid(unsafe_code)] (src/lib.rs:1) + cargo clippy -- -D warnings over the whole crate"
+  result    = "pass"
+  tool      = "clippy 0.1.96 (31fca3adb2 2026-06-26) + rustc 1.96.1 (31fca3adb 2026-06-26)"
+  record    = "evidence/clippy.txt"
+  record_hash = "record:sha-512:0eded43e0319bda65240d6ae8e4f21b3565c60cd34c0c0a455f0467879b6df078b259b0f93fc47c73d38d797417b5329095d64230003238a28b3e90fe4d87f6b"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:2183581e684d32f55fe04496f0756a6866c331e2d40ef98854732f16bed99e1d572c587595acd04b238407113803dc2587557cba97e53d4d9e36a23df091a688"
+    [[claim.evidence.inputs]]
+    path   = "src/syntax.rs"
+    digest = "subject:sha-512:d448a9f259496950174071e2f912d5c29750476745c91d5f93bb526ef248d7ae89215365b3f6fea329f18c9075f56519610f3adb3850beee653f28b39206115d"
+    [[claim.evidence.inputs]]
+    path   = "src/checksum.rs"
+    digest = "subject:sha-512:40f7a188df236707fba2dce497fbac971548b3baca16bb9e7c69d98413542315ca5778098793bc69d05f311a7a7080fd0dcc0f3ef23bc89e29d19b8491ab9785"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:b59bc67ca290673fe79eef2a1031b5b70668e1ddbfab4509e389aa46574fce2d26cce203a5f6d3c1b70ca31cddb36488986413ebca1c30e5036e132d3243e183"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:026337d136cd517ba24ae19f7bdd4cb85365f9851c7ffda9a928d8ad9101d718c4b8cc439c18d98840cda74271568549159f70292901e16e30ed96ccdedc7261"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind      = "lint"
+  family    = "mechanical"
+  method    = "lint"
+  epistemic_tier = "T4"
+  ref       = "cargo clippy -- -D warnings (mutant: empty `unsafe {}` block inserted in validate)"
+  result    = "fail"
+  tool      = "clippy 0.1.96 (31fca3adb2 2026-06-26) + rustc 1.96.1 (31fca3adb 2026-06-26) (1-line mutation, reverted)"
+  record    = "evidence/r4-mutation-control.txt"
+  record_hash = "record:sha-512:350cec23ab8e369ec82f801315673099516ba9905db7aad1752233985e588fc706a051474f650d4e0c2bb39f222c4f4b3a3bac2458e7c3c92393b697589f9516"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "IB-004"
+
+
+# ===================================================================
+# IB-005 -- R5: cross-cutting ("verification of R1-R3 is unbounded") -- NOT MET
+# ===================================================================
+[[claim]]
+id        = "IB-005"
+clause    = "R5"
+item      = "cross-cutting: R1, R2, R3"
+statement = "No unbounded verification argument exists yet for R1/R2/R3: IB-001/IB-002 are bounded dynamic samples (points, not sets) and IB-003's Kani proof is bounded to 20 ASCII bytes. See [[deviation]] below."
+band      = "A0"
+status    = "gap"
+grade     = "unspecified"
+clause_source = "spec-document"
+captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+# weight omitted -> unweighted (W1): this row documents the gap the deviation below names;
+# it does not itself carry the format's vouching -- the deviation carries the disclosure.
+
+# ===================================================================
+# IB-006 -- R6 (optional): cargo doc builds clean
+# ===================================================================
+[[claim]]
+id            = "IB-006"
+clause        = "R6"
+item          = "iban-check (cargo doc --no-deps, warnings fatal)"
+statement     = "cargo doc --no-deps builds the crate's documentation with zero warnings — enforced by making rustdoc warnings fatal (RUSTDOCFLAGS=-D warnings), not merely by checking for the word 'Generated'."
+band          = "A0"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "mechanical"
+clause_source = "spec-document"
+captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+  [claim.self_verify]
+  command = "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps"
+  expect  = "Generated"
+
+    [claim.self_verify.watched_fail]
+    of_command = "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps"
+    perturbed  = "added a broken intra-doc link ([`totally::bogus::path`]) to the crate root doc comment"
+    observed   = "   |\n31 | //! See [`totally::bogus::path`] for details.\n   |           ^^^^^^^^^^^^^^^^^^^^ no item named `totally` in scope\n   |\n   = note: `-D rustdoc::broken-intra-doc-links` implied by `-D warnings`\n   = help: to override `-D warnings` add `#[allow(rustdoc::broken_intra_doc_links)]`\n\nerror: could not document `iban-check`"
+    date       = "2026-09-28"
+
+  [[claim.evidence]]
+  kind      = "lint"
+  family    = "mechanical"
+  method    = "lint"
+  epistemic_tier = "T4"
+  ref       = "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps over the whole crate (0 warnings, enforced by -D warnings)"
+  result    = "pass"
+  tool      = "rustdoc (bundled with rustc 1.96.1 (31fca3adb 2026-06-26)) via cargo 1.96.1 (356927216 2026-06-26)"
+  record    = "evidence/cargo-doc.txt"
+  record_hash = "record:sha-512:d9a217b57579e40783c98074aeaa9a11cb2e7442bd0b51152e8cbd54127970a6a4a8831229c7a0b1fc0a7d8f5035d64637c60a6e12056530fcf33028a9dffbb8"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:2183581e684d32f55fe04496f0756a6866c331e2d40ef98854732f16bed99e1d572c587595acd04b238407113803dc2587557cba97e53d4d9e36a23df091a688"
+    [[claim.evidence.inputs]]
+    path   = "src/syntax.rs"
+    digest = "subject:sha-512:d448a9f259496950174071e2f912d5c29750476745c91d5f93bb526ef248d7ae89215365b3f6fea329f18c9075f56519610f3adb3850beee653f28b39206115d"
+    [[claim.evidence.inputs]]
+    path   = "src/checksum.rs"
+    digest = "subject:sha-512:40f7a188df236707fba2dce497fbac971548b3baca16bb9e7c69d98413542315ca5778098793bc69d05f311a7a7080fd0dcc0f3ef23bc89e29d19b8491ab9785"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:b59bc67ca290673fe79eef2a1031b5b70668e1ddbfab4509e389aa46574fce2d26cce203a5f6d3c1b70ca31cddb36488986413ebca1c30e5036e132d3243e183"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:026337d136cd517ba24ae19f7bdd4cb85365f9851c7ffda9a928d8ad9101d718c4b8cc439c18d98840cda74271568549159f70292901e16e30ed96ccdedc7261"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind      = "lint"
+  family    = "mechanical"
+  method    = "lint"
+  epistemic_tier = "T4"
+  ref       = "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps (mutant: broken intra-doc link added to crate root doc comment)"
+  result    = "fail"
+  tool      = "rustdoc (bundled with rustc 1.96.1 (31fca3adb 2026-06-26)) via cargo 1.96.1 (356927216 2026-06-26) (1-line mutation, reverted)"
+  record    = "evidence/r6-mutation-control.txt"
+  record_hash = "record:sha-512:e7d503c5aaf9813baeeb45d5506c00b442e5225ba2e39b3bf75e3d4c92bec398b86e42a4cef529e259cffa18989e0881d9f86ef08263affedd1eaf0f40c3b188"
+  captured_at_commit = "d0692787f245f770d00b0f987b8df77d81b0bc27"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "IB-006"
+
+
+# ===================================================================
+[[deviation]]
+requirement      = "R5"
+kind             = "unmet"
+statement        = "R1/R2/R3 evidence is entirely bounded: R1/R2 rest on named test fixtures plus a 200-trial LCG-perturbed sample (dynamic, points not sets); R3 (probe grade) is a Kani proof bounded to inputs of at most 20 ASCII bytes, unwind=24 -- not the crate's real 34-byte capacity, and not an unbounded/kernel-checked argument. No unbounded argument exists for any of the three."
+cause            = "No Lean/Aeneas extraction lane exists for this crate, and CBMC's own cost on this machine (measured: 29s/206s/415s at a 8/16/20-byte harness bound; did not finish within a 10-minute time-box unconstrained at the real 34-byte maximum) makes a full-length or genuinely unbounded Kani proof impractical within this delivery."
+impact           = "Inputs longer than the tested/proved envelope are covered only by informal structural reasoning (uniform, length-bounded per-byte loops), not by a machine-checked argument. A crafted input outside the proved/tested range could in principle still misbehave, though nothing in the code's shape suggests one exists."
+remedy           = "Extend the Kani harness's bound as CBMC/toolchain performance allows, or add a Lean/Aeneas extraction of validate's core loop for a genuinely unbounded proof. Target: before v2 (see the consumer decision's condition C1)."
+waiver_requested = true
+
+[[filler]]
+profile = "acceptance/verification/code/rust"
+party   = "ivmat"
+role    = "producer"

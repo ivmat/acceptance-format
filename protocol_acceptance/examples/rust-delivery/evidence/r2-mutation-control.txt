@@ -1,0 +1,34 @@
+   Compiling iban-check v0.1.0 (<crate>)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running tests/checksum.rs (target/debug/deps/checksum-4977eb0ec9bddc47)
+
+running 3 tests
+test a_wrong_checksum_is_rejected ... ok
+test all_known_valid_ibans_pass ... FAILED
+test flipping_one_digit_of_a_valid_iban_always_changes_the_verdict ... FAILED
+
+failures:
+
+---- all_known_valid_ibans_pass stdout ----
+
+thread 'all_known_valid_ibans_pass' (31551654) panicked at tests/checksum.rs:29:9:
+assertion `left == right` failed: expected "GB82 WEST 1234 5698 7654 32" to validate
+  left: Err(BadChecksum)
+ right: Ok(())
+
+---- flipping_one_digit_of_a_valid_iban_always_changes_the_verdict stdout ----
+
+thread 'flipping_one_digit_of_a_valid_iban_always_changes_the_verdict' (31551655) panicked at tests/checksum.rs:109:9:
+assertion `left == right` failed: fixture "GB82 WEST 1234 5698 7654 32" must itself be valid before we can test perturbations of it
+  left: Err(BadChecksum)
+ right: Ok(())
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    all_known_valid_ibans_pass
+    flipping_one_digit_of_a_valid_iban_always_changes_the_verdict
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test checksum`

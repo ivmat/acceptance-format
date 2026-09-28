@@ -1,0 +1,20 @@
+[package]
+name = "iban-check"
+version = "0.1.0"
+edition = "2021"
+description = "IBAN syntax + ISO 7064 mod-97-10 checksum validator, no dependencies."
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+name = "iban_check"
+path = "src/lib.rs"
+
+[dependencies]
+
+[lints.rust]
+# Kani sets `--cfg kani` when it compiles this crate; a normal `cargo
+# build`/`clippy` run does not know that cfg exists, which would otherwise
+# warn "unexpected_cfgs" on `#[cfg(kani)] mod verification` and fail
+# `cargo clippy -- -D warnings`.
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(kani)"] }

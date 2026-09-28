@@ -1,0 +1,23 @@
+    Checking iban-check v0.1.0 (<crate>)
+error: usage of an `unsafe` block
+   --> src/lib.rs:104:5
+    |
+104 |     unsafe {}
+    |     ^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> src/lib.rs:1:11
+    |
+  1 | #![forbid(unsafe_code)]
+    |           ^^^^^^^^^^^
+
+error: unnecessary `unsafe` block
+   --> src/lib.rs:104:5
+    |
+104 |     unsafe {}
+    |     ^^^^^^ unnecessary `unsafe` block
+    |
+    = note: `-D unused-unsafe` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(unused_unsafe)]`
+
+error: could not compile `iban-check` (lib) due to 2 previous errors

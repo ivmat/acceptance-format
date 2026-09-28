@@ -1,0 +1,11 @@
+   Compiling iban-check v0.1.0 (<crate>)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running tests/checksum.rs (target/debug/deps/checksum-4977eb0ec9bddc47)
+
+running 3 tests
+test a_wrong_checksum_is_rejected ... ok
+test all_known_valid_ibans_pass ... ok
+test flipping_one_digit_of_a_valid_iban_always_changes_the_verdict ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

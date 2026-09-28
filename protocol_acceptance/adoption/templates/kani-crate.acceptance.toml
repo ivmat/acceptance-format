@@ -1,0 +1,118 @@
+# kani-crate.acceptance.toml — a PRODUCER skeleton package for a Kani-verified Rust crate.
+#
+# This is what a producer ships against `kani-crate.contract.toml` (protocol.md §4). Every
+# placeholder below (search for the string FILL) marks a field you must fill: run the validator on
+# this file AS-IS and it FAILS with named, specific errors pointing at the unfilled fields — that
+# is deliberate (a skeleton with no real evidence cannot pass; a silently-passing skeleton would be
+# worse). See
+# ../KANI-FV-ADOPTION.md for the full walkthrough, the two-commit re-stamp pattern for
+# [subject].commit, and the hashdomains.py snippet for record_hash/toolchain/build_inputs digests
+# (§6: the toolchain identity is TWO separate artifacts — the Kani release bundle and the
+# cargo-kani launcher binary — never collapsed into one entry).
+#
+#   python3 format_acceptance/tools/check_acceptance.py --strict --strict-weight your-crate.acceptance.toml
+#
+# Never hand-edit a FILLED copy of this file after your harness output changes — re-run your
+# generator and re-emit it, the same discipline the worked example
+# (protocol_acceptance/examples/rust-delivery/gen_package.py) follows.
+
+[format]
+id       = "acceptance/0"
+protocol = "acceptance-protocol/0"
+profile  = "acceptance/verification/code/rust"
+
+[subject]
+name   = "<FILL: crate name>"
+kind   = "rust-crate"
+commit = "<FILL: 40-hex commit of the ALREADY-COMMITTED crate — see the guide's two-commit re-stamp pattern>"
+dirty  = false
+
+[contract]
+id                 = "<FILL: matches kani-crate.contract.toml [document].id>"
+hash               = "<FILL: contract:sha-512: 128 lowercase hex chars -- recompute after you edit the contract; see the guide>"
+requirements_total = 2
+
+[spec]
+path    = "acceptance-contract.toml"
+version = "<FILL: e.g. AC-your-crate-0001@v1>"
+axis    = "the requirements of contract <FILL: contract id>"
+
+[coverage]
+clauses_total = 2
+claims_total  = 2
+
+# ===================================================================
+# K-001 -- R1: a Kani panic-freedom harness (rust.md §4's "never panics / no UB" row: T2/T3,
+# probe/A1/bmc, no control needed for a freedom claim)
+# ===================================================================
+[[claim]]
+id            = "K-001"
+clause        = "R1"
+item          = "<FILL: e.g. src/lib.rs>"
+statement     = "<FILL: the property this harness checks, one falsifiable sentence>"
+band          = "A1"
+status        = "evidenced"
+grade         = "probe"
+clause_source = "spec-document"
+bounds        = "<FILL: e.g. \"bounded: KANI_BOUND=32 bytes (real capacity: 2048 -- see rust.md trap 5a.1)\">"
+captured_at_commit = "<FILL: same 40-hex as [subject].commit>"
+
+  [claim.self_verify]
+  command = "<FILL: e.g. cargo kani --harness never_panics>"
+  expect  = "<FILL: the exact success line your harness prints, e.g. \"VERIFICATION:- SUCCESSFUL\">"
+
+  [[claim.evidence]]
+  kind        = "kani-harness"
+  family      = "bmc"
+  method      = "kani-harness"
+  epistemic_tier = "T2"
+  ref         = "<FILL: path to the harness function, e.g. src/lib.rs::never_panics>"
+  result      = "pass"
+  tool        = "<FILL: e.g. \"kani@0.67.0 (commit unknown -- cargo kani --version reports no commit)\">"
+  bounds      = "<FILL: e.g. \"bounded: KANI_BOUND=32 bytes\">"
+  semantics   = "<FILL: what the harness actually models, e.g. \"unwind=33, no loop-bound errors\">"
+  record      = "evidence/<FILL: e.g. kani-never-panics.txt>"
+  record_hash = "<FILL: record:sha-512: 128 lowercase hex chars -- see the guide's hashdomains snippet>"
+  captured_at_commit = "<FILL: same 40-hex as [subject].commit>"
+    # Two DISTINCT toolchain entries -- the Kani release bundle (kani-compiler, kani-driver, cbmc,
+    # kissat, every .rlib) and the cargo-kani launcher binary are different artifacts with
+    # different identity; collapsing them into one entry loses that distinction (guide §6).
+    [[claim.evidence.toolchain]]
+    name   = "kani-bundle"
+    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- deterministic manifest digest over the installed ~/.kani/kani-VERSION/ bundle's own files; see the guide's bundle_manifest_digest snippet>"
+    [[claim.evidence.toolchain]]
+    name   = "cargo-kani-launcher"
+    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- digest of the ~/.cargo/bin/cargo-kani launcher binary's own bytes>"
+    # no `commit` on either entry -- cargo-kani reports none; do not invent one (rust.md §5a trap 4)
+
+    # build_inputs SHOULD carry Cargo.lock and rust-toolchain.toml (rust.md's required_build_inputs
+    # declaration); MANDATORY at baseline/4, a recommendation below it (guide §6). Paths are exact,
+    # resolved relative to where this manifest lives (core.md B6) -- not by basename.
+    [[claim.evidence.build_inputs]]
+    path   = "Cargo.lock"
+    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- recomputed by the validator over Cargo.lock's own bytes>"
+    [[claim.evidence.build_inputs]]
+    path   = "rust-toolchain.toml"
+    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- recomputed by the validator over rust-toolchain.toml's own bytes>"
+
+# R2 (cross-cutting "unbounded") is not yet met by a bounded harness. Design rule 1 (core.md §2)
+# makes gaps first-class: an omitted clause is not a permitted silence, so R2 gets its own gap
+# claim here IN ADDITION to the deviation below (the deviation explains why; the gap claim is the
+# clause's own required row).
+[[claim]]
+id            = "K-002"
+clause        = "R2"
+item          = "<FILL: e.g. src/lib.rs>"
+statement     = "not yet evidenced at A0 -- bounded harness only, see the deviation below"
+status        = "gap"
+clause_source = "spec-document"
+
+# The deviation explaining WHY R2's gap exists and what would close it.
+[[deviation]]
+requirement      = "R2"
+kind             = "unmet"
+statement        = "<FILL: e.g. \"the harness bound is 32 bytes; the real input can be up to 2048 bytes\">"
+cause            = "<FILL: why the bound is smaller than the real capacity (tool budget, state explosion, ...)>"
+impact           = "<FILL: what is NOT yet proven as a result>"
+remedy           = "<FILL: what would close it, and when>"
+waiver_requested = false

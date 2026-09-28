@@ -1,139 +1,67 @@
 #!/usr/bin/env bash
-# run_all.sh — the acceptance-format gate suite. Runs from repo root regardless of caller cwd.
-#
-# This is the same suite the format's working repo runs, minus two steps that do not apply to a
-# public repo. The content-leak gate below replaces one of them.
-#
-# The leak gate runs with an EMPTY baseline (see gates/leak_baseline.json). No baselining is
-# permitted here: any leak-gate hit is a real failure to fix in the source file, never in
-# gates/leak_baseline.json.
-set -euo pipefail
+# Complete public suite; continue after failures so the final report is complete.
+set -uo pipefail
 cd "$(dirname "$0")/.."
-
-echo "-- 1/10: manifest validator selftest (tools/check_acceptance.py) --"
-python3 tools/check_acceptance.py --selftest
-python3 tools/m11.py --selftest
-
-echo "-- 2/10: examples validate --"
-# --strict: record-pointer existence is enforced (core.md §0.6 / CS-21..23: strict applies only
-# to non-illustrative manifests -- the illustrative examples below are marked
-# illustrative = true, so this stays a no-op on record-pointer existence for them; they are also
-# wholly unweighted, so --strict-weight is a no-op on them too. examples/weighted-toy/ is
-# illustrative = false and weighted, so both flags are LIVE checks on it, not no-ops -- see its
-# own README for why it is the template to copy, not the illustrative ones.
-python3 tools/check_acceptance.py --strict --strict-weight \
-  examples/minimal.acceptance.toml examples/rs-verified-der/acceptance.toml \
-  examples/verify-rust-std-pr618/acceptance.toml examples/verify-rust-std-pr664/acceptance.toml \
-  examples/weighted-toy/acceptance.toml
-python3 tools/check_execute.py --yes-run-untrusted-commands \
-  --subject-root examples/weighted-toy examples/weighted-toy/acceptance.toml
-
-echo "-- 3/10: row-rule checker selftest (tools/check_ledger.py) --"
-python3 tools/check_ledger.py --selftest > /dev/null
-
-echo "-- 4/10: shipped envelopes obey the row rules --"
-shopt -s nullglob
-envelopes=(examples/*/ENVELOPE.md)
-shopt -u nullglob
-if [ ${#envelopes[@]} -gt 0 ]; then
-  # --strict-weight: core.md §8.1's ratchet -- safe, currently a no-op on shipped envelopes.
-  python3 tools/check_ledger.py --strict-weight "${envelopes[@]}"
-else
-  echo "no sample envelopes present -- skipping"
-fi
-
-echo "-- 5/10: recipe-execution mode selftest (tools/check_execute.py) --"
-python3 tools/check_execute.py --selftest > /dev/null
-
-echo "-- 6/10: cross-representation parity harness --"
-# The two checkers must reach the same VERDICT on the same claim. Nothing else in this suite could
-# notice when they diverged, because every other step exercises one checker at a time -- which is
-# how `out-of-scope` came to grant weight in Markdown and refuse it in TOML for a full day.
-# This step includes its own watched-break proof; a green line here means the harness was also
-# shown able to fail.
-python3 tools/check_parity_selftest.py --quiet
-
-echo "-- 7/10: content-leak gate (empty baseline; any hit is a real failure) --"
-python3 gates/test_check_content_leaks.py
-python3 gates/check_content_leaks.py
-
-echo "-- 8/10: schema artifact (tools/emit_schema.py) -- drift + example validation --"
-# CURRENT schema is 0.2.0-draft (SCHEMA_VERSION, tools/emit_schema.py) -- 0.1.0-draft is the
-# committed, no-longer-regenerated historical artifact (spec/format.md "The schema artifact");
-# this step drift-checks the CURRENT one only, not both.
-python3 tools/emit_schema.py --selftest > /dev/null
-schema_tmp="$(mktemp)"
-trap 'rm -f "$schema_tmp"' EXIT
-python3 tools/emit_schema.py > "$schema_tmp"
-if ! cmp -s "$schema_tmp" schema/acceptance-0.2.0-draft.schema.json; then
-  echo "schema drift: run 'python3 tools/emit_schema.py > schema/acceptance-0.2.0-draft.schema.json'"
-  exit 1
-fi
-rm -f "$schema_tmp"
-trap - EXIT
-python3 tools/emit_schema.py --check examples/minimal.acceptance.toml \
-  examples/rs-verified-der/acceptance.toml examples/verify-rust-std-pr618/acceptance.toml \
-  examples/verify-rust-std-pr664/acceptance.toml examples/weighted-toy/acceptance.toml \
-  profiles/verification/examples/valid/acceptance.toml \
-  profiles/verification/examples/invalid/acceptance.toml
-
-echo "-- 9/10: self-manifest validates as a CERTIFICATE (acceptance.toml) --"
-# This gate validates the manifest that DESCRIBES this gate suite, under the same --strict
-# --strict-weight flags a real certificate must clear -- no exemption for being about this repo.
-# The circularity is disclosed, not hidden: acceptance.toml's own [[claim]] "SELF-1"
-# claims exactly "step 1 of this script passes", and so on through "SELF-8" naming this script's own
-# step 8. This is fine because the format's anchor against self-reference is never the manifest's
-# own say-so -- it is that every claim carries a `self_verify.command` a reader re-executes
-# themselves. A broken checker cannot hide behind this step: it would first have to keep passing its
-# OWN embedded fixture suites (steps 1/3/5, each backed by a recorded, reverted mutation-control
-# witness in acceptance.toml) to even reach here, and this step re-validates the resulting manifest
-# from a cold read, not from anything cached.
-python3 tools/check_acceptance.py --strict --strict-weight acceptance.toml
-
-# Static validation above proves the manifest is well-FORMED; it cannot tell whether each claim's
-# declared `self_verify.expect` still matches what that command actually prints today. That is the
-# drift core.md 8.2 exists to catch, and until now this suite ran --execute against
-# examples/weighted-toy but never against the manifest describing THIS repo -- so a claim of ours
-# could go stale silently while every gate stayed green. It did: SELF-1's fixture count and SELF-7's
-# tracked-file count both drifted. Executing our own recipes closes the gap that let that ship.
-# (no --require-run: SELF-NOTE is a deliberate unweighted note with no self_verify.command, and
-# the format does not require one for an unweighted row.)
-python3 tools/check_execute.py --yes-run-untrusted-commands --subject-root . acceptance.toml
-
-echo "-- 10/10: profile conformance pair (profiles/verification/examples) -- able to fail --"
-# profiles/verification/PROFILE.md's own required deliverable: one example that validates, one
-# that fails for a PROFILE reason (not a syntax error) -- and the failure is proven live here on
-# every gate run, not merely asserted in prose (the same "shown able to fail" discipline step 6's
-# own comment names for the parity harness).
-python3 tools/check_acceptance.py --strict --strict-weight \
-  profiles/verification/examples/valid/acceptance.toml
-set +e
-profile_invalid_out="$(python3 tools/check_acceptance.py --strict --strict-weight \
-  profiles/verification/examples/invalid/acceptance.toml 2>&1)"
-profile_invalid_rc=$?
-set -e
-if [ "$profile_invalid_rc" -eq 0 ]; then
-  echo "profile conformance: examples/invalid/acceptance.toml unexpectedly PASSED -- the"
-  echo "profile's negative conformance example is not able to fail"
-  echo "$profile_invalid_out"
-  exit 1
-fi
-# Two separate assertions, not one: the field-name fragment AND the rule-name suffix, so a future
-# edit that drops the "(format.md rule 3)" citation from the diagnostic (leaving a message that
-# still matches on the field-name fragment alone) is itself a gate failure, not a silent pass.
-if ! printf '%s' "$profile_invalid_out" | grep -q "trust field 'lr' present without a nonempty 'calibration' field"; then
-  echo "profile conformance: examples/invalid/acceptance.toml failed, but not for the expected"
-  echo "profile rule (PROFILE.md constraint 3 / format.md design rule 3):"
-  echo "$profile_invalid_out"
-  exit 1
-fi
-if ! printf '%s' "$profile_invalid_out" | grep -q "(format.md rule 3)"; then
-  echo "profile conformance: examples/invalid/acceptance.toml failed on the right field, but the"
-  echo "diagnostic no longer names the rule (format.md rule 3) -- PROFILE.md's own requirement"
-  echo "that the failure text name the profile rule:"
-  echo "$profile_invalid_out"
-  exit 1
-fi
-echo "$profile_invalid_out"
-
-echo "== acceptance-format gates: PASS =="
+export PYTHONDONTWRITEBYTECODE=1
+fail=0
+run() {
+  echo "-- $*"
+  "$@"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then echo "GATE FAIL (exit $rc): $*"; fail=1; fi
+}
+negative() {
+  local expected="$1"; shift
+  local output rc
+  output=$("$@" 2>&1); rc=$?
+  echo "$output"
+  if [ "$rc" -ne 1 ] || [[ "$output" != *"$expected"* ]]; then
+    echo "GATE FAIL: expected exit 1 and diagnostic $expected: $*"; fail=1
+  else echo "PASS negative control: $expected"; fi
+}
+for tool in check_acceptance check_core hashdomains check_ledger check_execute spec_inventory; do
+  run python3 "format_acceptance/tools/$tool.py" --selftest
+done
+run python3 format_acceptance/tools/check_parity_selftest.py --quiet
+for tool in profiles/conformance profiles/troubleshooting bindings/code bindings/code_rust; do
+  run python3 "format_acceptance/tools/$tool.py" --selftest
+done
+run python3 protocol_acceptance/tools/m11.py --selftest
+run python3 protocol_acceptance/tools/acceptance_protocol.py --selftest
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-states
+rd=protocol_acceptance/examples/rust-delivery
+run python3 format_acceptance/tools/check_acceptance.py --root . --strict --strict-weight "$rd/acceptance.toml"
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-contract "$rd/acceptance-contract.toml"
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-package "$rd/acceptance.toml" --contract "$rd/acceptance-contract.toml"
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-decision "$rd/acceptance-decision.toml" --contract "$rd/acceptance-contract.toml" --package "$rd/acceptance.toml"
+# The shipped decision must also be EFFECT-eligible
+# on a date inside its validity window (not merely VALID) -- a regression gate the earlier
+# one-day UTC-drift defect would have failed.
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-decision "$rd/acceptance-decision.toml" --contract "$rd/acceptance-contract.toml" --package "$rd/acceptance.toml" --effect --allow-conditions --now 2026-09-28
+run python3 gates/check_decision_expiry.py
+# Minimal is a fictional producer-only shape example; strict evidence-pointer checks
+# apply to the real weighted certificate below, whose records must exist.
+run python3 format_acceptance/tools/check_acceptance.py --root . format_acceptance/examples/minimal.acceptance.toml
+run python3 format_acceptance/tools/check_acceptance.py --root . --strict --strict-weight examples/weighted-toy/acceptance.toml
+run python3 format_acceptance/tools/check_execute.py --yes-run-untrusted-commands --subject-root examples/weighted-toy examples/weighted-toy/acceptance.toml
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-contract examples/weighted-toy/acceptance-contract.toml
+run python3 protocol_acceptance/tools/acceptance_protocol.py check-package examples/weighted-toy/acceptance.toml --contract examples/weighted-toy/acceptance-contract.toml
+conf=format_acceptance/profiles/conformance/examples
+run python3 format_acceptance/tools/check_core.py --root . --strict "$conf/valid/acceptance.toml"
+run python3 format_acceptance/tools/profiles/conformance.py --root . "$conf/valid/acceptance.toml"
+negative 'C3:' python3 format_acceptance/tools/profiles/conformance.py --root . "$conf/invalid/acceptance.toml"
+ts=format_acceptance/profiles/troubleshooting/examples
+run python3 format_acceptance/tools/check_core.py --root . --strict "$ts/valid.acceptance.toml"
+negative 'C-T' python3 format_acceptance/tools/check_core.py --root . --strict "$ts/invalid.acceptance.toml"
+run python3 gates/check_class_lock.py
+run python3 gates/check_class_lock.py --selftest
+run python3 gates/check_assumptions.py
+run python3 gates/check_assumptions.py --selftest
+run python3 gates/check_build_inputs.py
+run python3 gates/check_adoption_templates.py
+run python3 gates/check_export_closure.py
+run python3 gates/test_check_content_leaks.py
+run python3 gates/check_public_leaks.py --selftest
+run python3 gates/check_public_leaks.py
+if [ "$fail" -ne 0 ]; then echo 'PUBLIC SUITE RED'; exit 1; fi
+echo 'PUBLIC SUITE GREEN'

@@ -1,0 +1,267 @@
+[standard]
+id         = "rfc5280"
+title      = "RFC 5280 — Internet X.509 PKI Certificate and CRL Profile"
+edition    = "2008-05"
+provenance = "external"
+slice      = true
+slice_note = "the TBSCertificate/Certificate field family (§4.1, §4.1.1.x, §4.1.2.x incl. the two Time sub-clauses), the extensions family (§4.2, §4.2.1 and its members, §4.2.2 and its members) as one row each, plus §6 (path validation) and §7 (internationalized names) as normative rows this subject may later declare not-applicable — the clauses a DER certificate structure parser-validator can conform to, violate, or must declare out of scope for"
+numbering  = "the standard's own clause numbers"
+
+[[clause]]
+id    = "RFC5280-4.1"
+ref   = "§4.1"
+title = "Certificate top-level ASN.1 SEQUENCE definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.1.1"
+ref   = "§4.1.1.1"
+title = "tbsCertificate field definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.1.2"
+ref   = "§4.1.1.2"
+title = "signatureAlgorithm must equal tbsCertificate signature field"
+force = "shall"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.1.3"
+ref   = "§4.1.1.3"
+title = "signatureValue field definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.1"
+ref   = "§4.1.2.1"
+title = "version field definition, DEFAULT v1 must be omitted"
+force = "shall"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.2"
+ref   = "§4.1.2.2"
+title = "serialNumber field definition and range"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.3"
+ref   = "§4.1.2.3"
+title = "signature field definition inside TBSCertificate"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.4"
+ref   = "§4.1.2.4"
+title = "issuer Name/RDNSequence field definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.5"
+ref   = "§4.1.2.5"
+title = "CA selects UTCTime through 2049, GeneralizedTime after"
+force = "shall"
+side  = "encoder"
+
+[[clause]]
+id    = "RFC5280-4.1.2.5.1"
+ref   = "§4.1.2.5.1"
+title = "UTCTime representation: Zulu, seconds present, YY pivot 50"
+force = "shall"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.5.2"
+ref   = "§4.1.2.5.2"
+title = "GeneralizedTime representation: Zulu, seconds, no fraction"
+force = "shall"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.6"
+ref   = "§4.1.2.6"
+title = "subject Name/RDNSequence field definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.7"
+ref   = "§4.1.2.7"
+title = "subjectPublicKeyInfo field definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.8"
+ref   = "§4.1.2.8"
+title = "unique identifiers are deprecated, version-gated fields"
+force = "shall"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.1.2.9"
+ref   = "§4.1.2.9"
+title = "extensions field present only in version 3 certificates"
+force = "shall"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2"
+ref   = "§4.2"
+title = "certificate extensions family definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1"
+ref   = "§4.2.1"
+title = "standard extensions family definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.1"
+ref   = "§4.2.1.1"
+title = "authority key identifier extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.2"
+ref   = "§4.2.1.2"
+title = "subject key identifier extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.3"
+ref   = "§4.2.1.3"
+title = "key usage extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.4"
+ref   = "§4.2.1.4"
+title = "certificate policies extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.5"
+ref   = "§4.2.1.5"
+title = "policy mappings extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.6"
+ref   = "§4.2.1.6"
+title = "subject alternative name extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.7"
+ref   = "§4.2.1.7"
+title = "issuer alternative name extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.8"
+ref   = "§4.2.1.8"
+title = "subject directory attributes extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.9"
+ref   = "§4.2.1.9"
+title = "basic constraints extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.10"
+ref   = "§4.2.1.10"
+title = "name constraints extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.11"
+ref   = "§4.2.1.11"
+title = "policy constraints extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.12"
+ref   = "§4.2.1.12"
+title = "extended key usage extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.13"
+ref   = "§4.2.1.13"
+title = "CRL distribution points extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.14"
+ref   = "§4.2.1.14"
+title = "inhibit anyPolicy extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.1.15"
+ref   = "§4.2.1.15"
+title = "freshest CRL extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.2"
+ref   = "§4.2.2"
+title = "private internet extensions family definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.2.1"
+ref   = "§4.2.2.1"
+title = "authority information access extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-4.2.2.2"
+ref   = "§4.2.2.2"
+title = "subject information access extension definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5280-6"
+ref   = "§6"
+title = "certification path validation algorithm"
+force = "shall"
+side  = "decoder"
+
+[[clause]]
+id    = "RFC5280-7"
+ref   = "§7"
+title = "processing rules for internationalized names"
+force = "shall"
+side  = "both"

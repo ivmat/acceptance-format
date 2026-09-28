@@ -1,0 +1,29 @@
+[standard]
+id         = "rfc8017"
+title      = "RFC 8017 (11/2016) — PKCS #1: RSA Cryptography Specifications Version 2.2"
+edition    = "2016-11"
+provenance = "external"
+slice      = true
+slice_note = "the RSA key ASN.1 syntax clauses (Appendix A.1, A.1.1, A.1.2) this crate's RSA key parsers can conform to or violate"
+numbering  = "the standard's own clause numbers"
+
+[[clause]]
+id    = "RFC8017-A.1"
+ref   = "§A.1"
+title = "RSA key representation overview"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC8017-A.1.1"
+ref   = "§A.1.1"
+title = "RSAPublicKey ASN.1 type definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC8017-A.1.2"
+ref   = "§A.1.2"
+title = "RSAPrivateKey type and version/otherPrimeInfos cross-field rule"
+force = "shall"
+side  = "both"

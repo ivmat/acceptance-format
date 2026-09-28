@@ -1,0 +1,54 @@
+# Minimal valid manifest — the smallest honest certificate: one evidenced claim, one gap.
+
+[format]
+id = "acceptance/0"
+profile = "acceptance/verification/code/rust"   # REQUIRED at 0.3.0 (B12); no compatibility default
+kind_registry = ["rust-crate", "rust-workspace"]
+
+[subject]
+name   = "example-lib"
+kind   = "rust-crate"
+commit = "0000000000000000000000000000000000000000"
+dirty  = false
+
+[spec]
+path    = "SPEC.md"
+version = "v1"
+
+[coverage]
+clauses_total = 2
+claims_total  = 2
+
+[[claim]]
+id        = "A-001"
+clause    = "S-1"
+item      = "src/lib.rs::add"
+statement = "add never panics on any i32 pair"
+band      = "A1"
+status    = "evidenced"
+
+  [[claim.evidence]]
+  kind      = "kani-harness"
+  family    = "bmc"
+  ref       = "check_add_no_panic"
+  result    = "pass"
+  tool      = "kani@d4df833c8f8f"
+  bounds    = "exhaustive-i32"
+  semantics = ""
+  record    = "evidence/kani-add.json"
+  # B21 typed assurance metadata (core.md B21; verification/code/rust.md §1a): declared only,
+  # never validated for truth. `proof-obligation` fits an exhaustive bounded-model-check: the one
+  # obligation Kani discharges over the full i32xi32 domain.
+  coverage         = { metric = "proof-obligation", value = 1.0 }
+  tool_qualification = { basis = "vendor-published Kani soundness argument; not independently audited" }
+  # B20 typed `toolchain`/`build_inputs` deliberately NOT added here: this manifest's subject
+  # (`example-lib`) is fictional (`commit` is the all-zero placeholder, F3), so there is no real
+  # Cargo.lock/rust-toolchain.toml in this repo to hash, and no real Kani build commit to disclose
+  # — verification/code/rust.md §1a / trap 5a.4 says never invent one.
+
+[[claim]]
+id        = "A-002"
+clause    = "S-2"
+item      = "src/lib.rs::div"
+statement = "div returns Err on zero divisor (gap; evaluated at ladder floor A0)"
+status    = "gap"

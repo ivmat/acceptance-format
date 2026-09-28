@@ -1,0 +1,15 @@
+{
+  "synthetic": true,
+  "note": "Invented format fixture, not an actual Kani run or certification.",
+  "checked": "wire::proofs::reject_truncated_header",
+  "claim": "CONF/EWF-1",
+  "result": "pass",
+  "tool": "fictional-kani@0000000000000000000000000000000000000000",
+  "bound": "symbolic input buffers up to eight bytes; unwind=9",
+  "semantics": "",
+  "subject": {
+    "name": "example-wire-decoder",
+    "commit": "0000000000000000000000000000000000000000"
+  },
+  "produced_at": "2026-09-21T09:00:00Z"
+}

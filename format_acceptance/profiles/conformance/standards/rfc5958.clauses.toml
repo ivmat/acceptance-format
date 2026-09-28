@@ -1,0 +1,22 @@
+[standard]
+id         = "rfc5958"
+title      = "RFC 5958 (08/2010) — Asymmetric Key Packages"
+edition    = "2010-08"
+provenance = "external"
+slice      = true
+slice_note = "the OneAsymmetricKey and EncryptedPrivateKeyInfo structural clauses (§2, §3) this crate's key parsers can conform to, violate, or declare out of scope for"
+numbering  = "the standard's own clause numbers"
+
+[[clause]]
+id    = "RFC5958-2"
+ref   = "§2"
+title = "OneAsymmetricKey (PKCS#8 v2) ASN.1 type definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5958-3"
+ref   = "§3"
+title = "EncryptedPrivateKeyInfo ASN.1 type definition"
+force = "definition"
+side  = "both"

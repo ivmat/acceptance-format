@@ -1,0 +1,37 @@
+# A public teaching contract for the existing weighted-toy claim.
+[document]
+protocol = "acceptance-protocol/0"
+minor = 0
+kind = "contract"
+id = "AC-WEIGHTED-TOY-0001"
+version = 1
+issued_at = "2026-09-27T00:00:00Z"
+issued_by = "consumer"
+status = "issued"
+[parties]
+consumer = { name = "Example consumer" }
+producer = { name = "Example producer" }
+[subject]
+kind = "tool"
+name = "weighted-toy"
+description = "ASCII lowercase slug example"
+profile = "acceptance/verification"
+[[requirement]]
+id = "S-1"
+statement = "slug(s) never returns an uppercase ASCII letter"
+mandatory = true
+waivable = false
+domain = "correctness"
+clause_source = "spec-document"
+[requirement.evidence]
+min_tier = "T3"
+weighted_required = true
+control_required = false
+recipe_required = true
+freshness = "any"
+independence = "none"
+[acceptance]
+rule = "all-mandatory-satisfied"
+consumer_verification = "re-execute-all"
+authority = "Example consumer"
+profiles_required = ["acceptance/verification"]

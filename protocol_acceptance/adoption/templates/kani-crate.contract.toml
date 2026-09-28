@@ -1,0 +1,76 @@
+# kani-crate.contract.toml — a REQUESTER skeleton for a Kani-verified Rust crate delivery.
+#
+# This is the CONSUMER'S document (protocol.md §3): the requirements a delivery must meet, before
+# any code is written. Copy it, fill every placeholder (search for the string FILL), then run:
+#
+#   python3 protocol_acceptance/tools/acceptance_protocol.py check-contract your-crate.contract.toml
+#
+# and iterate until it is clean. See ../KANI-FV-ADOPTION.md for the full walkthrough — what each
+# section means, how to tighten this from `exploratory` to `final`, and the class/phase mechanism
+# behind `assurance_class` and `phase` below.
+#
+# This skeleton deliberately ships with LOW floors (phase = "exploratory", T5, unweighted, no
+# recipe) even though it names an assurance_class: §3.7's maturity rule only turns a below-class
+# shortfall into a NOTE while the phase is not "final" (or the requirement is "draft") — exactly
+# the crystallizing behaviour P12 describes. Tighten the floors as the harnesses mature; the
+# adoption guide's migration checklist shows the shape a `final`-phase version of this same
+# contract should reach.
+
+[document]
+protocol   = "acceptance-protocol/0"
+minor      = 0
+kind       = "contract"
+id         = "AC-<FILL: your-crate>-0001"
+version    = 1
+issued_at  = "<FILL: 2026-01-01T00:00:00Z — when you issue this>"
+issued_by  = "consumer"
+status     = "issued"
+
+[parties]
+consumer = { name = "<FILL: your team or org>" }
+producer = { name = "<FILL: the crate's maintainer or team, or \"open\" for a call for proposals>" }
+
+[subject]
+kind         = "rust-crate"
+name         = "<FILL: crate name>"
+description  = "<FILL: one sentence — what this crate does>"
+deliverables = ["the crate at a tagged commit", "acceptance.toml package", "evidence/"]
+profile      = "acceptance/verification/code/rust"
+
+[[requirement]]
+id            = "R1"
+statement     = "<FILL: the property a reader can falsify, e.g. \"never panics on any input up to N bytes\">"
+mandatory     = true
+waivable      = false
+domain        = "safety"
+clause_source = "consumer-statement"
+firmness      = "draft"
+  [requirement.evidence]
+  min_tier          = "T5"
+  weighted_required = false
+  control_required  = false
+  recipe_required   = false
+  freshness         = "any"
+  independence      = "none"
+
+[[requirement]]
+id            = "R2"
+statement     = "every covering claim of R1 holds over the whole input domain, not just the harness's bound"
+mandatory     = true
+waivable      = true
+domain        = "correctness"
+kind          = "cross-cutting"
+clause_source = "consumer-statement"
+over          = ["R1"]
+firmness      = "draft"
+  [requirement.demands]
+  [requirement.demands.fields]
+  bounds = "unbounded"
+
+[acceptance]
+rule                  = "all-mandatory-satisfied"
+consumer_verification = "re-execute-all"
+authority              = "<FILL: who may issue the decision, e.g. \"your-team / lead\">"
+profiles_required      = ["acceptance/verification/code/rust"]
+phase                  = "exploratory"
+assurance_class        = "baseline/3"

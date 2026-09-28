@@ -1,0 +1,27 @@
+standard = "example-wire-format-1"
+declared_at = "2026-09-21T08:00:00Z"
+
+[[row]]
+clause = "EWF-1"
+applicability = "applicable"
+reason = ""
+
+[[row]]
+clause = "EWF-2"
+applicability = "applicable"
+reason = ""
+
+[[row]]
+clause = "EWF-3"
+applicability = "not-applicable"
+reason = "The fictional crate exposes only a decoder, with no encoder."
+
+[[row]]
+clause = "EWF-4"
+applicability = "excluded"
+reason = "The producer declines to claim duplicate-field rejection in this revision."
+
+[[row]]
+clause = "EWF-5"
+applicability = "applicable"
+reason = ""

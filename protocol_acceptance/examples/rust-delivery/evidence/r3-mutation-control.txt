@@ -1,0 +1,36 @@
+   Compiling iban-check v0.1.0 (<crate>)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.14s
+     Running tests/checksum.rs (target/debug/deps/checksum-4977eb0ec9bddc47)
+
+running 3 tests
+test a_wrong_checksum_is_rejected ... FAILED
+test flipping_one_digit_of_a_valid_iban_always_changes_the_verdict ... FAILED
+test all_known_valid_ibans_pass ... FAILED
+
+failures:
+
+---- a_wrong_checksum_is_rejected stdout ----
+
+thread 'a_wrong_checksum_is_rejected' (31551789) panicked at src/lib.rs:168:9:
+index out of bounds: the len is 2 but the index is 2
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- flipping_one_digit_of_a_valid_iban_always_changes_the_verdict stdout ----
+
+thread 'flipping_one_digit_of_a_valid_iban_always_changes_the_verdict' (31551791) panicked at src/lib.rs:168:9:
+index out of bounds: the len is 2 but the index is 2
+
+---- all_known_valid_ibans_pass stdout ----
+
+thread 'all_known_valid_ibans_pass' (31551790) panicked at src/lib.rs:168:9:
+index out of bounds: the len is 2 but the index is 2
+
+
+failures:
+    a_wrong_checksum_is_rejected
+    all_known_valid_ibans_pass
+    flipping_one_digit_of_a_valid_iban_always_changes_the_verdict
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test checksum`

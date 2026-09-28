@@ -5,7 +5,11 @@
 # no exemption for being a small teaching subject. Every field a weighted claim needs is here and
 # is real: `[spec].axis`, `clause_source`, `band`, `bounds`, `[claim.self_verify]`,
 # `[claim.self_verify.watched_fail]` (genuinely performed -- see below), and `record_hash`
-# (computed with `python3 tools/m11.py evidence-record <file>`, spec/evidence-types.md).
+# (the typed `record:` wire -- never the untyped legacy `evidence-record:`/bare wire that
+# `format_acceptance/spec/hash-domains.md`'s "Read-only legacy record wires" section accepts
+# read-only, with a WARNING, and that producers MUST NOT emit -- computed with
+# `format_acceptance/tools/hashdomains.py`'s own `digest("record:", <file bytes>)`, same as
+# `protocol_acceptance/adoption/KANI-FV-ADOPTION.md` §5).
 # Copy this file, point it at your own subject, and you have a real weighted manifest -- see
 # `README.md` in this directory for a field-by-field walkthrough.
 #
@@ -17,6 +21,7 @@
 # record land in the immediately following commit.
 
 [format]
+profile = "acceptance/verification"
 id            = "acceptance/0"
 shape         = "single-file"
 spec_id       = "acceptance-format"
@@ -37,6 +42,11 @@ dirty  = false           # `git status --short` was empty at the commit named ab
 path    = "SPEC.md"
 version = "v1"
 axis    = "the properties SPEC.md documents for examples/weighted-toy/slug.py's slug() function"
+
+[contract]
+id = "AC-WEIGHTED-TOY-0001"
+hash = "contract:sha-512:35c0e3955b359f9ebef152f17d00f4b5583756fab90628fd1840f2e1509887e9d11e5f038faa116742c87eebf6219bee1908ca63161292219a5eb541f31e64c3"
+requirements_total = 1
 
 [coverage]
 clauses_total = 1
@@ -84,4 +94,4 @@ clause_source = "spec-document"   # SPEC.md, above
   bounds      = "bounded: 5 concrete input strings (plain lowercase, plain uppercase, mixed case with an internal space, an alphanumeric string with no letters to change, already-hyphenated input) -- not the full string domain"
   cases       = 5
   record      = "evidence/test-slug-run.txt"
-  record_hash = "sha-512:ae61d3d244e26b96e866ff8258b7c106e2da37bf4e3f7ed4b73f13470529fb929f93f47cf01e0de7ab65d47d0e5f29bd191a34b2ea010b3c8c310f54c1075876"
+  record_hash = "record:sha-512:e2c56be9da77ac3169a4bffbbcf97d819080718488a54e091667806c9ec10e73a67a64ac66d44a4b03d1811518984b6aad11d103bf0ce9182310b1aee506fc86"

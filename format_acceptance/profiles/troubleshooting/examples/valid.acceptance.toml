@@ -1,0 +1,64 @@
+# acceptance/troubleshooting example pair (0.1.0 revision) -- the VALID half.
+# A blind diagnoser, sealed before the run, isolates the fault domain of both exercised
+# scenarios from permitted evidence alone. Synthetic: no real diagnosis was run.
+
+[format]
+id      = "acceptance/0"
+profile = "acceptance/troubleshooting"
+
+[subject]
+name   = "example-troubleshooting-subject"
+kind   = "tool"
+commit = "0000000000000000000000000000000000000000"
+dirty  = false
+
+[spec]
+path    = "SPEC.md"
+version = "v1"
+
+[coverage]
+clauses_total = 1
+claims_total  = 1
+
+[diagnostics]
+privacy   = "no personal data"
+retention = "repo lifetime"
+sampling  = "100% (every scenario)"
+
+[[claim]]
+id          = "TS-EX-1"
+clause      = "example-fault"
+item        = "example::diagnose"
+statement   = "blind diagnosis isolates the fault domain of both exercised example-fault scenarios (floor band A0)"
+fault_class      = "example-fault"
+outcome          = "isolate_fault_domain"
+outcome_criterion = { granularity = "example-domain", grading = "exact-set" }
+scenario_source   = { rule = "example:: every named scenario (synthetic, not a real generator)", population = 2 }
+scenarios   = ["s1", "s2"]
+status      = "evidenced"
+grade       = "ungraded"
+
+  [[claim.evidence]]
+  kind           = "blind-diagnosis"
+  family         = "injected-diagnosis"
+  ref            = "example::diagnoser"
+  result         = "pass"
+  tool           = "example-diagnoser@0"
+  record         = "evidence/results.json"
+  record_hash    = "record:sha-512:be7b8539ec0ed698eeb60251a8e59959330a5f1e35f970611ff7eaa507fd936ca550b66e96726f8eaaf3a8ec2c6efe6e4996b941368bfbff5d63532ce74b3836"
+  epistemic_tier = "T3"
+  held_out       = false
+
+    [claim.evidence.diagnoser]
+    kind   = "deterministic"
+    id     = "example_diagnoser"
+    digest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    [claim.evidence.blinding]
+    truth_hash       = "sha256:a2d8b842feeb97f65eac7f68fdea227ad46bc4a9d2772758caf9cc5a32bd4d7d"
+    visible_evidence = ["diagnostic output"]
+    committed_at     = "0000000000000000000000000000000000000000"
+
+    [claim.evidence.results]
+    s1 = "isolate_fault_domain"
+    s2 = "isolate_fault_domain"

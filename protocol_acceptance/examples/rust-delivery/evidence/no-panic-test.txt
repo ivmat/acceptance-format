@@ -1,0 +1,11 @@
+   Compiling iban-check v0.1.0 (<crate>)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running tests/no_panic.rs (target/debug/deps/no_panic-66ea8665207cdaff)
+
+running 3 tests
+test empty_and_whitespace_only_never_panic ... ok
+test adversarial_ascii_near_miss_lengths_never_panic ... ok
+test random_byte_strings_never_panic ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+

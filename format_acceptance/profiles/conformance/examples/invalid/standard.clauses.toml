@@ -1,0 +1,44 @@
+# Fictional standard invented solely for this example; no borrowed normative text.
+[standard]
+id = "example-wire-format-1"
+title = "Example wire format, invented edition one"
+edition = "1"
+provenance = "external"
+slice = true
+slice_note = "Five invented wire rules; this example declares only this slice."
+numbering = "the invented standard's own clause numbers"
+
+[[clause]]
+id = "EWF-1"
+ref = "1"
+title = "Reject truncated headers"
+force = "shall"
+side = "decoder"
+
+[[clause]]
+id = "EWF-2"
+ref = "2"
+title = "Reject reserved flag bits"
+force = "shall"
+side = "decoder"
+
+[[clause]]
+id = "EWF-3"
+ref = "3"
+title = "Emit the shortest length header"
+force = "shall"
+side = "encoder"
+
+[[clause]]
+id = "EWF-4"
+ref = "4"
+title = "Reject repeated field identifiers"
+force = "shall"
+side = "decoder"
+
+[[clause]]
+id = "EWF-5"
+ref = "5"
+title = "Reject lengths beyond remaining input"
+force = "shall"
+side = "decoder"

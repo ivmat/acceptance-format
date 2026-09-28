@@ -1,0 +1,37 @@
+# Clause numbers and original short titles only; see README.md for limits and copyright.
+# Sources: ENVELOPE.md section 5, the DER crate's source citations, and standard structure.
+
+[standard]
+id = "itu-t-x680-2021"
+title = "ITU-T X.680 (02/2021) — ASN.1 types and notation"
+edition = "2021-02"
+provenance = "external"
+slice = true
+slice_note = """\
+Table 1 universal tags; §22.7 NamedBitList trailing zeros; §41 restricted string repertoires.\
+"""
+numbering = "the standard's own clause numbers"
+
+[[clause]]
+id = "X680-T1"
+ref = "Table 1"
+title = "Universal tags assigned to ASN.1 types"
+force = "definition"
+side = "both"
+
+[[clause]]
+id = "X680-22.7"
+ref = "§22.7"
+title = "NamedBitList trailing-zero flexibility"
+force = "may"
+side = "both"
+
+[[clause]]
+id = "X680-41"
+ref = "§41"
+title = "Restricted string types and character repertoires"
+force = "definition"
+side = "both"
+
+# UNVERIFIED: precise §41 subclauses for PrintableString, IA5String, NumericString and
+# VisibleString repertoires are not established; only the cited clause family is admitted.

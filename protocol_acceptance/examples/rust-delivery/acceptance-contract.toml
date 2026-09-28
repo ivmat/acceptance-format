@@ -1,0 +1,196 @@
+# acceptance-contract.toml — the CONSUMER's contract (protocol.md §3).
+#
+# Authored by the consumer (Acme Payments Ltd) for a small, real deliverable: a hand-rolled IBAN
+# syntax + ISO 7064 mod-97-10 checksum validator, no dependencies. Six requirements: R1-R4 and R6
+# are ITEM requirements with a CORE floor (artifact-agnostic: epistemic tier, weight, control,
+# recipe, freshness, independence) plus a PROFILE floor under
+# `[requirement.evidence.profile."acceptance/verification/code/rust"]` (grade/band mechanism:
+# format_acceptance/profiles/verification/PROFILE.md; Rust-specific families/tokens:
+# format_acceptance/profiles/verification/code/rust.md — renamed from
+# protocol_acceptance/spec/profiles/rust-code.md 2026-09-24). R5 is CROSS-CUTTING: it constrains R1-R3's own
+# claims rather than carrying its own evidence floor, and demands each covering claim's `bounds`
+# field read "unbounded" — which the delivered package will NOT be able to show (Kani's proof is
+# bounded), driving a declared deviation, a waiver, and an accepted-with-conditions decision.
+
+[document]
+protocol  = "acceptance-protocol/0"
+minor     = 0
+kind      = "contract"
+id        = "AC-2026-0001"
+version   = 1
+issued_at = "2026-09-16T10:00:00Z"
+issued_by = "consumer"
+status    = "issued"
+
+[parties]
+consumer = { name = "Acme Payments Ltd", contact = "platform@acme-payments.example" }
+producer = { name = "ivmat" }
+
+[subject]
+kind         = "rust-crate"
+name         = "iban-check"
+description  = "IBAN syntax + ISO 7064 mod-97-10 checksum validator, no dependencies, no_std-capable arithmetic"
+deliverables = ["crate source at a tagged commit", "acceptance.toml package", "evidence/ directory"]
+constraints  = [
+  "license: MIT OR Apache-2.0",
+  "msrv: 1.85",
+  "no network at runtime",
+  "deps: none",
+  "unsafe: forbid",
+]
+profile = "acceptance/verification/code/rust"
+
+# ---------------------------------------------------------------------------------------------
+# R1 — malformed input is rejected
+# ---------------------------------------------------------------------------------------------
+
+[[requirement]]
+id            = "R1"
+statement     = "Malformed IBAN values (bad length, bad characters, bad country code) are rejected, with the specific IbanError variant matching the specific defect."
+mandatory     = true
+waivable      = false
+domain        = "correctness"
+clause_source = "consumer-statement"
+
+  [requirement.evidence]
+  min_tier          = "T3"
+  weighted_required = true
+  control_required  = true
+  recipe_required   = true
+  freshness         = "delivered-revision"
+  independence      = "none"
+
+  [requirement.evidence.profile."acceptance/verification/code/rust"]
+  min_grade = "test-only"
+  min_band  = "A1"
+  families  = ["dynamic", "bmc", "kernel"]
+
+# ---------------------------------------------------------------------------------------------
+# R2 — the checksum is computed correctly
+# ---------------------------------------------------------------------------------------------
+
+[[requirement]]
+id            = "R2"
+statement     = "The ISO 7064 mod-97-10 checksum is computed correctly over the rearranged IBAN: known-valid IBANs pass, and a single-digit perturbation of a valid IBAN always fails."
+mandatory     = true
+waivable      = false
+domain        = "correctness"
+clause_source = "consumer-statement"
+
+  [requirement.evidence]
+  min_tier          = "T3"
+  weighted_required = true
+  control_required  = true
+  recipe_required   = true
+  freshness         = "delivered-revision"
+  independence      = "none"
+
+  [requirement.evidence.profile."acceptance/verification/code/rust"]
+  min_grade = "test-only"
+  min_band  = "A1"
+  families  = ["dynamic", "bmc", "kernel"]
+
+# ---------------------------------------------------------------------------------------------
+# R3 — never panics on any input
+# ---------------------------------------------------------------------------------------------
+
+[[requirement]]
+id            = "R3"
+statement     = "iban_check::validate never panics on any input, including empty strings, non-ASCII/invalid-UTF-8-adjacent strings, and strings far longer than any real IBAN."
+mandatory     = true
+waivable      = false
+domain        = "safety"
+clause_source = "consumer-statement"
+
+  [requirement.evidence]
+  min_tier          = "T2"
+  weighted_required = true
+  control_required  = false
+  recipe_required   = true
+  freshness         = "delivered-revision"
+  independence      = "none"
+
+  [requirement.evidence.profile."acceptance/verification/code/rust"]
+  min_grade = "probe"
+  min_band  = "A1"
+  families  = ["bmc", "dynamic"]
+
+# ---------------------------------------------------------------------------------------------
+# R4 — no unsafe code
+# ---------------------------------------------------------------------------------------------
+
+[[requirement]]
+id            = "R4"
+statement     = "The crate contains no unsafe code anywhere in its source (enforced by #![forbid(unsafe_code)]), and clippy runs clean under -D warnings."
+mandatory     = true
+waivable      = false
+domain        = "security"
+clause_source = "consumer-statement"
+
+  [requirement.evidence]
+  min_tier          = "T4"
+  weighted_required = true
+  control_required  = true
+  recipe_required   = true
+  freshness         = "delivered-revision"
+  independence      = "none"
+
+  [requirement.evidence.profile."acceptance/verification/code/rust"]
+  min_grade = "mechanical"
+  min_band  = "A1"
+  families  = ["mechanical"]
+
+# ---------------------------------------------------------------------------------------------
+# R5 — cross-cutting: the verification of R1-R3 is unbounded
+# ---------------------------------------------------------------------------------------------
+
+[[requirement]]
+id            = "R5"
+statement     = "Every covering claim of R1, R2 and R3 holds over the whole input domain (unbounded) — not merely a bounded proof or a finite test sample."
+mandatory     = true
+waivable      = true
+domain        = "correctness"
+clause_source = "consumer-statement"
+kind          = "cross-cutting"
+over          = ["R1", "R2", "R3"]
+
+  [requirement.demands]
+  # no core demands beyond the field demand below — R1/R2/R3's own item floors already require
+  # weight/control/recipe; this requirement adds only the boundedness demand.
+  [requirement.demands.fields]
+  bounds = "unbounded"
+
+# ---------------------------------------------------------------------------------------------
+# R6 — optional: docs build clean
+# ---------------------------------------------------------------------------------------------
+
+[[requirement]]
+id            = "R6"
+statement     = "cargo doc --no-deps builds the crate's documentation with zero warnings."
+mandatory     = false
+waivable      = false
+domain        = "documentation"
+clause_source = "consumer-statement"
+
+  [requirement.evidence]
+  min_tier          = "T4"
+  weighted_required = true
+  control_required  = false
+  recipe_required   = true
+  freshness         = "delivered-revision"
+  independence      = "none"
+
+  [requirement.evidence.profile."acceptance/verification/code/rust"]
+  min_grade = "mechanical"
+  min_band  = "A0"
+  families  = ["mechanical"]
+
+# ---------------------------------------------------------------------------------------------
+
+[acceptance]
+rule                  = "all-mandatory-satisfied"
+consumer_verification = "re-execute-all"
+authority             = "Acme Payments Ltd / platform-lead"
+profiles_required     = ["acceptance/verification/code/rust"]
+stale_after           = "P180D"
+phase                 = "final"

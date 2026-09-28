@@ -1,0 +1,29 @@
+[standard]
+id         = "rfc5480"
+title      = "RFC 5480 (03/2009) — Elliptic Curve Cryptography Subject Public Key Information"
+edition    = "2009-03"
+provenance = "external"
+slice      = true
+slice_note = "the EC public key algorithm-identifier, named-curve parameter, and subjectPublicKey point-encoding clauses (§2.1, §2.1.1, §2.2) this crate's EC key parsers can conform to or violate"
+numbering  = "the standard's own clause numbers"
+
+[[clause]]
+id    = "RFC5480-2.1"
+ref   = "§2.1"
+title = "EC public key AlgorithmIdentifier (id-ecPublicKey) and parameters"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5480-2.1.1"
+ref   = "§2.1.1"
+title = "named curve OID as the ECParameters CHOICE arm"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC5480-2.2"
+ref   = "§2.2"
+title = "subjectPublicKey field encodes the EC point as octets"
+force = "definition"
+side  = "both"

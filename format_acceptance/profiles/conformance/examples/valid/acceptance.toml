@@ -1,0 +1,124 @@
+# Synthetic format example: invented standard, crate, commit, and evidence.
+# F2 [spec].version hashes the INVENTORY FILE's raw bytes (the in-tree normalised
+# slice), domain-separated with b"normative-reference:"; it hashes no external text.
+# Evidence is A0 and unweighted: no real execution or observed-red control exists.
+
+[format]
+id = "acceptance/0"
+profile = "acceptance/conformance"
+kind_registry = ["rust-crate", "rust-workspace"]
+
+[subject]
+name = "example-wire-decoder"
+kind = "rust-crate"
+commit = "0000000000000000000000000000000000000000"
+dirty = false
+
+[spec]
+path = "standard.clauses.toml"
+provenance = "external"
+version = "normative-reference:sha-512:26efe43bfd67a213322b8929b6c8bf39ffefedef8f974805d2cd749180f35be20e04985add650db3f083261fb09a97d46e0eba5aec65a87cab105c20686d145b"
+axis = "one claim per clause of the declared slice of example-wire-format-1"
+external = ["Example wire format, invented edition one"]
+
+[coverage]
+clauses_total = 5
+claims_total = 5
+denominator = "slice"
+slice_note = "Five invented wire rules; this example declares only this slice."
+
+[conformance]
+standard = "example-wire-format-1"
+applicability_record = "applicability.toml"
+applicability_hash = "applicability-record:sha-512:45b898f2455e13680d812efab9d14e5bf290ce08a2de9a46c85e708747a0cf5ae5a221918bf8006e952ed345b87d3607b11c94fb28a90add7b57a56ce5aec7d0"
+applicability_declared_at = "2026-09-21T08:00:00Z"
+
+[[claim]]
+id = "CONF/EWF-1"
+clause = "EWF-1"
+clause_source = "external-standard"
+item = "src/lib.rs::decode_header"
+statement = "Synthetic evidence illustrates rejection of truncated headers up to eight input bytes."
+band = "A0"
+status = "evidenced"
+grade = "ungraded"
+weight = "unweighted"
+applicability = "applicable"
+
+  [[claim.evidence]]
+  kind = "kani-harness"
+  family = "bmc"
+  method = "kani-harness"
+  epistemic_tier = "T2"
+  ref = "wire::proofs::reject_truncated_header"
+  result = "pass"
+  tool = "fictional-kani@0000000000000000000000000000000000000000"
+  bounds = "symbolic input buffers up to eight bytes; unwind=9"
+  semantics = ""
+  record = "evidence/clause-1.json"
+  record_hash = "sha-512:7e4dc172cfb1d5faa11943b76c88d19dd008fafdcc7abd831a51f7377b1a73bfb34d7d4c497b0e43b9baa5f62e3cd004041ae47ff4bfbfd130f9e54dd56d6b1c"
+  captured_at_commit = "0000000000000000000000000000000000000000"
+
+[[claim]]
+id = "CONF/EWF-2"
+clause = "EWF-2"
+clause_source = "external-standard"
+item = "src/lib.rs::decode_flags"
+statement = "Reserved-bit rejection is applicable but has no evidence yet."
+band = "A0"
+status = "gap"
+grade = "ungraded"
+weight = "unweighted"
+applicability = "applicable"
+
+[[claim]]
+id = "CONF/EWF-3"
+clause = "EWF-3"
+clause_source = "external-standard"
+item = "src/lib.rs::encode_length"
+statement = "Shortest-header emission does not apply to this decoder-only subject."
+band = "A0"
+status = "not-applicable"
+weight = "unweighted"
+applicability = "not-applicable"
+applicability_reason = "The fictional crate exposes only a decoder, with no encoder."
+
+[[claim]]
+id = "CONF/EWF-4"
+clause = "EWF-4"
+clause_source = "external-standard"
+item = "src/lib.rs::decode_fields"
+statement = "Duplicate-field rejection is applicable but excluded by the producer this revision."
+band = "A0"
+status = "gap"
+grade = "out-of-scope"
+weight = "unweighted"
+applicability = "excluded"
+applicability_reason = "The producer declines to claim duplicate-field rejection in this revision."
+scope_ref = "applicability.toml"
+
+[[claim]]
+id = "CONF/EWF-5"
+clause = "EWF-5"
+clause_source = "external-standard"
+item = "src/lib.rs::decode_length"
+statement = "Synthetic evidence illustrates rejection of lengths beyond eight-byte input buffers."
+band = "A0"
+status = "evidenced"
+grade = "ungraded"
+weight = "unweighted"
+applicability = "applicable"
+
+  [[claim.evidence]]
+  kind = "kani-harness"
+  family = "bmc"
+  method = "kani-harness"
+  epistemic_tier = "T2"
+  ref = "wire::proofs::reject_oversized_length"
+  result = "pass"
+  tool = "fictional-kani@0000000000000000000000000000000000000000"
+  bounds = "symbolic input buffers up to eight bytes; unwind=9"
+  semantics = ""
+  record = "evidence/clause-5.json"
+  record_hash = "sha-512:b20fdd7740ffbaa9788c94172adaffc027971cc83382687151c985c2ec46b8c69974f55b3bfa0fc697c60b4d6ea1af8f0ef2c2c6ee1bbc3b857507a203fce346"
+  captured_at_commit = "0000000000000000000000000000000000000000"

@@ -1,0 +1,46 @@
+# Public Class text history. Locked versions are not ratified.
+
+[[lock]]
+version = "0.3.0"
+date = "2026-09-24"
+reason = "Class text snapshot for this release."
+ratified = false
+
+[lock.files]
+"format_acceptance/spec/core.md" = "b375e430131b6c703c4f1761c108cb746b3039ebe8223ea206f51fe5048961fa"
+"format_acceptance/spec/format.md" = "5d55ccbcab4f29133faa2532fdfd052b8bd295fdce24e733ac382931051902a5"
+"format_acceptance/spec/profiles.md" = "4189463bd5dabf6adf31e69ff4f3d16f0b7bbdf29b7232f107ca0bf7eb94ce4d"
+"format_acceptance/spec/hash-domains.md" = "ff37a77e5fb481a4562383b9f7f208b779fb26492ee97f79978ab2068296a162"
+"protocol_acceptance/spec/protocol.md" = "da6837c76429919b518573601c5e9d2a62a6ff2ff42f59c2eab5b6b4b41206ad"
+"protocol_acceptance/spec/states.toml" = "68056f49dcb80c531fe7afd8bfe9f707d2f558a0ef1ae64d2200057093133a2f"
+"protocol_acceptance/spec/assurance-classes.toml" = "6fd8453a902a1a4625fc252a11185d8f3248a54936dfab9038a63b7edbc844c8"
+
+[[lock]]
+version = "0.3.1"
+date = "2026-09-26"
+reason = "Class text snapshot for this release."
+ratified = false
+
+[lock.files]
+"format_acceptance/spec/core.md" = "451b932426bc1f818efe04615974399e08c506da5b867bee8c40eab656c6ae58"
+"format_acceptance/spec/format.md" = "506b5cd97233ad40ee202da84f14ed278dd8d5d9134645b59bb71ba00300dc4c"
+"format_acceptance/spec/profiles.md" = "8288f7fb380d528a179827513e236f71d5484b2febf3d54bcf415c412b658f55"
+"format_acceptance/spec/hash-domains.md" = "b44f4a1094e484bdae63f4a0b4cc49659bd035e3608abbf1812cb29d20382583"
+"protocol_acceptance/spec/protocol.md" = "d149d0624f057e47dd655cf5d7c5d86c7c19bf910019058aaa863e000d537381"
+"protocol_acceptance/spec/states.toml" = "f8c14d639bc62d11d2d8db97b58f088408815d54119006beaa7c471b372e5ada"
+"protocol_acceptance/spec/assurance-classes.toml" = "66aeecb8743c57ab5f420f3c44dd09c4223c8e4eeac344a0366e2ca7f8b7d58f"
+
+[[lock]]
+version = "0.3.2"
+date = "2026-09-27"
+reason = "Class text snapshot for this release. Editorial update: repaired dangling internal references, across three rounds (no normative change). Fold 4: dropped remaining internal-only prose (work-package self-references, a dangling section citation, a stale unsupplied-documents claim, an internal roadmap/scoreboard citation, an owner attribution) in favor of equivalent public-facing statements; no rule or registry changed. Fold 5: dropped two further dangling internal review-round citations from core.md/profiles.md (rule text unchanged), replaced a reference to an unshipped development-only mutation-audit script in protocol.md with a plain note that the audit lives upstream, and reworded protocol.md's description of `tools/check_acceptance.py` to match how this release's own README and adoption guide already describe it; no rule or registry changed."
+ratified = false
+
+[lock.files]
+"format_acceptance/spec/core.md" = "1cfa1725d2e515aa609e5a190d8f5746567525bf43b86ca0bc77119822476c73"
+"format_acceptance/spec/format.md" = "f13a2ba8dc02c076a3fb3a5a30b0426e0159c4df6f356a5b4fe6efe2c70c1a62"
+"format_acceptance/spec/profiles.md" = "ec8a49a383b77e6b984450d54f737cd9be062edee89933109200b976faec0b3b"
+"format_acceptance/spec/hash-domains.md" = "8be5a51e09ee8932e24ebbf71219a8962b6f41623d6e111e74068a16ee09b40f"
+"protocol_acceptance/spec/protocol.md" = "740f841fd6ed7bad5a631d087b5f059e265444136ddd51ed32abc36c05207eb3"
+"protocol_acceptance/spec/states.toml" = "e536de5f8941e38b2e55b592d8885556a6f9fc2444aee756053e2acfc97ccc31"
+"protocol_acceptance/spec/assurance-classes.toml" = "9c2c0ad6f5db2ab1b0639a68dcc5b6390af3e1f29e5ed779a5db4033adc73b2d"

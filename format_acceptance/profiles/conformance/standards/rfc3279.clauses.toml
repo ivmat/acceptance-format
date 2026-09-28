@@ -1,0 +1,22 @@
+[standard]
+id         = "rfc3279"
+title      = "RFC 3279 — Algorithms and Identifiers for X.509 PKI"
+edition    = "2002-04"
+provenance = "external"
+slice      = true
+slice_note = "the ECDSA signature value and RSA public key encoding clauses (§2.2.3, §2.3.1) this crate's structural parsers can conform to or violate"
+numbering  = "the standard's own clause numbers"
+
+[[clause]]
+id    = "RFC3279-2.2.3"
+ref   = "§2.2.3"
+title = "ECDSA-Sig-Value ASN.1 type definition"
+force = "definition"
+side  = "both"
+
+[[clause]]
+id    = "RFC3279-2.3.1"
+ref   = "§2.3.1"
+title = "RSA public key encoding inside SubjectPublicKeyInfo"
+force = "definition"
+side  = "both"

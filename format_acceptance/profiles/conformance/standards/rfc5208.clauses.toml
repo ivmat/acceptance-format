@@ -1,0 +1,19 @@
+[standard]
+id         = "rfc5208"
+title      = "RFC 5208 (05/2008) — Public-Key Cryptography Standards #8: Private-Key Information Syntax"
+edition    = "2008-05"
+provenance = "external"
+slice      = true
+slice_note = "the single PrivateKeyInfo structural clause (§5) this crate's pkcs8 v1 parser can conform to or violate"
+numbering  = "the standard's own clause numbers"
+
+[[clause]]
+id    = "RFC5208-5"
+ref   = "§5"
+title = "PrivateKeyInfo ASN.1 type definition, version fixed to v1"
+force = "definition"
+side  = "both"
+
+# UNVERIFIED: RFC 5208 §5 has no lettered/numbered sub-clauses in the published text, as far as
+# could be confirmed (no §5.1, §5.2 headings). If the version=v1(0) constraint and the
+# attributes field warrant their own rows, split this clause then rather than here.
