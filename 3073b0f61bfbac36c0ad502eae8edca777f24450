@@ -1,0 +1,1 @@
+full-regression: GREEN @ 3073b0f61bfbac36c0ad502eae8edca777f24450 — bash gates/run_all.sh in the real tree, porcelain-clean before and after, HEAD == this sha, exit 0, 2026-09-28; also green in a copy without .git, and the upstream leak scan (--tree) passed. Owner push word 2026-09-28.
