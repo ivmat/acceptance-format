@@ -1,1 +1,0 @@
-full-regression: GREEN @ 70576646af28e0538fb1aa55cf477ea0bc54a914 — bash gates/run_all.sh in the real tree, porcelain-clean before and after, HEAD == this sha, exit 0, 2026-10-03; also green in a copy without .git, and the upstream leak scan (--tree) passed. Cross-family review: astra roadmap r2 PASS. Owner push word: PENDING.
