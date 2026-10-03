@@ -284,7 +284,7 @@ _HOME_PATH_RE = re.compile(
     re.escape(_tok("~", "/repo/")) + r"\S+"
     r"|" + re.escape(_tok("/", "Users", "/")) + r"[A-Za-z0-9_.\-]+(?:/[^\s`)]*)?"
 )
-_COLD_OPUS_RE = re.compile(_tok("cold", "[- ]", "op", "us"), re.IGNORECASE)
+_COLD_REVIEW_RE = re.compile(_tok("cold", "[- ]", "op", "us"), re.IGNORECASE)
 _NAME_TOKEN_RE = re.compile(
     r"\b(" + _tok("as", "tra") + "|" + _tok("fa", "ble") + "|" + _tok("gpt", "-\\w+") + r")\b",
     re.IGNORECASE,
@@ -320,7 +320,7 @@ def hygiene_violations(text: str) -> list[tuple[int, str, str]]:
     for i, line in enumerate(text.splitlines(), 1):
         if _HOME_PATH_RE.search(line):
             hits.append((i, "home-path", line))
-        elif _COLD_OPUS_RE.search(line) or _NAME_TOKEN_RE.search(line) or _SOL_NAME_RE.search(line):
+        elif _COLD_REVIEW_RE.search(line) or _NAME_TOKEN_RE.search(line) or _SOL_NAME_RE.search(line):
             hits.append((i, "reviewer-name", line))
         elif _APPARATUS_TOKEN_RE.search(line):
             hits.append((i, "apparatus", line))

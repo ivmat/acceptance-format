@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The roadmap now states the protocol's scope: pure producer↔consumer artefact acceptance, with
+  transactions, payment, legal standing and business contracts outside it, and the format designed
+  to fit into them. It also sets the 0.4 target: a pure acceptance protocol, trust numbers out of
+  the class, closed grammars, and the "profile" split (0.4.0 at the earliest).
+- `export_closure.py`: an internal pattern name was renamed (no behaviour change), found by a
+  stricter leak scan that now also checks words joined by `_` or `-`.
 - The README opens with a plain-language introduction and a tiny worked example.
 - The publication leak gates no longer ship in this repository. They must list the vocabulary
   they search for, so shipping them published that list. They now run before each export
