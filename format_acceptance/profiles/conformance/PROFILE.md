@@ -12,8 +12,9 @@ The profile vocabulary and its checked examples are shipped in this directory.
 
 **Conformance 0.2.0 (2026-09-24).** `source_claim` / `source_claims_other` /
 `[conformance].source_manifest{,_hash}` (0.1.0-draft's pre-`/0` cross-manifest borrowing
-encoding) are retired — the meaning no longer reads them, at any declared `profile_version`, no
-compatibility shim. A borrowed claim now cites its source with a class B8 `acceptance-claim`
+encoding) no longer supply borrowing evidence at any `profile_version`. A compatibility
+path still accepts them as inert metadata with a warning at `0.1.0-draft`; at `0.2.0` they
+are errors (see C11 for version fallback). A borrowed claim now cites its source with a class B8 `acceptance-claim`
 reference evidence entry (`core.md` B8), validated entirely by
 `check_core.check_reference_evidence` — this meaning adds no B8-specific mechanism of its own.
 C6's inventory-digest recomputation, C7's applicability-hash recomputation and C9's manifest-wide
@@ -259,8 +260,11 @@ constraints (FIXED vocabulary):
 - **C11 — RETIRED at 0.2 (lowered to class B8).** The pre-`/0` borrowed-evidence contract
   described in this section through `profile_version 0.1.0-draft` (`source_claim`,
   `source_claims_other`, `[conformance].source_manifest{,_hash}`) is gone: the meaning no longer
-  reads these fields, at any declared `profile_version` — their presence is a hard `C8:`-prefixed
-  error, not a warning with a grace period ("no compatibility shim," by design). A borrowed claim now cites its source with a class B8 `acceptance-claim` reference
+  uses these fields as borrowing evidence at any `profile_version`. Their presence produces a
+  `C8:`-prefixed warning as inert metadata when the resolved version is `0.1.0-draft`, and an
+  error otherwise. This compatibility check reads `[format].profile_version`, falling back
+  to `[format].version`, then to `0.1.0-draft` if both are absent; it does not validate the old
+  borrowing contract. A borrowed claim now cites its source with a class B8 `acceptance-claim` reference
   evidence entry in `evidence` (`core.md` B8) — see "Evidence borrowed from a verification
   manifest," below, for what that entry looks like and which core rule owns each part of the old
   C11 contract (hash-before-parse, source-claim existence and status, non-control membership,
@@ -353,8 +357,9 @@ checks: per-clause applicability-statement well-formedness (every clause `applic
 above), not a path this check validates; `[spec].axis` present and `clause_source` on every claim
 (R-8); and Constraints C1–C10, C8 (the `code/rust` binding's own delta). What used to be C11 (the
 pre-`/0` borrowed-evidence lineage) is retired at 0.2: presence of `source_claim`,
-`source_claims_other` or `[conformance].source_manifest{,_hash}` is now a hard error at every
-`profile_version`; a borrowed claim is validated entirely by `check_core.check_reference_evidence`
+`source_claims_other` or `[conformance].source_manifest{,_hash}` produces a warning for inert
+metadata at resolved version `0.1.0-draft` and an error otherwise (C11's compatibility check);
+a borrowed claim is validated entirely by `check_core.check_reference_evidence`
 (class B8) once it carries a real `acceptance-claim` evidence row. C6/C7/C9's digest and
 containment sub-checks are likewise retired from this module — `check_core.check_spec`,
 `check_core.check_documents` and `check_core.check_no_aggregates` already cover them on every

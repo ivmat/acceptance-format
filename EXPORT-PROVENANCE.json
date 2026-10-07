@@ -14,7 +14,7 @@
       "sha256": "7a2c8cdf4e95816c20daf0bd00429482d0d6e7f4df4e1cdcadaf4abf80ef7bef"
     },
     "KNOWN-LIMITS.md": {
-      "sha256": "58d7b1f42055e40cc2513407db7470e67a8b2f8cd228750b98ed317a3cc9013e"
+      "sha256": "b4217742b4d3d29bb4905de59d60fda3f5037ef8c02297a5287ed9829234f570"
     },
     "LICENSE-NOTES.md": {
       "sha256": "e08c3c751db79dcc92bc48720340cc9c48d2f1c3d03c2c1f2ec9ededf4f4e676"
@@ -80,7 +80,7 @@
       "sha256": "50806f355e2dbca9f66752c1322562019d2d3c58100d1c6416f9566b6cc24397"
     },
     "format_acceptance/profiles/conformance/PROFILE.md": {
-      "sha256": "d3c88174a1b492c718ae3bbf98b46d2e8cf0da3ce51067bfd39c3d4ba8873469"
+      "sha256": "105eecc36150a3d2c86237a5017765cafb67981cf4563c2152cc44c27123bf0a"
     },
     "format_acceptance/profiles/conformance/code/rust.md": {
       "sha256": "5337cf981fbbcb5dad19c58796fbb217c6771244263dea049fe78265d1e4d8fd"
@@ -440,6 +440,6 @@
       "sha256": "e432f9ccf286fe56d60074ea7252f0adedb8b5b0b42b98929dc464befdfd2de9"
     }
   },
-  "source_commit": "428123b45c86297ce2d8d6834f0dff236bee1e48",
+  "source_commit": "88d52fe743b23e3bc198261e202df79736b8130e",
   "source_dirty": false
 }

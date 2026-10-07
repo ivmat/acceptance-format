@@ -5,15 +5,19 @@ a signature, or proof that the evidence is true.
 
 Deferred to 0.4 (see [ROADMAP.md](ROADMAP.md) for what 0.4 is planned, not final, to add):
 
-- B8 claim-discharge mode (a claim discharged through a reference to another claim — distinct
-  from the shipped `[[condition]].discharged_by` decision-level field, protocol.md §5.3).
+- B8 claim-discharge mode (using a source verdict without named records) — distinct from
+  B8 `acceptance-claim` reference evidence, which ships and requires named source records,
+  and from the shipped `[[condition]].discharged_by` decision-level field, protocol.md §5.3.
 - Digest/components freshness; freshness remains commit-only.
 - Multiple governing `[spec]` documents.
 - `gap_reason` and `spec_drift` claim fields.
 - Registration of additional `when_kind` kinds (currently usable through `kind_registry`).
 - The fault-resolution protocol and package-integrity profile.
 - Signing and DSSE.
-- Retirement of the conformance 0.1 legacy-field compatibility shim.
+- Retirement of the conformance `0.1.0-draft` compatibility paths: warnings for inert
+  `source_claim` / `source_claims_other` / `[conformance].source_manifest{,_hash}` metadata,
+  legacy applicability encodings, and `[conformance].cover_only` handling. The old borrowing
+  validation is already retired; borrowing uses B8 reference evidence.
 - Retirement of untyped legacy record hashes. They produce warnings throughout 0.3.x;
   writers must emit typed `record:sha-512:` hashes.
 - The `external_pilot` readiness level.
@@ -39,7 +43,8 @@ hash and validates without a legacy-hash warning.
 The minimal example is fictional and validated as a producer-only record shape;
 its evidence pointers are placeholders, so it is not a strict evidence certificate.
 
-The `rs-verified-der` example is omitted pending migration. The historical
+The `rs-verified-der` example in this repository is omitted pending migration;
+`der-verified` itself ships an acceptance 0.3.2 manifest and evidence records. The historical
 comparison document discusses it as a case study, not as a current validated example.
 
 The public closure gate uses export provenance and exercises the unchanged closure
