@@ -7,7 +7,7 @@ warning: Found the following unsupported constructs:
          Verification will fail if one or more of these constructs is reachable.
          See https://model-checking.github.io/kani/rust-feature-support.html for more details.
 
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.57s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.31s
 Checking harness verification::validate_never_panics...
 CBMC 6.8.0 (cbmc-6.8.0)
 CBMC version 6.8.0 (cbmc-6.8.0) 64-bit arm64 macos
@@ -3594,34 +3594,34 @@ Unwinding loop _RNvNtCskTE0W3CPs27_10iban_check8checksum14mod97_is_valid.0 itera
 aborting path on assume(false) at file <users>/runner/work/kani/kani/library/kani/src/lib.rs line 57 column 1 function kani::mem::cbmc::same_allocation thread 0
 aborting path on assume(false) at file src/checksum.rs line 29 column 15 function checksum::mod97_is_valid thread 0
 Not unwinding loop _RNvNtCskTE0W3CPs27_10iban_check8checksum14mod97_is_valid.0 iteration 24 file src/checksum.rs line 29 column 5 function checksum::mod97_is_valid thread 0
-Runtime Symex: 254.734s
+Runtime Symex: 340.323s
 size of program expression: 1050342 steps
 slicing removed 812272 assignments
 Generated 25259 VCC(s), 13454 remaining after simplification
-Runtime Postprocess Equation: 5.38892s
+Runtime Postprocess Equation: 5.5286s
 Passing problem to propositional reduction
 converting SSA
-Runtime Convert SSA: 6.135s
+Runtime Convert SSA: 5.57911s
 Running propositional reduction
 Post-processing
-Runtime Post-process: 0.937919s
+Runtime Post-process: 0.965414s
 Solving with CaDiCaL 2.0.0
 4526460 variables, 30161531 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 5.97855s
-Runtime decision procedure: 12.2225s
+Runtime Solver: 4.8943s
+Runtime decision procedure: 10.5936s
 Running propositional reduction
 Solving with CaDiCaL 2.0.0
 4526461 variables, 30161532 clauses
 SAT checker: instance is SATISFIABLE
-Runtime Solver: 90.6747s
-Runtime decision procedure: 90.9837s
+Runtime Solver: 87.35s
+Runtime decision procedure: 87.6561s
 Running propositional reduction
 Solving with CaDiCaL 2.0.0
 4526462 variables, 30161533 clauses
 SAT checker: instance is UNSATISFIABLE
-Runtime Solver: 1.12787s
-Runtime decision procedure: 1.14162s
+Runtime Solver: 1.20872s
+Runtime decision procedure: 1.22222s
 
 RESULTS:
 Check 1: core::num::<impl usize>::checked_sub.arithmetic_overflow.1
@@ -5554,7 +5554,7 @@ SUMMARY:
  ** 0 of 385 failed (19 unreachable)
 
 VERIFICATION:- SUCCESSFUL
-Verification Time: 386.95908s
+Verification Time: 467.75006s
 
 Manual Harness Summary:
 Complete - 1 successfully verified harnesses, 0 failures, 1 total.

@@ -37,14 +37,17 @@ def reference_row(mode):
         if mode=='weaker':ev['epistemic_tier']='T5'
         if mode=='equal':ev['epistemic_tier']='T3'
         rep=evaluate(d,root)
-        if mode in ('ok','equal'):assert rep.doc['claim'][0]['evidence'][0]['epistemic_tier']=='T3'
+        # B8 must derive/preserve this field; unrelated B1 warning text is not evidence.
+        if mode in ('ok','equal'):
+            tier = rep.doc['claim'][0]['evidence'][0].get('epistemic_tier')
+            assert tier == 'T3', f'B8: reference epistemic_tier expected T3, got {tier!r}'
         return C.verdict(rep)[0],diagnostic(rep)
 n=len(CASES)
 for name,mode,v,sub in [
  ('b8-reference-row-missing-ref-red','missing-ref','FAIL','reference row ref must equal'),
  ('b8-reference-row-result-fail-red','fail','FAIL','reference row result must equal'),
  ('b8-reference-row-record-hash-neq-manifest-hash-red','hash','FAIL','reference row record_hash must equal'),
- ('b8-reference-row-ok','ok','PASS','B1: subject digest not recomputed')]:
+ ('b8-reference-row-ok','ok','PASS','')]:
     synthetic(name,v,sub,lambda m=mode:reference_row(m))
 group(2,n)
 n=len(CASES)
@@ -114,7 +117,7 @@ n=len(CASES)
 for name,mode,v,sub in [
  ('b8-bandless-source-explicit-a0-red','bandless','FAIL','band-less source requires a band-less referencing claim'),
  ('b8-reference-tier-weaker-than-derived-red','weaker','FAIL','reference tier must equal derived minimum'),
- ('b8-reference-tier-equal-ok','equal','PASS','B1:')]:
+ ('b8-reference-tier-equal-ok','equal','PASS','')]:
     synthetic(name,v,sub,lambda m=mode:reference_row(m))
 group(7,n)
 n=len(CASES)
@@ -143,10 +146,7 @@ n=len(CASES)
 synthetic('b8-source-in-nested-repo-red','FAIL','B6: reference manifest: path crosses repository boundary',lambda:conformance_case('nested'))
 group(9,n)
 
-# Group 10 (the archived rs-verified-der trial's B6-containment/B2-control exception fixtures)
-# retired: the trial moved to the companion's archive/, so `trials/` no
-# longer carries it and step 3 of the companion gate accepts no exception (every trial must
-# PASS; none present -> skip). See docs/ACCEPTANCE-0.3-BUILD-PLAN.md revision.
+# Group 10 containment/control exception fixtures were retired; no exceptions remain.
 
 def profile_contract():
     text=(Path(C.__file__).parents[1]/'profiles/conformance/PROFILE.md').read_text()

@@ -1,9 +1,9 @@
 ---
 type: reference
-digest: Draft adapter specification for projecting contracts into worker briefs and assembling packages from reports.
+digest: Draft adapter specification for projecting specifications into worker briefs and assembling packages from reports.
 ---
 
-# Adapter: the orchestrator's two mechanical directions — contract → brief, report → package (DRAFT)
+# Adapter: the orchestrator's two mechanical directions — specification → brief, report → package (DRAFT)
 
 > **Publication note.** This file is not part of the Class text locked in `CLASS-LOCK.toml`; it
 > specifies a public tool feature that `acceptance_protocol.py` implements and cites by name.
@@ -17,9 +17,9 @@ orchestrator (a Python reference implementation today, with a future compiled im
 in parity) does two mechanical projections, and the worker fills only the semantic slice in
 between.
 
-## 1. Down: `project-brief` — contract (+ policy) → the minimal brief a worker receives
+## 1. Down: `project-brief` — specification (+ policy) → the minimal brief a worker receives
 
-Input: the bound contract version and the touch-list / allowed writes the orchestrator chose.
+Input: the bound specification version and the touch-list / allowed writes the orchestrator chose.
 Output: a brief in the tool's own `worker-brief/v1` shape — no new brief format per delivery —
 with:
 
@@ -28,11 +28,11 @@ with:
 | `goal` | `[subject].description` (one sentence) |
 | `scope` | `[subject]` + the orchestrator's `allowed_writes` |
 | `plan` | one line per requirement: `R<id>: <statement>` — statements only, no floors, no hashes |
-| `done_criteria` | per requirement: the recipe as a command + expect the worker must make pass. Source, in order: the contract's optional `[requirement.evidence.recipe] {command, expect, control_patch?}` (the consumer names the check it will re-run — the mechanical source); else the profile's recipe carrier for the requirement's pattern (a template the projector fills with the subject's paths); else the brief says `recipe: proposed by worker` and the worker's `fill.toml` must supply it, which the assembler records and the consumer sees as producer-chosen. `recipe_required` alone (a boolean) is never enough to project a command. Cross-cutting demands rendered as one line each |
+| `done_criteria` | per requirement: the recipe as a command + expect the worker must make pass. Source, in order: the specification's optional `[requirement.evidence.recipe] {command, expect, control_patch?}` (the consumer names the check it will re-run — the mechanical source); else the profile's recipe carrier for the requirement's pattern (a template the projector fills with the subject's paths); else the brief says `recipe: proposed by worker` and the worker's `fill.toml` must supply it, which the assembler records and the consumer sees as producer-chosen. `recipe_required` alone (a boolean) is never enough to project a command. Cross-cutting demands rendered as one line each |
 | `oracle` | the list of commands the worker must run and capture as transcripts for the report (§2) — the brief is invalid without one; the assembler does not run them |
-| `decisions_collected` | the contract's `phase`, and which requirements are `draft` (the worker may propose `requirement-defect` deviations on those) |
-| `allowed_writes` | the orchestrator's choice; never the contract, package or decision files |
-| `provenance` | `authority-ruled` iff the contract is consumer-issued or ratified |
+| `decisions_collected` | the specification's `phase`, and which requirements are `draft` (the worker may propose `requirement-defect` deviations on those) |
+| `allowed_writes` | the orchestrator's choice; never the specification, package or decision files |
+| `provenance` | `authority-ruled` iff the specification is consumer-issued or ratified |
 
 What is deliberately **not** in the brief: floors (`min_tier`, profile floors), hashes, the
 authority, the disposition vocabulary, the lifecycle. The worker sees *what must be true* and
@@ -40,8 +40,14 @@ authority, the disposition vocabulary, the lifecycle. The worker sees *what must
 This follows a general local-goal-only principle applied to the protocol: the worker's contract
 is the brief; the wider system's contract is the document.
 
-Context cost: for the Rust example, the six-requirement contract (≈ 120 lines of TOML) projects
-to a brief of ≈ 15 lines.
+Context cost measured 2026-10-07: the Rust example's six-requirement specification is
+**196 lines / 741 whitespace-delimited tokens**; its generated brief is
+**37 lines / 301 whitespace-delimited tokens** (18.9% / 40.6% of the specification).
+These are exact whitespace counts, not model tokenizer counts. Reproduce with
+`python3 protocol_acceptance/tools/acceptance_protocol.py project-brief
+protocol_acceptance/examples/rust-delivery/acceptance-specification.toml --allowed-writes
+protocol_acceptance/examples/rust-delivery/writes.toml --out /tmp/rust-brief.yaml --stats`.
+The checked-in `brief.yaml` records this projection; live Kani regeneration remains blocked.
 
 ## 2. Up: `assemble-package` — worker report → `acceptance.toml`
 
@@ -51,7 +57,7 @@ protocol package. Mechanical fields (never typed by the worker):
 
 | package field | assembled from |
 |---|---|
-| `[format]`, `[contract] {id, hash, requirements_total}`, `[spec]`, `[coverage]` totals | the contract file |
+| `[format]`, `[specification] {id, hash, requirements_total}`, `[spec]`, `[coverage]` totals | the specification file |
 | `[subject].commit`, `dirty` | `git rev-parse HEAD`, `git status` |
 | `[[claim]].id`, `clause`, `item` | brief line ↔ requirement id; `item` from the touch-list |
 | `[[claim.evidence]] kind/method/family/epistemic_tier` | the recipe's command class (profile table: `cargo test` → unit-test/T3, `cargo kani` → kani-harness/T2, `cargo clippy`/`doc` → lint/T4) |
@@ -82,8 +88,10 @@ plus the consumer's re-run is.
 
 - **Now:** both directions as verbs of `protocol_acceptance/tools/acceptance_protocol.py` (Python, stdlib),
   exercised by `acceptance_protocol.py --selftest` on a synthetic chain (`fixtures/verification_chain.py`).
-  `examples/rust-delivery/`'s own `gen_package.py` does the "up" half by hand today and does not
-  yet call `assemble-package`; making it a thin caller is future work.
+  `examples/rust-delivery/gen_package.py` calls `assemble-package` as of 2026-10-07;
+  its B20 enrichment hashes build inputs and both Kani artifacts mechanically. The assembly
+  fixture gate passes; live package replacement and the stronger consumer exercise await
+  an authorized heavy Kani run and a clean committed subject.
 - **Then:** a compiled orchestrator implementation performs the same two projections;
   the protocol's consumer-parity discipline applies (one format, two consumers, verdicts must agree
   on a corpus before the compiled side takes over) — the parity corpus is the set of briefs and

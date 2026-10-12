@@ -5,7 +5,7 @@ digest: The acceptance/0 manifest schema — class fields, typed locators, appli
 
 # The acceptance manifest — format v0 (`acceptance/0`)
 
-**Class text LOCKED at 0.3.2 (2026-09-27).** This text is frozen: a change needs a new `[[lock]]` entry
+**Class text LOCKED at 0.4.0 (2026-10-11).** This text is frozen: a change needs a new `[[lock]]` entry
 (new version + reason) in `CLASS-LOCK.toml`, enforced by `gates/check_class_lock.py`. Locked is not
 ratified: the status below stays CANDIDATE until the owning authority ratifies the class.
 
@@ -80,8 +80,7 @@ FROZEN for external consumption, `acceptance/0` is an evolving validator-defined
 contract. Producer and validator move in lockstep; a manifest is meaningful against
 the validator revision recorded beside it, not whatever the id meant on another day.
 Pinning that revision supplies the stability guarantee. The integer changes at the
-deliberate frozen-contract boundary. A paired private repository's pin closure adds byte
-identity for the definitions and tools it consumes.
+deliberate frozen-contract boundary. A consumer's pin closure adds byte identity for the definitions and tools it consumes.
 
 ## Base subject-kind registry (B14)
 
@@ -205,7 +204,7 @@ weight = "unweighted"       # default when absent; weighted | unweighted
 
 # [claim.self_verify]       # class shape when present; command + expect required
 # Per-grade recipe/bounds/positive-control requirements belong to verification (8b);
-# recipe carriers are binding declarations (profiles.md D1/A1).
+# recipe carriers are binding declarations (profiles.md, division of responsibilities).
 # command = "<deciding command>"
 # expect = "<expected output>" # required with command
 # precondition = "<freshness/environment guard>" # optional

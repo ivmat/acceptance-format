@@ -1,0 +1,5 @@
+[workspace]
+resolver = "2"
+members = ["geom-math", "raster-draw", "paint-app"]
+
+# No external crates.io dependencies anywhere in this workspace (offline build, per brief).

@@ -198,7 +198,7 @@ item      = "src/lib.rs::e"
 statement = "e was reviewed"
 band      = "A0"
 grade     = "inspection-argued"
-doc_ref   = "docs/e-review.md"
+doc_ref   = "documents/e-review.md"
 status    = "evidenced"
 
   [[claim.evidence]]
@@ -207,7 +207,7 @@ status    = "evidenced"
   ref      = "e-review"
   result   = "pass"
   tool     = "manual"
-  reviewer = "ivo"
+  reviewer = "reviewer-a"
   record   = "evidence/does-not-exist-e.txt"
 
 [[claim]]
@@ -557,7 +557,7 @@ status    = "gap"
 
 # 0.1-DRAFT.md fixtures — clause_source / self_verify / spec.axis+external /
 # coverage.denominator+slice_note (denominator/slice_note/clause_source="test-name" are
-# CLAIM-CLASSES-AWAITING-WEIGHT.md EXPERIMENTAL fields: parseable, shape-checked, not meaning-enforced).
+# EXPERIMENTAL fields: parseable, shape-checked, not meaning-enforced).
 
 _GAP_CLAIM_WITH_SELF_VERIFY = """
 [[claim]]
@@ -585,7 +585,7 @@ item      = "src/lib.rs::h"
 statement = "h is deliberately not implemented"
 band      = "A0"
 grade     = "out-of-scope"
-scope_ref = "docs/scope.md#a"
+scope_ref = "documents/scope.md#a"
 status    = "gap"
 """
 
@@ -1115,7 +1115,7 @@ def selftest() -> int:
   ref      = "c-mutant-review"
   result   = "pass"
   tool     = "manual"
-  reviewer = "ivo"
+  reviewer = "reviewer-a"
   record   = "evidence/does-not-exist-c-review.txt"
 """,
         )),
@@ -1236,7 +1236,7 @@ def selftest() -> int:
         "self_verify needed (0.1-DRAFT §1)",
         _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM.replace(
             'grade     = "probe"',
-            'grade     = "inspection-argued"\ndoc_ref   = "docs/a-review.md"',
+            'grade     = "inspection-argued"\ndoc_ref   = "documents/a-review.md"',
         )),
         expect_pass=True,
     )
@@ -1297,7 +1297,7 @@ def selftest() -> int:
     r = _run_case(
         "standalone: claim with grade = 'out-of-scope' and NO scope_ref FAILS (0.1-DRAFT §1)",
         _mini_manifest(_OUT_OF_SCOPE_CLAIM.replace(
-            'scope_ref = "docs/scope.md#a"\n', ""
+            'scope_ref = "documents/scope.md#a"\n', ""
         )),
         expect_pass=False,
         expect_substr="requires a nonempty claim-level 'scope_ref'",
@@ -1560,12 +1560,12 @@ def selftest() -> int:
     if r:
         failures.append(r)
 
-    # CLAIM-CLASSES-AWAITING-WEIGHT.md C1: [coverage].denominator / slice_note — EXPERIMENTAL, parseable and
+    # experimental denominator semantics: [coverage].denominator / slice_note — EXPERIMENTAL, parseable and
     # shape-checked, meaning not enforced.
     count += 1
     r = _run_case(
         "standalone: [coverage].denominator = 'slice' without slice_note FAILS "
-        "(CLAIM-CLASSES-AWAITING-WEIGHT.md C1)",
+        "(experimental denominator semantics)",
         _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
             "claims_total  = 1", 'claims_total  = 1\ndenominator = "slice"',
         ),
@@ -1578,7 +1578,7 @@ def selftest() -> int:
     count += 1
     r = _run_case(
         "standalone: [coverage].denominator = 'slice' WITH slice_note PASSES "
-        "(CLAIM-CLASSES-AWAITING-WEIGHT.md C1)",
+        "(experimental denominator semantics)",
         _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
             "claims_total  = 1",
             'claims_total  = 1\ndenominator = "slice"\nslice_note = "sampled subset only"',
@@ -1590,7 +1590,7 @@ def selftest() -> int:
 
     count += 1
     r = _run_case(
-        "standalone: [coverage].denominator = 'complete' PASSES (CLAIM-CLASSES-AWAITING-WEIGHT.md C1)",
+        "standalone: [coverage].denominator = 'complete' PASSES (experimental denominator semantics)",
         _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
             "claims_total  = 1", 'claims_total  = 1\ndenominator = "complete"',
         ),
@@ -1601,7 +1601,7 @@ def selftest() -> int:
 
     count += 1
     r = _run_case(
-        "standalone: [coverage].denominator with an invalid value FAILS (CLAIM-CLASSES-AWAITING-WEIGHT.md C1)",
+        "standalone: [coverage].denominator with an invalid value FAILS (experimental denominator semantics)",
         _mini_manifest(_A1_HYGIENE_NO_CONTROL_CLAIM).replace(
             "claims_total  = 1", 'claims_total  = 1\ndenominator = "bogus"',
         ),
@@ -1611,8 +1611,8 @@ def selftest() -> int:
     if r:
         failures.append(r)
 
-    # CLAIM-CLASSES-AWAITING-WEIGHT.md C1: a valid denominator value PASSES but carries an EXPERIMENTAL warning
-    # naming CLAIM-CLASSES-AWAITING-WEIGHT.md — presence is parseable, meaning is not enforced.
+    # experimental denominator semantics: a valid denominator value PASSES but carries an EXPERIMENTAL warning
+    # explaining that denominator/slice semantics are not yet frozen.
     count += 1
     with tempfile.TemporaryDirectory() as _td:
         _p = Path(_td) / "acceptance.toml"
@@ -1626,11 +1626,11 @@ def selftest() -> int:
                 f"{_rep.errors}"
             )
         elif not any(
-            "EXPERIMENTAL" in w and "CLAIM-CLASSES-AWAITING-WEIGHT.md" in w for w in _rep.warnings
+            "EXPERIMENTAL" in w and "denominator/slice semantics are not yet frozen; validated for shape only" in w for w in _rep.warnings
         ):
             failures.append(
-                f"[coverage].denominator EXPERIMENTAL warning: expected a warning naming "
-                f"CLAIM-CLASSES-AWAITING-WEIGHT.md, got: {_rep.warnings}"
+                f"[coverage].denominator EXPERIMENTAL warning: expected a warning explaining "
+                f"that denominator/slice semantics are not yet frozen, got: {_rep.warnings}"
             )
 
     # ======================================================================
@@ -2303,7 +2303,7 @@ def selftest() -> int:
   ref      = "f-review"
   result   = "pass"
   tool     = "manual"
-  reviewer = "ivo"
+  reviewer = "reviewer-a"
   record   = "evidence/does-not-exist-f.txt"
 """,
             ),
@@ -2729,7 +2729,7 @@ clause_source = "spec-document"
     r = _run_case(
         "R2_3: out-of-scope scope_ref must be a locator, not free prose",
         _mini_manifest(_OUT_OF_SCOPE_CLAIM.replace(
-            'scope_ref = "docs/scope.md#a"', 'scope_ref = "nonsense"')),
+            'scope_ref = "documents/scope.md#a"', 'scope_ref = "nonsense"')),
         expect_pass=False,
         expect_substr="scope_ref must be a LOCATOR",
     )
@@ -3003,7 +3003,7 @@ clause_source = "spec-document"
         failures.append(r)
 
     # ------------------------------------------------------------------
-    # F1-F4 (2026-09-17, linux findings fold — estate core-alignment plan §2h, RFC-0015 trial).
+    # F1-F4: kind registry, external-spec identity, prospective commit and verdict regressions.
     # Each: one RED fixture (the old, closed/overloaded/silent behavior), one GREEN fixture
     # (the class-level fix). See spec/format.md "§0 Class -> Instance -> Run" and design rules
     # 4/7.

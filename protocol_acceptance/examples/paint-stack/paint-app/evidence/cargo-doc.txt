@@ -1,0 +1,6 @@
+    Checking geom-math v0.1.0 (<WORKSPACE>/geom-math)
+    Checking raster-draw v0.1.0 (<WORKSPACE>/raster-draw)
+    Checking paint-app v0.1.0 (<WORKSPACE>/paint-app)
+ Documenting paint-app v0.1.0 (<WORKSPACE>/paint-app)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.49s
+   Generated <WORKSPACE>/target/doc/paint_app/index.html and 1 other file

@@ -1,0 +1,5 @@
+[package]
+name = "paint-app"
+version = "0.1.0"
+[dependencies]
+raster-draw = { path = "../raster-draw" }

@@ -1,29 +1,35 @@
 {
-  "family_version": "0.3.2",
+  "family_version": "0.4.0",
   "files": {
     ".gitignore": {
       "sha256": "32346fe2d347b392243164173413168fba6e3f02e364c37bc425913866368afe"
     },
     "ASSUMPTIONS.md": {
-      "sha256": "8f29c5619009ea1d9cfff11c5f66d39c97368b8dd5233108119ff37ba186bfe5"
+      "sha256": "d73f58ec4a3314937098b52eb4772ecee6941daa94e0ccba760efef50e1606b3"
     },
     "CHANGELOG.md": {
-      "sha256": "a24fa9e3bc13fc22b7b040c86eb391cae5de86fdadbb1a600f012811cb75a792"
+      "sha256": "ea905659176a87419da2f5c5750d50b8a01607dc9a29305ffb97142b7d952320"
     },
     "CLASS-LOCK.toml": {
-      "sha256": "7a2c8cdf4e95816c20daf0bd00429482d0d6e7f4df4e1cdcadaf4abf80ef7bef"
+      "sha256": "6c09e1605829deb3c5214c37aa72ea764a186b71c5f9bc7f79756a478759ad2d"
     },
     "KNOWN-LIMITS.md": {
-      "sha256": "b4217742b4d3d29bb4905de59d60fda3f5037ef8c02297a5287ed9829234f570"
+      "sha256": "922732de054df83e8abd1361ddc2b1818411f2f48ee4411a45d65df2a04629b0"
     },
     "LICENSE-NOTES.md": {
       "sha256": "e08c3c751db79dcc92bc48720340cc9c48d2f1c3d03c2c1f2ec9ededf4f4e676"
     },
+    "OVERVIEW.md": {
+      "sha256": "3bcbe23f03563e96f680de79e13743c06243c31b0817b73d61bfcba72f85e76c"
+    },
     "README.md": {
-      "sha256": "1416e691bc33f3668a5ae41b9166842c44f356061bcbbe228f9dadb92869b09c"
+      "sha256": "776154e18e6f85d1cb1eddf47d5f6814d3042e5159193491c6e8cc9efd7e996c"
+    },
+    "REPO.md": {
+      "sha256": "98b7d0d9e26d112813df90ac7422d0006e6ba59f7f8dce4db5aca047a26f0aac"
     },
     "ROADMAP.md": {
-      "sha256": "f7275137bad3feb21d906fff27c7d1c9b52d8497c0cb900b8ddda86183d46306"
+      "sha256": "edf437c28bb8b4a7a84c670194f779916ca689ec2dcf22fdc1d8a41a81be2e79"
     },
     "WHY.md": {
       "sha256": "2f55b05c4369d50ea378f439a82f6893c503b044b031a88cb4d81fe320efcd70"
@@ -32,19 +38,22 @@
       "sha256": "492741513f6d911c8233f23f0cb28383341626e5e7506909e2e9c513acd0cac1"
     },
     "examples/weighted-toy/README.md": {
-      "sha256": "a011dd8cf0876d6266a70746477ad070954e477e3c8044d61bc8d1dbd595baf0"
+      "sha256": "93ab0feb53dc4d1c691ae26759855c13e04989200d326f4cae80c0d2029a53b0"
     },
     "examples/weighted-toy/SPEC.md": {
       "sha256": "ca11e38941ebdc0ccc7a85a759fba178dfb540f7e21a8021e55d405b3f86df16"
     },
-    "examples/weighted-toy/acceptance-contract.toml": {
-      "sha256": "e654d2ff8416ac6881f8d7c21105e442388a334d8b1e4a6b83f5d59210d746db"
+    "examples/weighted-toy/acceptance-specification.toml": {
+      "sha256": "019250d5b537931dddfef5440e436514fb7af6ced321aee14e0ba0252f5b5806"
     },
     "examples/weighted-toy/acceptance.toml": {
-      "sha256": "a9a68440db31ee17581d77a2ddadda74f3ee20f4dad337a169db989cea86e163"
+      "sha256": "0915f2a6d09c39d55184c27983b699f9b4c7f8c480c8e360ae0755ccf52ea387"
     },
     "examples/weighted-toy/evidence/test-slug-run.txt": {
       "sha256": "bec5e6f215998adc4689c053db64cd0811fe82ce1ebfd8829d1bed832a057bda"
+    },
+    "examples/weighted-toy/gen_package.py": {
+      "sha256": "b00d0b3be66104c0c189f7db76ecc3bb515b58ac49a11b4fae44d5b9a9e0e1ed"
     },
     "examples/weighted-toy/slug.py": {
       "sha256": "8b443b7ebc288ea8c78930bd3e60a7442df2201ad8c9eb695afe3d4c35f446f5"
@@ -59,31 +68,31 @@
       "sha256": "c1c669c1defbbaa93ec9e27c529b916c2cb3ef18177eb695437c15d3578687e7"
     },
     "format_acceptance/profiles/bindings/README.md": {
-      "sha256": "62117a8d961db80e7696978329e8bcb7c89d9178070da7537684d3854ca78b47"
+      "sha256": "245eda65bbeb16d48c1bdd44baaeb60eaa42f775c0da7c0681357bcdbd4492ca"
     },
     "format_acceptance/profiles/bindings/built-artifact.md": {
-      "sha256": "8f82fedac006b0b7b6b6519f920f8112349e40a99fb0a80e4470850ee304befc"
+      "sha256": "06d3a9f24b9fff696ff894777305685f748fc586c3cb25442f840278e04661e5"
     },
     "format_acceptance/profiles/bindings/code.md": {
       "sha256": "7eec61de6bbf4360c730b0466d5407d686d4b2a060a43505a6591f85148406e0"
     },
     "format_acceptance/profiles/bindings/code/rust.md": {
-      "sha256": "8738d5c67f53d9281ede539621ef734d989c71045e94820742534ad757d1c844"
+      "sha256": "6441e5b34db9839747cb5ef00b24003f28c4011b4601aa1a1c68c9c1af7726b4"
     },
     "format_acceptance/profiles/bindings/document.md": {
-      "sha256": "dd0eb75229d961ac3a11f213140454bb3dee68f6a6f8003e7fcff776bfc7df04"
+      "sha256": "eefe00ba2d9da3c684920c7b6f55ef1cb47e1d8a273825ec79730f2673174360"
     },
     "format_acceptance/profiles/bindings/estate-element.md": {
-      "sha256": "71ef6c62e651d158aaf5ba2cca68e6808fbb90be5f191a4bc1f9b015accc7234"
+      "sha256": "9e40105874ea3bb4012aa6f7624e3682b8c011e313ad3d69918c9cd980858d04"
     },
     "format_acceptance/profiles/bindings/tool.md": {
-      "sha256": "50806f355e2dbca9f66752c1322562019d2d3c58100d1c6416f9566b6cc24397"
+      "sha256": "f030ab7f92f32a9e4dd6deedde570c7ed518c5d0b61a38882fadc0be65939607"
     },
     "format_acceptance/profiles/conformance/PROFILE.md": {
-      "sha256": "105eecc36150a3d2c86237a5017765cafb67981cf4563c2152cc44c27123bf0a"
+      "sha256": "494d9abc75a7c12056134c9e14375e7e33bba56d24ea1089191afb0b6d173f32"
     },
     "format_acceptance/profiles/conformance/code/rust.md": {
-      "sha256": "5337cf981fbbcb5dad19c58796fbb217c6771244263dea049fe78265d1e4d8fd"
+      "sha256": "2bcfa8425eecd5359f1d7c99baaabb96af6e3fe8320a54ffd53f08377fe2b81b"
     },
     "format_acceptance/profiles/conformance/examples/README.md": {
       "sha256": "8f8d8befa8976da1ad777991659a1c24c4cc6aead753f396f2cba155761c8ad1"
@@ -119,19 +128,19 @@
       "sha256": "975c9d437ab2ae7557bf4c3d1845d9743c03a2cadf552685cf69f7bb6099317d"
     },
     "format_acceptance/profiles/conformance/standards/README.md": {
-      "sha256": "6ed0bf9e4d37d4a0f14d6e40fd3cb0aa772a12fe008b065112bc26071c62d0fa"
+      "sha256": "68512733381c4d1c607b7d0ebe726efb0f016775404097ef62870d7a9ea86808"
     },
     "format_acceptance/profiles/conformance/standards/itu-t-x680-2021.clauses.toml": {
-      "sha256": "3a194f504818d7f4236b9ba54b99890807a8e00520012a0757dd0ce6c7c97ab6"
+      "sha256": "852d08bfdc7f2aaf5af2198bcc8f2cf62362e44d6367df358e5a59eea99976e3"
     },
     "format_acceptance/profiles/conformance/standards/itu-t-x690-2021.clauses.toml": {
-      "sha256": "970a5dd74b2f8908c9c68561454bbdd15a7f82f3c6e7d339cde148cd2307d921"
+      "sha256": "eb650816f87532655c8c2347873399b05d852c1c54cc8b238f990ad1ef92bf76"
     },
     "format_acceptance/profiles/conformance/standards/rfc3279.clauses.toml": {
       "sha256": "64d9ae6123df0a8ada5813808d985e799314f40a71e6b69c086913210b7d8532"
     },
     "format_acceptance/profiles/conformance/standards/rfc5208.clauses.toml": {
-      "sha256": "b373b73c05b3098789e270414ade9caccfe2faa44427bae4ebbd7fe5814c30a0"
+      "sha256": "96e76804ba8f2820d72dca79845b98730966d5c0ac4dd1299a610481d8ef5559"
     },
     "format_acceptance/profiles/conformance/standards/rfc5280.clauses.toml": {
       "sha256": "20b13c755a6fbf2e79137b040cb3392f21fca51d84020123f3cdfccb27f5cede"
@@ -140,7 +149,7 @@
       "sha256": "d29cd806c0380300b69817d11ae50bdde33bf4735dc90d60270d9a1ae9bcbcec"
     },
     "format_acceptance/profiles/conformance/standards/rfc5915.clauses.toml": {
-      "sha256": "6cdc1864c1a55c752ba4d2afbbb36f6183219fcf2f2991dd07a21e1dda399cc0"
+      "sha256": "72bcba30e1666e6e62988b9ea81c45635b28964fc99291c98bca2abe7ca509a8"
     },
     "format_acceptance/profiles/conformance/standards/rfc5958.clauses.toml": {
       "sha256": "db83a5ea650c784fce4d44005248cb43316b595a2453d95f2e4cb15c80684819"
@@ -152,7 +161,7 @@
       "sha256": "d3201acb0c2abd55118c8afaaa3aaf03f6e8baecc06debd2a2d1f45fbe4fe518"
     },
     "format_acceptance/profiles/troubleshooting/PROFILE.md": {
-      "sha256": "3629ff114ec98380971acceb7f8c8a1a15aaf4484435734c19571546f1e70c95"
+      "sha256": "7b6e3488c3d424eb08273b9e28f0b79983c405f5587538aaed01f2bd1bd1d979"
     },
     "format_acceptance/profiles/troubleshooting/examples/SPEC.md": {
       "sha256": "83205490e98a0bfc048980984ecce3792575a2d7c1016e738ae3a2ead5e16d82"
@@ -167,34 +176,34 @@
       "sha256": "1ddaa038316f3c87cb363d9674a8c285a9496b37b4b6934684e1a2eeb8855099"
     },
     "format_acceptance/profiles/verification/PROFILE.md": {
-      "sha256": "21fab45409cfcae0a7f1fc49916c97c1b713e83f80337e2f8891ae3944d05eed"
+      "sha256": "65c3281880f13e90b861f78d29fbdabcd2ba5f709194f8ab36b7627adb2c9ded"
     },
     "format_acceptance/profiles/verification/code/rust.md": {
-      "sha256": "ba6fc32bd0bded73effc262336e8de6894e116f062dda08d8a6622327f20cd83"
+      "sha256": "81fd966879a9be7a9310519fdd3b312c986b082c18d863123144eeca9d54eded"
     },
     "format_acceptance/spec/0.1-DRAFT.md": {
-      "sha256": "28c0180bdd309cea3676db33f2b72d09ab780f6bd8e063410cefeca6f49f8092"
+      "sha256": "587be3455d0e0463b6fcfdb165198bacc21d38203c779ec48f456b824ffb7e8e"
     },
     "format_acceptance/spec/assurance-bands.md": {
       "sha256": "10daec1c593a653ae0ff3118d8d05a48c8c419fa39f630254acf8e4dd6d0951a"
     },
     "format_acceptance/spec/core.md": {
-      "sha256": "1cfa1725d2e515aa609e5a190d8f5746567525bf43b86ca0bc77119822476c73"
+      "sha256": "765769858ead77b3bd62597d2f8019da7b7ecf835f3ba57094a6d6c9a55447b0"
     },
     "format_acceptance/spec/coverage-ledger.md": {
-      "sha256": "5dc3c4e1897607cd77405ea568f78bc243341d305cd2224f740ed01738ec8b3d"
+      "sha256": "64da4cc8894786ba696b4af4ba72e270ef57530295fe811ba77ab2105465be2e"
     },
     "format_acceptance/spec/evidence-types.md": {
       "sha256": "008755ebee8c5cb64388145bb4e61e882a1204948872fa556ef939960088b946"
     },
     "format_acceptance/spec/format.md": {
-      "sha256": "f13a2ba8dc02c076a3fb3a5a30b0426e0159c4df6f356a5b4fe6efe2c70c1a62"
+      "sha256": "8a3cfc7215fae6116d7858423bfa019fc36033df35634f0e61086f34645c3863"
     },
     "format_acceptance/spec/hash-domains.md": {
-      "sha256": "8be5a51e09ee8932e24ebbf71219a8962b6f41623d6e111e74068a16ee09b40f"
+      "sha256": "33cedb347aa92a02a2dda190347bab382d58184eb67441c86e52aa17b468e331"
     },
     "format_acceptance/spec/profiles.md": {
-      "sha256": "ec8a49a383b77e6b984450d54f737cd9be062edee89933109200b976faec0b3b"
+      "sha256": "121f69050baa0e441244e2c19ac5f6a0ee83488f0df78a03d41b68061054009c"
     },
     "format_acceptance/tools/OBLIGATIONS.md": {
       "sha256": "be0e0a39f686cb0f44305159b48b688d8a3316142944f6cccc35a410cde19d65"
@@ -215,31 +224,31 @@
       "sha256": "c62cac8c0a60ce408f660793012bca4ee8f38fdd43c7e020d2fd768731a291d0"
     },
     "format_acceptance/tools/check_core.py": {
-      "sha256": "96e84649832a8a04f22e5f6eaec450acb928064f4727ac08b95671913c7ab278"
+      "sha256": "97cce3b4467ee2f88f6b2fa6a55667e0c934241cf9362b82ad9aab4a2a03ce3f"
     },
     "format_acceptance/tools/check_execute.py": {
-      "sha256": "a4a1b42a85bc0272cc935d5908387e2bde6933187c35e561caebb619fc78abd9"
+      "sha256": "fa8e56eccbd9ff32cbb2e7b12f627585975fa3c814b648a41f3975cb61480fa5"
     },
     "format_acceptance/tools/check_ledger.py": {
-      "sha256": "15ef9fa9ff7e961e9e88f8d7e9701b4f756505a251e0ebf7144dbd24b561db37"
+      "sha256": "82f9eb4084fc885ba5a6a15b88e5425ff80de6cd517722e2120cd1bcb66af864"
     },
     "format_acceptance/tools/check_parity_selftest.py": {
-      "sha256": "e2d4173c1473675b04ce7c6753b4f8dc218b30c549b57ecfa55950c22f3bcc62"
+      "sha256": "b37925bd392eeec68ca577df69bb0fd2da9063e5d551f01338e712716c5a924b"
     },
     "format_acceptance/tools/fixtures/binding_cases.py": {
       "sha256": "8ff4a9aff200508eed687e648d3cec481c81c86fa8b7ebd04019ce4eb2af3f18"
     },
     "format_acceptance/tools/fixtures/core_cases.py": {
-      "sha256": "8fb119ec4fee6f7663b0bc1bb827257fccd89778ff37def54f229fca2c639394"
+      "sha256": "452d8dfd7a506fbb6a7a8c459b82580ca7209ad8a06b27a29dc4b2971da28df6"
     },
     "format_acceptance/tools/fixtures/legacy.py": {
-      "sha256": "c61fbe18fbaae4e2db66efbd25dacc81bd7ec1e45a6fa8dfd0d6b9b26fc8bbc7"
+      "sha256": "a0ebbe738f951c808ce489c7589441ef67df7217b506d9229bebbc80bb1a579c"
     },
     "format_acceptance/tools/fixtures/r2_cases.py": {
       "sha256": "93b4a380eabd48c030538382cc97ef46a7faa8feca49b1154611fc063e3c7f66"
     },
     "format_acceptance/tools/fixtures/r3_cases.py": {
-      "sha256": "4663c63c2cd64ac2a62a266a7b9d1f429f739263dabb8fea4f066356fbdadf87"
+      "sha256": "9b7568063fccd90cace9ae00136b1e8d2aa54e54931d221ce9c3a3e0573253d8"
     },
     "format_acceptance/tools/fixtures/review_cases.py": {
       "sha256": "c719890b9cae14386c5bc0a2dfd47edb893eb776f663d4ea556b494498da6346"
@@ -251,13 +260,13 @@
       "sha256": "758bf70b51efebce3ba7e2605a412b66918639d4f7bdb4923e1d09da2ea3002f"
     },
     "format_acceptance/tools/hashdomains.py": {
-      "sha256": "7b3d3d0a8bdee2af59d30ca35f648b3728a8723cd8d898d1ac6c561cf0a7024b"
+      "sha256": "b12a5e20fb2ec48855d6da235f7a6bbbe77402c743453d42dd1fef106d20431a"
     },
     "format_acceptance/tools/profiles/__init__.py": {
       "sha256": "98811913fcfc6e07091f38196df1712d350c7df3b00f1c008821b9a58c3657a0"
     },
     "format_acceptance/tools/profiles/conformance.py": {
-      "sha256": "0a0494367a2141347b8f83d7b16668153471eaa27dd804a38c3b937dcd65a80f"
+      "sha256": "c72d991930234b82516abcaafcc4eab76e88c2136d34d80dced1196d142fce01"
     },
     "format_acceptance/tools/profiles/troubleshooting.py": {
       "sha256": "0fe29309b0982f7d05a5abfb8f8ec1387b7b8ca76d194100fb509180d8d21248"
@@ -271,8 +280,11 @@
     "gates/check_adoption_templates.py": {
       "sha256": "9554bf361296a4f3e05fed999e990d1768b02f9d2d7c18abc3d7d509cb9032ab"
     },
+    "gates/check_amendment_lock.py": {
+      "sha256": "dd9ad00ce2eedf429e15698d58b664a3fe117227d730441da4147f397aa7fa5b"
+    },
     "gates/check_assumptions.py": {
-      "sha256": "94424dd31469b6c125e9e427aacc795ad3eb625fa738b21242c95ae532271083"
+      "sha256": "f23cb381fcfaa3e7bf81cb49fe59d79f9909a9aa3f609c5ec19da87fe3f2aa5d"
     },
     "gates/check_build_inputs.py": {
       "sha256": "2ca2c1a91e417cbddb29e88955b1393c612e9f61e13ef54878a34af6ddc6dd51"
@@ -281,67 +293,277 @@
       "sha256": "8ba52f56ed3e6344a09635d15c594941336fa69e23a0456a3fbb2d4f9daab3bd"
     },
     "gates/check_decision_expiry.py": {
-      "sha256": "352956a8ecf70ddba49ff4f71d7b3bb7d1e7b32ac9ab64f7d638fd9081877637"
+      "sha256": "6e7b344b24c23b9e99ef62c0a344eb5f42a23e693d78bba79da4eae79797e7e9"
     },
     "gates/check_export_closure.py": {
-      "sha256": "bc0aca9ad5d103fae2f28afe1ad06cff896eb807a802132f372cfb9a1dde6cf1"
+      "sha256": "c503109f5eadfbe940e2e5f81172fd379797bf511b5a6e8a67050d1bcc46aabc"
+    },
+    "gates/check_paint_stack.py": {
+      "sha256": "52559caf73306e2222e804df81fa1cfe232221fd986d665c1a11f9bea52aeef2"
     },
     "gates/run_all.sh": {
-      "sha256": "54d1a740fee5828f65bb0abbc29af007eb24e4e7b0cb90fc9100a38b2179015d"
+      "sha256": "8a5e4f06a5f0dd41b0c25986225669aa0055ec176b0a383992020671cfa56d1b"
     },
     "protocol_acceptance/adoption/KANI-FV-ADOPTION.md": {
-      "sha256": "535422b8e0a53bf5047eccb4775705abf18ee6f2ad730325d76e3d7d44813209"
+      "sha256": "f024645ee4274914220060b4d734b969444e30e08ee9dafcb62a3f26dd6f365b"
     },
     "protocol_acceptance/adoption/templates/kani-crate.acceptance.toml": {
-      "sha256": "3e258daeef9f5ea3139a4965d2337227f5830729e217ef10257e0abeaaa098e2"
+      "sha256": "0b9461529c74ad2b85b3b01b7b33017805d6de9b56d40480713e9c1c82257d2b"
     },
-    "protocol_acceptance/adoption/templates/kani-crate.contract.toml": {
-      "sha256": "31e071b48428b251292e6d24724152ebf48490c640a763e6db7ca4f0eefe079c"
+    "protocol_acceptance/adoption/templates/kani-crate.specification.toml": {
+      "sha256": "66997aa8170b9a694703e492ad6c31cd775604f587a1dc3f1335b5ad28f52f07"
     },
     "protocol_acceptance/adoption/templates/selftest_templates.py": {
-      "sha256": "2ce51f9d2d02d535be59dfc109bed7f4c573eea622743b8e7fe055908c1e4104"
+      "sha256": "48b091841bcf422711fe6bc20c8737ff7aace14683e8a594d83f001911d715d7"
+    },
+    "protocol_acceptance/examples/paint-stack/.gitignore": {
+      "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb"
+    },
+    "protocol_acceptance/examples/paint-stack/Cargo.lock": {
+      "sha256": "aaa40c893b29b89334e63289b93ec82913cf8b10f6e9517e95e3d936b96682ed"
+    },
+    "protocol_acceptance/examples/paint-stack/Cargo.toml": {
+      "sha256": "6127f47ef7411f2ada8383c9b04e001aa46b691a496cb568e1a6b9579821fa2c"
+    },
+    "protocol_acceptance/examples/paint-stack/README.md": {
+      "sha256": "10d06db9e7922fbce0e1f94eaf29e126378d39c966696c91f5985d43aeefceae"
+    },
+    "protocol_acceptance/examples/paint-stack/gen_packages.py": {
+      "sha256": "114c505af1a099821e40a96af0eb145993930aa5f0117cb87fc05d07a56b294c"
+    },
+    "protocol_acceptance/examples/paint-stack/gen_stack.py": {
+      "sha256": "691c63e1b127347113907de89602678ae48e75919bae36332dd14839b9fb8c7c"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/Cargo.lock": {
+      "sha256": "aaa40c893b29b89334e63289b93ec82913cf8b10f6e9517e95e3d936b96682ed"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/Cargo.toml": {
+      "sha256": "2c6e4ab820f2a4768d6811ee72bb48f7202f23afe59dacae78057cc376a01512"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/SPEC.md": {
+      "sha256": "349d252ba1352daaf55852866e3a5536bab0f0a6ac6643e00ced97b1471c7ceb"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/acceptance.toml": {
+      "sha256": "91d68f59083cb9423ffdb0841be1b16b87870de85de9f796203fd1cb20063a29"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/acceptance/AC-GEOM-0001/Cargo.lock": {
+      "sha256": "aaa40c893b29b89334e63289b93ec82913cf8b10f6e9517e95e3d936b96682ed"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/acceptance/AC-GEOM-0001/acceptance-decision.toml": {
+      "sha256": "0a2ec9d083f68288478e4196f9207aa966cfe66dca697cdb31efd3ed71fc39d0"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/acceptance/AC-GEOM-0001/acceptance-specification.toml": {
+      "sha256": "6a9491c768d24c7c0e8d353a15e3dbdbaec4e49a6ec32ca4b2077cdf81d914bc"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/acceptance/AC-GEOM-0001/acceptance.toml": {
+      "sha256": "89999370dd50dffee000e83586cdc85beb3dd36d9d9e5cc3921ad0f6087b2926"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/acceptance/AC-GEOM-0001/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/evidence/cargo-test.txt": {
+      "sha256": "37f13d87bc796c003be4b989f0fd05b7c47e1a25e0042076dc2a331bdbcfe2dd"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/evidence/clippy.txt": {
+      "sha256": "6464f07be97e2bbe37ca3c50b18c47611e96b78e0b7f48732c01d3e692fb6744"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/evidence/gm1-mutation-control.txt": {
+      "sha256": "ef1bc264273bc6dcdcdf0a89eb4afbdbaa6915fcf10ffcde51cabab95b8c4f5a"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/evidence/gm2-mutation-control.txt": {
+      "sha256": "aa9c379237175360f0cb0caa00582c5475a371dc3d5f0f870a2591da4369b81c"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/evidence/kani-dist2_never_overflows_full_domain.txt": {
+      "sha256": "e7f7c99778c28c27c871786a8a1ee40765eabcac8c6f62a8c93a06962553784e"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/evidence/kani-isqrt_correct_full_domain.txt": {
+      "sha256": "23a7ee9590802664a3e46c67822e7676584298238cba089558c20f3a47a86a49"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/examples/paint-stack/geom-math/src/lib.rs": {
+      "sha256": "0665483712fd6c4fdde93528f348eb5e60ab4045a7ff9e009ea8dbc8f1b2bba0"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/Cargo.lock": {
+      "sha256": "aaa40c893b29b89334e63289b93ec82913cf8b10f6e9517e95e3d936b96682ed"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/Cargo.toml": {
+      "sha256": "eb4921e8550e5310591fd8dea4aaf8c749da8e955ee8ec677f4d4536881159c2"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/SPEC.md": {
+      "sha256": "1012a1fb5a1adc140d342d4b17332c179ac01aa0bcc1801e155dda379990c140"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/acceptance-decision.toml": {
+      "sha256": "41c70adeb47de37a416b51e5955bfd2a263ed2852dce5ae69d34bb85d10d86e3"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/acceptance-package.toml": {
+      "sha256": "a4f7d5dda1d7d227ab3c4971373825536a4666bfcb5b540f42081b21a4fab6d0"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/acceptance-specification.toml": {
+      "sha256": "281a4b48830d68f7644fed1508af9577122b0fa70169d7771c5210c781fb7fbe"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/acceptance.toml": {
+      "sha256": "90216d1c644eb56c8120d443a08f5b44b747c938110fed9d5f150c4b4d43f8a3"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/evidence/cargo-doc.txt": {
+      "sha256": "ad5400179ccfcb99045b9a9ec6024fc98c69639f9dcde113cb3ac13aa9a900ab"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/evidence/cargo-test.txt": {
+      "sha256": "6f4be04e7f4b3c6087b90203f5783c9b7ce414644fe2403389b0eeeae5c3b4eb"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/evidence/pa1-mutation-control.txt": {
+      "sha256": "81f0e04da999b790db189af51c613e09d85858f1215355844a1f01ba1924ff0e"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/evidence/pa2-mutation-control.txt": {
+      "sha256": "23912cd6f6485dbca27fb410689898aee4f4ee2b024e54ae6a9b94d6b8a0c1a1"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/evidence/pa3-mutation-control.txt": {
+      "sha256": "b1c2971d0fcc77a250f2787aa451ca48d5287dbdea6e55e106361e19cb35d8e3"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/evidence/pa4-mutation-control.txt": {
+      "sha256": "f60b11107bb4eff16e8bcf5356813b5e10b55116e8f6fe12195072ad2f0e61e8"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/evidence/r5-mutation-control.txt": {
+      "sha256": "bbb0e5edb6a5e99e905cc7cf3de46407faa35996e9c40533f9ad8a52db296918"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/make_decision.py": {
+      "sha256": "d7e55b3225f2fa25e86a66092b4d2194d56fc8e40ecea6389cf3dec130ccb0f7"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/src/lib.rs": {
+      "sha256": "f123d797b65b6eea3b244547c4f732e79b7b513995e587542db09cdab71f74f9"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/src/main.rs": {
+      "sha256": "5fa0690a72c02e2b7f7a4ce7907bc71618c09ae3fd9710e4f3d15400fd08d829"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/tests/cli.rs": {
+      "sha256": "65bda33488258721d3e0f47e9a043a4e9c09012d1b2fe824569c67bd33fe2fef"
+    },
+    "protocol_acceptance/examples/paint-stack/paint-app/tests/fixtures/circle_cx15_cy15_r10.ppm.hex": {
+      "sha256": "8a74e4c0d63239d01421002efdaf83a8e0fe3df335f3267d5d4ddce43bd534a4"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/Cargo.lock": {
+      "sha256": "aaa40c893b29b89334e63289b93ec82913cf8b10f6e9517e95e3d936b96682ed"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/Cargo.toml": {
+      "sha256": "dd149783db75d69ef96c19dbc7c819abf44738bcb5748c7009fba617875dfb9e"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/SPEC.md": {
+      "sha256": "a2a9842e377e0d955790fa29db8f8e84e9465e6dfd31f0c3d5e1511fea303a04"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/acceptance.toml": {
+      "sha256": "c66326ba7d99028b09036ca4793f7ff324e6211f4f2280cf8c86378b3deddc88"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/acceptance/AC-RASTER-0001/Cargo.lock": {
+      "sha256": "aaa40c893b29b89334e63289b93ec82913cf8b10f6e9517e95e3d936b96682ed"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/acceptance/AC-RASTER-0001/acceptance-decision.toml": {
+      "sha256": "19422dcc78d3585b37cb8ccf6f3be3f7153224a1773d1ba8474d2ad9dee3bd80"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/acceptance/AC-RASTER-0001/acceptance-specification.toml": {
+      "sha256": "3a0d41f93a1df94f5a0f850b15c108bf5a5fbe090aaa6983dafdd465a0071c3d"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/acceptance/AC-RASTER-0001/acceptance.toml": {
+      "sha256": "fcda403f99715a281cb2dec4fb9a6c6d7c38e7a3ecb30b4a411f6594337165d9"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/acceptance/AC-RASTER-0001/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/evidence/cargo-test.txt": {
+      "sha256": "9a94f375b2c1fd2529efea3e6e7ce36342a2a88f4747dcf57cfde21d68e07bbe"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/evidence/kani-octant_accurate_bounded.txt": {
+      "sha256": "2a001591c35ec1141061c88cdfa48d3744bfc491d26623c0a56a086eea929c37"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/evidence/kani-octant_adjacent_bounded.txt": {
+      "sha256": "4fca4ce4d6c479d132072eadc002bc01081dd156f59de1db8b0ebc8b07e5b995"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/evidence/rd1-mutation-control.txt": {
+      "sha256": "7692fd3d295b7571b9164d55c280bcb8eca95438ed2cc679ccdffb04917bfaf8"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/evidence/rd2-mutation-control.txt": {
+      "sha256": "742f625230c4327a42b8437b6582e19a29dae3a7c5235f47855c64b09740f975"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/evidence/rd3-mutation-control.txt": {
+      "sha256": "e2904ebc08c3ba17abb0867d76bde56349f6ee9b8a4bca2c6ac43ce4deae9243"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/evidence/rd4-mutation-control.txt": {
+      "sha256": "5d67ae34391c09f49f22273840087738229d51fd379ab4437c8fc3038cd3cb3c"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/examples/paint-stack/raster-draw/src/lib.rs": {
+      "sha256": "8acf9b3d6ca59dcf26e0655c1d509863b8a1fff3f814cc34cb78bea5ca732e78"
+    },
+    "protocol_acceptance/examples/paint-stack/run_example.sh": {
+      "sha256": "9444d6426769b1a12cb56c53cafacf41101f54b6dc20a6a619f0d5f9c4719afc"
+    },
+    "protocol_acceptance/examples/paint-stack/rust-toolchain.toml": {
+      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+    },
+    "protocol_acceptance/examples/paint-stack/selftest.py": {
+      "sha256": "91ce1cea14d5be1e719bc42dcaf9b8525959833e10ec0f7968ef7aebedc18db4"
+    },
+    "protocol_acceptance/examples/paint-stack/stack_support.py": {
+      "sha256": "948b64207ee78b17dea16261ecf4d1d219822c7c02795e3c4c168140afaeb874"
+    },
+    "protocol_acceptance/examples/paint-stack/store/ochre-accepted/AD-PAINT-0001.toml": {
+      "sha256": "41c70adeb47de37a416b51e5955bfd2a263ed2852dce5ae69d34bb85d10d86e3"
+    },
+    "protocol_acceptance/examples/paint-stack/store/ochre-accepted/D_gm1.toml": {
+      "sha256": "0a2ec9d083f68288478e4196f9207aa966cfe66dca697cdb31efd3ed71fc39d0"
+    },
+    "protocol_acceptance/examples/paint-stack/store/ochre-accepted/D_rd.toml": {
+      "sha256": "19422dcc78d3585b37cb8ccf6f3be3f7153224a1773d1ba8474d2ad9dee3bd80"
+    },
+    "protocol_acceptance/examples/paint-stack/transcripts.py": {
+      "sha256": "ea26f20e541ce3dce71adee3a42c51eacee8e7cc6c459c6ec34876e19d28973c"
     },
     "protocol_acceptance/examples/rust-delivery/Cargo.lock": {
       "sha256": "30cd2e063e99ab3ef574e4e0b689f47d5bc2be53d63bb7c0049742ab05d6202d"
     },
     "protocol_acceptance/examples/rust-delivery/README.md": {
-      "sha256": "70e23663c5640737264c939e29cb9fbb564cb4002890ca8da893365855c6f48f"
-    },
-    "protocol_acceptance/examples/rust-delivery/acceptance-contract.toml": {
-      "sha256": "6308dac08add13a38776e6b8076e3636a061176e89f6775e3105736d4909a3b4"
+      "sha256": "19ca78d4e72e6fb7979107eda443007d65c26cf00cd96683f273036944f923c2"
     },
     "protocol_acceptance/examples/rust-delivery/acceptance-decision.toml": {
-      "sha256": "7e8926b903257b396779b7deaa138e30cc07d90a2040f5c99fcf841c25f09b25"
+      "sha256": "0dc9602f74b414407680bdc66ec4337ed75ecf529819c98f83330e7266558de9"
+    },
+    "protocol_acceptance/examples/rust-delivery/acceptance-specification.toml": {
+      "sha256": "fa21e42f206ba31b9a35613137a8c687bbc66f7bde5a7f13b301aa140082e1e8"
     },
     "protocol_acceptance/examples/rust-delivery/acceptance.toml": {
-      "sha256": "c69502e3d985aa3854790e3bc7889d6c83e9f9bf5c71c8ff8bf04f86eece4ef8"
+      "sha256": "072255a047bff5763815d12d7b4aa90f0ce8903c5a4031d60eea8e53233af83d"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/cargo-doc.txt": {
-      "sha256": "366f01861c43a72ab01137d3960993bd5a5e32f146d4d1851c08ebb665de9704"
+      "sha256": "bab41d68b220a2ffbc5d68f7757cc0970f68d76d25ab89a62c7a02cdc064789d"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/checksum-test.txt": {
-      "sha256": "9d7b586e270d416fd4ad7c9b99ed2dc29df90645bc65835fd2c4ae6c0e11b667"
+      "sha256": "ea247487f5858010716463ab70d50b6db4bddb32311be06f0d11918f87dbdf57"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/clippy.txt": {
-      "sha256": "01455c00e1683ec8cb39875af03aa02aafa66d0306f7f87f63adf2a593886a40"
+      "sha256": "e321bfd5115e2209471639afdbdadb336060a3c507d10c68a19261be1b2e91cd"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/kani-validate-never-panics.txt": {
-      "sha256": "5cc65a30cffe72462e4ff856be149f48f2a456e0ae83aadc726ed513b92013d7"
+      "sha256": "4f109991c92c62f52c29e3fc43df15190a5886a2df8058e1c23bca721c90ea95"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/malformed-test.txt": {
-      "sha256": "87b046c2c5994ff0fd3682f1debbbd04ffa62787eed634daf63920c35acacdb2"
+      "sha256": "6993a76ffcc2265ed0ae1abad39ebb6958fe1daafe52d99fa42e7aad3a5d35d5"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/no-panic-test.txt": {
-      "sha256": "8dad54fa3c695ee2e9cff6f124f762bd80e986ca0ac22643e909423ebb932eb8"
+      "sha256": "f189bd2b9a099c0d7806272100efa37c0bb4fff22054ad81ffdab3610555da71"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/r1-mutation-control.txt": {
-      "sha256": "5f7b72cd5dd2af467f29646e7708e99e15dfc8c58954fc3d1b1353da57cc5892"
+      "sha256": "f64f8c1d18b8802e51b48386729a7a17f86fc2e68b0e9e05c3eca55d393d2c38"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/r2-mutation-control.txt": {
-      "sha256": "d8595df5c700ac6731dfebe8f6f81d8e31a77d7179d52f4e5e406c7782b51a95"
+      "sha256": "040b07bce5422905a4a6c6c102b84d7ba12e871eb755d89faabf6cde7138663f"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/r3-mutation-control.txt": {
-      "sha256": "b946b5c1a98dfe7e2a43c405b4053b0b02383d3377525c4bcd832caf9b148d6c"
+      "sha256": "2bc92dfc75f7abf1721c4cf28c8bee44f964ff0a81c922d12a9559c193a75113"
     },
     "protocol_acceptance/examples/rust-delivery/evidence/r4-mutation-control.txt": {
       "sha256": "34cb0e857b3e418d992d9a105aff3028156a98157fc79a9808a810f2c8afbc84"
@@ -350,7 +572,7 @@
       "sha256": "4fef03ad87ce6158067d0b8e566cc444fe4d4d77b69c197f13faf15cef9d9b8a"
     },
     "protocol_acceptance/examples/rust-delivery/gen_package.py": {
-      "sha256": "2983ae7688895154ebffda4452a7951200b7b442c82b7c9f7df97dbf9dba1e00"
+      "sha256": "6c952b212f12bba856f479b652ccf8ecab9569c049df70c7dc20a1e01cab2fe4"
     },
     "protocol_acceptance/examples/rust-delivery/iban-check/.gitignore": {
       "sha256": "44c92e3a70ad3307b7056871c2bdb096d8bfa9373f5bf06a79bb6324a20ff2fb"
@@ -362,7 +584,7 @@
       "sha256": "3c19063a584f2f174764cade5857d7867fafa16ba6c982b56d58dc55e947a80b"
     },
     "protocol_acceptance/examples/rust-delivery/iban-check/rust-toolchain.toml": {
-      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+      "sha256": "8f6d127bbaa873ce06fffd173e7273e6a12259dae793ac96642a7f5ac75a64c6"
     },
     "protocol_acceptance/examples/rust-delivery/iban-check/src/checksum.rs": {
       "sha256": "11fb9d711414fe31bf7a0c96e2b03275b709eb521acc01333ecdae4246eb08d6"
@@ -383,37 +605,40 @@
       "sha256": "a7b5e7975f2b3022bb7ace4a1263431ce25e6bbd363b68ebf76a7f10c0536385"
     },
     "protocol_acceptance/examples/rust-delivery/impact-events.jsonl": {
-      "sha256": "7c06c47a2a1da2b0045368489050d4ba86bd9506365aa35924fd40ede62c485b"
+      "sha256": "bf0f5e7ce51f5ace371534a64b8b66176c337084e0667bd944de667cde364bf3"
     },
     "protocol_acceptance/examples/rust-delivery/make_decision.py": {
-      "sha256": "077291360b686e3813744587b32897f190eb612ed7b2b4a367651ea40fefd7c5"
+      "sha256": "62d68d149ebef0208ee733ef47253fb04cdd0b9d5c90a86ebded751c5ac05c77"
     },
     "protocol_acceptance/examples/rust-delivery/run_example.sh": {
-      "sha256": "033ac4d90dec7271d6545377f529e227d2fea5020333cfd1469ef3ee6f70a498"
+      "sha256": "72afb87dfd006199c36f4062505965a6740a4b94eabbaa94abe1affaf71030f1"
     },
     "protocol_acceptance/examples/rust-delivery/rust-toolchain.toml": {
-      "sha256": "e5cc0545f232bde807bd9394c2433322d1cd2cf42b060ceab2ac7329bc9cdaa2"
+      "sha256": "8f6d127bbaa873ce06fffd173e7273e6a12259dae793ac96642a7f5ac75a64c6"
     },
     "protocol_acceptance/spec/adapters/worker-brief.md": {
-      "sha256": "a9f4b2bb3bf89c11b7ee615cb1619631fb8ad42a651672f6d178f0b3555c3c34"
+      "sha256": "29443201d079dd525f53af4fa09362c142bb42ac5884ff00b3410a37987ad6f1"
     },
     "protocol_acceptance/spec/assurance-classes.toml": {
-      "sha256": "9c2c0ad6f5db2ab1b0639a68dcc5b6390af3e1f29e5ed779a5db4033adc73b2d"
+      "sha256": "bfa7f2e5e25bdc7caded4054b648f6a14e19f87567a118ca5e0b8d402831c7f1"
     },
     "protocol_acceptance/spec/protocol.md": {
-      "sha256": "740f841fd6ed7bad5a631d087b5f059e265444136ddd51ed32abc36c05207eb3"
-    },
-    "protocol_acceptance/spec/stack.md": {
-      "sha256": "1eefb70bc6c9c44e7bfedfd83bc5b8d2497b4713753bac9c5bae9e06e244edfa"
+      "sha256": "cb94c352d08c4cb8bca25e9977614827cdd814fde82923b1beeda295b243c772"
     },
     "protocol_acceptance/spec/states.toml": {
-      "sha256": "e536de5f8941e38b2e55b592d8885556a6f9fc2444aee756053e2acfc97ccc31"
+      "sha256": "922806748589f4e1a1511ed1ab3fe20a7347c95e37e58d70089a2a68a4aa8367"
+    },
+    "protocol_acceptance/tools/acceptance_migrate.py": {
+      "sha256": "71df5954a8151c4390323b649ac2e28d50a72be8eba6d07d3fa2445d7dae2cdc"
     },
     "protocol_acceptance/tools/acceptance_protocol.py": {
-      "sha256": "b3143c49fa765440daecc04ed6ecf65c58332960b8881b2f41ab9c635df439a4"
+      "sha256": "953066a82f616b832d73ebd16224b5f080f0e306dad4f0b05231e4e75654f64f"
+    },
+    "protocol_acceptance/tools/chain.py": {
+      "sha256": "50dd213e880a59ccde587d3945e07c609ca08ffcb9d75849dc8b778bdf5306d8"
     },
     "protocol_acceptance/tools/export_closure.py": {
-      "sha256": "528d897cc0517c38660c3e79095d79dc2ba8484b6b059e70cb39e16355cd8123"
+      "sha256": "5f12f067e366460aa82eed766eb67e5854d80ba659b06681f9a3b645fb75d105"
     },
     "protocol_acceptance/tools/fixtures/__init__.py": {
       "sha256": "f93dc3bbb19824ac0947f8ea5d26a87deb6afc97080f05d60f34a98c42aa175f"
@@ -422,24 +647,60 @@
       "sha256": "8b325716418dba54c126578c918637e70a242d1456aa14bfff04922841dcbfa0"
     },
     "protocol_acceptance/tools/fixtures/assurance_class_chain.py": {
-      "sha256": "efde970fd0a11b5f8d3ee966afae50e69fd63d6354d9f362f076e281e2a4798b"
+      "sha256": "81aef965c75b296b350608bb6e3ebde7bea4bf3b97723d456efca0a2807df2ab"
+    },
+    "protocol_acceptance/tools/fixtures/chain_cases.py": {
+      "sha256": "56cead261b0db9e79b8a77e9beb238fbf56b0af74b78cc3104aa1b263c1febf4"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/Cargo.lock": {
+      "sha256": "f7aec7ccf4fca36f40b1c19931f1f1c481f22438272841318cf159224f383f82"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/Cargo.toml": {
+      "sha256": "1adad1d85fed6a0511e70d222ccf884f7aa15bc5bf3bca176496b30b7fb91750"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/README.md": {
+      "sha256": "76d98ec8e81f00801772955c8abf483b605a13c17791506c588c685470828b8f"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/geom-math/Cargo.toml": {
+      "sha256": "f3f9e1455b1f099dae68cfa4bfcd3a082b34e0b3a25d23eae11697df83b13fa2"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/geom-math/src/lib.rs": {
+      "sha256": "664ea0bec2539b989621b03f1d4de90080764458376093ef690c3b5157fc6796"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/paint-app/Cargo.toml": {
+      "sha256": "073088e00d08cbd4001e84d2431e2051ca0c5c7a3a6590c03022e71ab0ddac6a"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/paint-app/src/lib.rs": {
+      "sha256": "f99e505a77b5df6e758da8b4bcec2bc8e592a265556511666a2071d7bd1ae3fc"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/raster-draw/Cargo.toml": {
+      "sha256": "674a3bbbe940b10b7f86b2e2ba25477b805b0fa59bf9e0ad61cf6b09ad1c7c2a"
+    },
+    "protocol_acceptance/tools/fixtures/chain_tree/raster-draw/src/lib.rs": {
+      "sha256": "5859f3f5650718a84b36b2026475545aa229be64ab4a15e7d177e98c74bb3624"
     },
     "protocol_acceptance/tools/fixtures/conformance_chain.py": {
-      "sha256": "2b193a9fcd2d02de6f51d94a2f3c987bfa992f0c55e07640e5852bd574024be8"
+      "sha256": "7381204a0fc413cdaabff17be2c44bf74e2d560bb4a618037eb5357920c5e790"
     },
     "protocol_acceptance/tools/fixtures/troubleshooting_chain.py": {
-      "sha256": "081f85211a3d70a21a17d65708834474e23eedb228b47596e7d826d939c58420"
+      "sha256": "95e7bf520b3e7bb2dc991e680042405bd22ee057283d578156f5b3589238012b"
     },
     "protocol_acceptance/tools/fixtures/verification_chain.py": {
-      "sha256": "1ed21f8195049184d976a77207d345da68bbb813174f9359cd878cda6a6b9cec"
+      "sha256": "417c388e0d71ffdd547955584e4a8c7b6d80eb5c491bd78172e42802560d636b"
+    },
+    "protocol_acceptance/tools/fixtures/version_route_cases.py": {
+      "sha256": "9997a0e3f8786d27e746c7221e9f98fdbb29cb32d6faac745e0dc8def972530a"
     },
     "protocol_acceptance/tools/m11.py": {
-      "sha256": "7ed2989b869ab4a0be9a8c2a72c9ba663fe19cadbe27ffc15c5fbbde37c9080a"
+      "sha256": "52f5e5b268d4c63edb4fe4b6fdd1c96e7ca43a38252d209452de6b7ea9a5f4cc"
     },
     "protocol_acceptance/tools/profiles.py": {
-      "sha256": "e432f9ccf286fe56d60074ea7252f0adedb8b5b0b42b98929dc464befdfd2de9"
+      "sha256": "07c2c923bcc1de9761e00367be6706e948d6bf312b4acd6dbfd67a3e6ffd70cc"
+    },
+    "protocol_acceptance/tools/version_route.py": {
+      "sha256": "3d7a45b6cd2a9416dc3974728f938d68fc19484f0acd6fe063b5f2de1fba8847"
     }
   },
-  "source_commit": "88d52fe743b23e3bc198261e202df79736b8130e",
+  "source_commit": "0138f95fc594be8d8c77d17e3623da275b43b385",
   "source_dirty": false
 }

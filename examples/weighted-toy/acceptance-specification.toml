@@ -1,8 +1,8 @@
-# A public teaching contract for the existing weighted-toy claim.
+# A public teaching specification for the existing weighted-toy claim.
 [document]
-protocol = "acceptance-protocol/0"
+protocol = "acceptance-protocol/1"
 minor = 0
-kind = "contract"
+kind = "specification"
 id = "AC-WEIGHTED-TOY-0001"
 version = 1
 issued_at = "2026-09-27T00:00:00Z"

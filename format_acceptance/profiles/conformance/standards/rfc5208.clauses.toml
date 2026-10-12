@@ -14,6 +14,9 @@ title = "PrivateKeyInfo ASN.1 type definition, version fixed to v1"
 force = "definition"
 side  = "both"
 
-# UNVERIFIED: RFC 5208 §5 has no lettered/numbered sub-clauses in the published text, as far as
-# could be confirmed (no §5.1, §5.2 headings). If the version=v1(0) constraint and the
-# attributes field warrant their own rows, split this clause then rather than here.
+# UNVERIFIED: P26-RFC5208-1 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: published RFC 5208, §5 PrivateKeyInfo: whether the version=v1(0)
+# constraint and attributes field have separately numbered/lettered subdivisions.
+# Primary-text locator for later review: https://www.rfc-editor.org/rfc/rfc5208.txt
+# No claim about absent headings is verified here; retain the single coarse row.

@@ -1,9 +1,9 @@
-# kani-crate.contract.toml — a REQUESTER skeleton for a Kani-verified Rust crate delivery.
+# kani-crate.specification.toml — a consumer skeleton for a Kani-verified Rust crate delivery.
 #
 # This is the CONSUMER'S document (protocol.md §3): the requirements a delivery must meet, before
 # any code is written. Copy it, fill every placeholder (search for the string FILL), then run:
 #
-#   python3 protocol_acceptance/tools/acceptance_protocol.py check-contract your-crate.contract.toml
+#   python3 protocol_acceptance/tools/acceptance_protocol.py check-spec your-crate.specification.toml
 #
 # and iterate until it is clean. See ../KANI-FV-ADOPTION.md for the full walkthrough — what each
 # section means, how to tighten this from `exploratory` to `final`, and the class/phase mechanism
@@ -14,12 +14,12 @@
 # shortfall into a NOTE while the phase is not "final" (or the requirement is "draft") — exactly
 # the crystallizing behaviour P12 describes. Tighten the floors as the harnesses mature; the
 # adoption guide's migration checklist shows the shape a `final`-phase version of this same
-# contract should reach.
+# specification should reach.
 
 [document]
-protocol   = "acceptance-protocol/0"
+protocol   = "acceptance-protocol/1"
 minor      = 0
-kind       = "contract"
+kind       = "specification"
 id         = "AC-<FILL: your-crate>-0001"
 version    = 1
 issued_at  = "<FILL: 2026-01-01T00:00:00Z — when you issue this>"

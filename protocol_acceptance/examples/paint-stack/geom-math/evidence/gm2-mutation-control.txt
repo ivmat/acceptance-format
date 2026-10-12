@@ -1,0 +1,31 @@
+   Compiling geom-math v0.1.0 (<WORKSPACE>/geom-math)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.10s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/geom_math-bdaee36f851faede)
+
+running 4 tests
+test tests::isqrt_known_values ... ok
+test tests::dist2_known_values ... FAILED
+test tests::dist2_extremes_do_not_panic ... FAILED
+test tests::isqrt_exhaustive_small_range ... ok
+
+failures:
+
+---- tests::dist2_known_values stdout ----
+
+thread 'tests::dist2_known_values' (11385138) panicked at geom-math/src/lib.rs:62:5:
+attempt to add with overflow
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::dist2_extremes_do_not_panic stdout ----
+
+thread 'tests::dist2_extremes_do_not_panic' (11385137) panicked at geom-math/src/lib.rs:62:5:
+attempt to add with overflow
+
+
+failures:
+    tests::dist2_extremes_do_not_panic
+    tests::dist2_known_values
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--lib`

@@ -1,0 +1,22 @@
+   Compiling raster-draw v0.1.0 (<WORKSPACE>/raster-draw)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/raster_draw-c5a996419a589973)
+
+running 1 test
+test tests::property_8way_symmetry_as_a_set ... FAILED
+
+failures:
+
+---- tests::property_8way_symmetry_as_a_set stdout ----
+
+thread 'tests::property_8way_symmetry_as_a_set' (11422975) panicked at raster-draw/src/lib.rs:371:21:
+r=813 missing reflection (-475,-660) of (-475,660)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::property_8way_symmetry_as_a_set
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

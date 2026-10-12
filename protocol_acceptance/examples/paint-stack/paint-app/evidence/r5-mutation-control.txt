@@ -1,0 +1,12 @@
+ Documenting paint-app v0.1.0 (<WORKSPACE>/paint-app)
+    Checking paint-app v0.1.0 (<WORKSPACE>/paint-app)
+error: unresolved link to `totally::bogus::path`
+  --> paint-app/src/lib.rs:14:11
+   |
+14 | //! See [`totally::bogus::path`] for details.
+   |           ^^^^^^^^^^^^^^^^^^^^ no item named `totally` in scope
+   |
+   = note: `-D rustdoc::broken-intra-doc-links` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(rustdoc::broken_intra_doc_links)]`
+
+error: could not document `paint-app`

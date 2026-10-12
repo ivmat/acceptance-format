@@ -14,6 +14,9 @@ title = "ECPrivateKey ASN.1 type definition, EXPLICIT tags"
 force = "definition"
 side  = "both"
 
-# UNVERIFIED: RFC 5915 §3 has no lettered/numbered sub-clauses in the published text, as far as
-# could be confirmed. The parameters CHOICE and publicKey BIT STRING both live inside this
-# one clause; split them out only if a future revision needs finer addressing.
+# UNVERIFIED: P26-RFC5915-1 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: published RFC 5915, §3 ECPrivateKey: the parameters and publicKey
+# fields, their ASN.1 types, and whether subdivisions have their own locators.
+# Primary-text locator for later review: https://www.rfc-editor.org/rfc/rfc5915.txt
+# No claim about absent headings is verified here; retain the single coarse row.

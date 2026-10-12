@@ -83,6 +83,26 @@ COVERAGE_METRICS = {"statement", "branch", "decision", "mcdc", "proof-obligation
 UNIVERSAL_EVIDENCE_FIELDS = ["kind", "family", "ref", "result", "tool", "record"]
 RESERVED_TRUST_FIELDS = ("alpha", "beta", "lr")
 
+# B1 (acceptance 0.4.0): a git-revision identity's `path` grammar -- one or more `/`-joined
+# segments, each matching `[A-Za-z0-9._-]+` and neither `.` nor `..`. Shared by `[subject].path`
+# and B22's `[dependency.source].path`.
+B1_PATH_SEGMENT_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+# B22: dependency declaration (shape). `generic` registers the four relation tokens every binding
+# chain inherits -- "generic" has no loadable bindings/*.py module of its own (it is the implicit
+# root every chain narrows from, never a leaf), so this set is hard-coded here rather than read
+# from a declared .md block; a binding module adds its own additively (e.g. code/rust's `runtime`,
+# illustrative; profile vocabulary), via its own declaration's `relations` key -- the same
+# machine-readable block as `admits`/`identity` (B14/B17), collected generically by
+# `registered_relations` below.
+GENERIC_RELATIONS = frozenset({"build-tool", "verification-tool", "language", "platform"})
+DEPENDENCY_INVENTORY_SOURCES = {"lockfile", "manual"}
+DEPENDENCY_INPUT_ROLES = {"lockfile", "workspace-manifest", "member-manifest"}
+DEPENDENCY_ROLES = {"direct", "transitive"}
+DEPENDENCY_BINDING_VALUES = {"build-time-copy", "run-time-read"}
+DEPENDENCY_RESERVED_TABLES = ("delivered", "bridge", "toolchain")
+READER_ID_RE = re.compile(r"^[a-z0-9-]+/[0-9]+$")
+
 # The `control` block (assurance-bands.md rule 6 / evidence-types.md "Control block") is
 # FAMILY-AGNOSTIC (corrected 2026-08-22): it is an optional sub-table any evidence record may
 # carry — `family` on the record already says what was perturbed (kernel = mutated Lean theorem,
@@ -356,7 +376,7 @@ def check_coverage(rep: Reporter, doc: dict, claims: list) -> None:
         legacy = is_transitional_conformance(rep)
         (rep.warn if legacy else rep.error)("B11: " + ("legacy " if legacy else "") + "zero-claim clauses require denominator = slice")
 
-    # CLAIM-CLASSES-AWAITING-WEIGHT.md C1: OPTIONAL denominator — parseable and shape-checked, but its meaning
+    # OPTIONAL denominator — parseable and shape-checked, but its meaning
     # ("what makes a slice boundary legitimate") is NOT frozen, so its presence is EXPERIMENTAL,
     # not silently accepted. "slice" requires a nonempty slice_note so the omission-detection
     # guarantee stays honest about what it's scoped to — that shape rule IS enforced even though
@@ -371,13 +391,13 @@ def check_coverage(rep: Reporter, doc: dict, claims: list) -> None:
         else:
             rep.warn(
                 f"[coverage].denominator = {denominator!r} is EXPERIMENTAL "
-                f"(CLAIM-CLASSES-AWAITING-WEIGHT.md C1) — denominator/slice semantics are not yet frozen; "
+                f"— denominator/slice semantics are not yet frozen; "
                 f"validated for shape only"
             )
             if denominator == "slice" and not _is_nonempty_str(cov.get("slice_note")):
                 rep.error(
                     "[coverage].denominator = 'slice' requires a nonempty 'slice_note' "
-                    "(CLAIM-CLASSES-AWAITING-WEIGHT.md C1)"
+                    "to explain the scope of the sampled subset"
                 )
 
 
@@ -842,8 +862,8 @@ def check_claims(rep: Reporter, doc: dict, base_dir: Path, strict: bool) -> list
                 )
             elif clause_source == "test-name":
                 rep.warn(
-                    f"{ctx}: clause_source = 'test-name' is EXPERIMENTAL (CLAIM-CLASSES-AWAITING-WEIGHT.md "
-                    f"C5) — the clause and its evidence are the same artifact, so the test can "
+                    f"{ctx}: clause_source = 'test-name' is EXPERIMENTAL —"
+                    f" the clause and its evidence are the same artifact, so the test can "
                     f"never fail the requirement"
                 )
 
@@ -1045,6 +1065,23 @@ def _wire(value, domain):
         return False
 
 
+def _valid_b1_path(value) -> bool:
+    """B1: `path`'s grammar, verbatim -- one or more `/`-joined segments, each matching
+    `[A-Za-z0-9._-]+` and neither `.` nor `..` (so no empty segment, no leading or trailing `/`,
+    no `\\`, NUL, newline or non-ASCII)."""
+    if not isinstance(value, str) or not value:
+        return False
+    return all(seg not in (".", "..") and bool(B1_PATH_SEGMENT_RE.fullmatch(seg)) for seg in value.split("/"))
+
+
+def b1_git_revision_equal(a: dict, b: dict) -> bool:
+    """B1: two git-revision identities are equal iff `commit` and `path` are both
+    byte-equal; an absent `path` never equals a present one. A pure comparison helper -- not
+    wired into any cross-document join, which is the protocol's own job (closure, completeness),
+    provided here because B1 equality is part of the format core's identity-grammar ownership."""
+    return a.get("commit") == b.get("commit") and a.get("path") == b.get("path")
+
+
 def check_subject_locator(rep, subj):
     mode = subj.get("mode", "retrospective")
     if mode not in SUBJECT_MODES:
@@ -1062,6 +1099,11 @@ def check_subject_locator(rep, subj):
                 rep.error(f"[subject].commit must be 40 lowercase hex chars, got {subj['commit']!r}")
             if not isinstance(subj.get("dirty"), bool):
                 rep.error(f"[subject].dirty must be a bool, got {subj.get('dirty')!r}")
+            if "path" in subj and not _valid_b1_path(subj["path"]):
+                rep.error(
+                    f"B1: path must be one or more '/'-joined segments matching "
+                    f"[A-Za-z0-9._-]+, neither '.' nor '..', got {subj['path']!r}"
+                )
         if "digest" in subj and not _wire(subj["digest"].rsplit(":", 1)[0] + ":" + subj["digest"].rsplit(":", 1)[-1].lower() if "components" in subj and isinstance(subj["digest"], str) else subj["digest"], "subject:"):
             rep.error("B1: subject digest must use subject:sha-512:<128-hex>")
         if "digest" in subj and "components" not in subj:
@@ -1079,6 +1121,8 @@ def check_subject_locator(rep, subj):
                     if component["name"] in names:
                         rep.error("B1: duplicate component name")
                     names.add(component["name"])
+                    if "path" in component:
+                        rep.error("B1: path is an ERROR inside a [[subject.components]] locator (R45)")
                     if "components" in component or component.get("mode", "retrospective") != "retrospective":
                         rep.error("B1: components require a git-revision or content-digest locator")
                     else:
@@ -1181,7 +1225,7 @@ INVENTORY_FIRMNESS_VALUES = {"draft", "firm"}
 
 def check_inventory(rep: Reporter, doc: dict, claims: list) -> None:
     """B19: generic Class-rung spec inventory. A no-op unless `[spec].inventory` is present
-    (0.3 contracts require it later; existing manifests need no change)."""
+    (0.3 specifications require it later; existing manifests need no change)."""
     spec = doc.get("spec")
     if not isinstance(spec, dict) or "inventory" not in spec:
         return
@@ -1438,7 +1482,7 @@ def load_bindings(rep, paths):
             text = docpath.read_text()
             for block in re.findall(r"```toml\s*\n(.*?)```", text, re.S):
                 data = tomllib.loads(block)
-                for key in ("admits", "identity"):
+                for key in ("admits", "identity", "relations"):
                     if key in data: declarations[key] = data[key]
         except (OSError, ValueError) as exc:
             rep.unknowns.append(f"B14: binding declarations unavailable: {docpath}: {exc}")
@@ -1514,6 +1558,213 @@ def check_binding_admission(rep, subject, admitted, kinds):
     identity = "components" if "components" in subject else "git-revision" if "commit" in subject else "content-digest"
     if subject.get("mode", "retrospective") == "retrospective" and identity not in kinds:
         rep.error(f"B1: binding does not admit identity {identity}")
+
+
+def registered_relations(bindings):
+    """B22: the set of relation tokens this manifest's binding chain registers -- `generic`'s
+    four tokens (the implicit root of every chain) plus, additively, whatever each loaded
+    binding module declares via its own `relations` key (same declared-registry mechanism as
+    `admits`/`identity`, read generically by `load_bindings`)."""
+    tokens = set(GENERIC_RELATIONS)
+    for _, declaration in bindings:
+        value = declaration.get("relations", []) if isinstance(declaration, dict) else []
+        if isinstance(value, list):
+            tokens.update(v for v in value if isinstance(v, str))
+    return tokens
+
+
+def check_dependency_declaration(rep, doc, bindings):
+    """B22: dependency declaration (shape only). `[[dependency_inventory]]` and `[[dependency]]`
+    are meaning-neutral disclosure -- any manifest may carry them, and they change no claim's
+    weight, tier or band. The format core owns shape, relation-token registration through the
+    bindings, the `entries` count and input-digest recomputation; it never parses a lockfile or a
+    build manifest -- lockfile readers, the closure, identity joins and completeness belong to
+    the protocol."""
+    inventories = doc.get("dependency_inventory")
+    dependencies = doc.get("dependency")
+    if inventories is None and dependencies is None:
+        return
+    if inventories is not None and not (isinstance(inventories, list) and all(isinstance(x, dict) for x in inventories)):
+        rep.error("B22: [[dependency_inventory]] must be a list of tables")
+        inventories = []
+    if dependencies is not None and not (isinstance(dependencies, list) and all(isinstance(x, dict) for x in dependencies)):
+        rep.error("B22: [[dependency]] must be a list of tables")
+        dependencies = []
+    inventories = inventories or []
+    dependencies = dependencies or []
+
+    relations = registered_relations(bindings)
+    inv_by_id = {}
+    for i, inv in enumerate(inventories):
+        ctx = f"dependency_inventory[{i}]"
+        inv_id = inv.get("id")
+        if not isinstance(inv_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", inv_id):
+            rep.error(f"B22: {ctx}.id must be unique and match [a-z0-9][a-z0-9._-]*, got {inv_id!r}")
+            inv_id = None
+        elif inv_id in inv_by_id:
+            rep.error(f"B22: duplicate dependency_inventory id {inv_id!r}")
+            inv_id = None
+
+        source = inv.get("source")
+        if source == "toolchain":
+            rep.error(f"B22: {ctx}.source 'toolchain' is reserved (ERROR)")
+        elif not isinstance(source, str) or source not in DEPENDENCY_INVENTORY_SOURCES:
+            rep.error(f"B22: {ctx}.source must be one of {sorted(DEPENDENCY_INVENTORY_SOURCES)}, got {source!r}")
+
+        covers = inv.get("covers")
+        if not (isinstance(covers, list) and covers and all(isinstance(c, str) for c in covers)):
+            rep.error(f"B22: {ctx}.covers must be a nonempty list of relation tokens")
+            covers = []
+
+        entries = inv.get("entries")
+        if not isinstance(entries, int) or isinstance(entries, bool) or entries < 0:
+            rep.error(f"B22: {ctx}.entries must be an integer >= 0, got {entries!r}")
+            entries = None
+
+        inputs = inv.get("input")
+        if source == "lockfile":
+            reader = inv.get("reader")
+            if not isinstance(reader, str) or not READER_ID_RE.fullmatch(reader):
+                rep.error(
+                    f"B22: {ctx}.reader is REQUIRED for source='lockfile' and must match "
+                    f"[a-z0-9-]+/[0-9]+, got {reader!r}"
+                )
+            if not (isinstance(inputs, list) and inputs):
+                rep.error(f"B22: {ctx} requires one or more [[dependency_inventory.input]] rows for source='lockfile'")
+                inputs = []
+            lockfile_rows = 0
+            for j, row in enumerate(inputs):
+                ictx = f"{ctx}.input[{j}]"
+                if not isinstance(row, dict):
+                    rep.error(f"B22: {ictx} must be a table")
+                    continue
+                role = row.get("role")
+                if not isinstance(role, str) or role not in DEPENDENCY_INPUT_ROLES:
+                    rep.error(f"B22: {ictx}.role must be one of {sorted(DEPENDENCY_INPUT_ROLES)}, got {role!r}")
+                elif role == "lockfile":
+                    lockfile_rows += 1
+                path, digest = row.get("path"), row.get("digest")
+                if not _is_nonempty_str(path):
+                    rep.error(f"B22: {ictx}.path must be a nonempty string")
+                if not _wire(digest, "artifact:"):
+                    rep.error(f"B22: {ictx}.digest must be an 'artifact:sha-512:<128-hex>' wire digest")
+                elif _is_nonempty_str(path):
+                    target = _resolve_pointer(rep, path, ictx)
+                    if target is not None:
+                        try:
+                            raw = target.read_bytes()
+                        except OSError:
+                            message = f"{ictx}: input pointer does not exist: {path} (or is unreadable)"
+                            (rep.error if rep.context.strict else rep.warn)(message)
+                        else:
+                            if hashdomains.digest("artifact:", raw) != digest:
+                                rep.error(f"B22: {ictx}: input digest differs from recomputed artifact:sha-512 hash")
+                extra_row = set(row) - {"role", "path", "digest"}
+                if extra_row:
+                    rep.error(f"B22: {ictx} carries unknown field(s) {sorted(extra_row)}")
+            if lockfile_rows != 1:
+                rep.error(f"B22: {ctx} must carry exactly one input with role='lockfile', found {lockfile_rows}")
+        elif source == "manual":
+            if "reader" in inv:
+                rep.error(f"B22: {ctx}.reader is forbidden for source='manual'")
+            if "input" in inv:
+                rep.error(f"B22: {ctx} must not declare [[dependency_inventory.input]] rows for source='manual'")
+
+        extra_inv = set(inv) - {"id", "source", "covers", "entries", "reader", "input"}
+        if extra_inv:
+            rep.error(f"B22: {ctx} carries unknown field(s) {sorted(extra_inv)}")
+        if inv_id is not None:
+            inv_by_id[inv_id] = {"source": source, "covers": covers, "entries": entries, "count": 0}
+
+    seen_dep_ids = set()
+    for i, dep in enumerate(dependencies):
+        ctx = f"dependency[{i}]"
+        dep_id = dep.get("id")
+        if not _is_nonempty_str(dep_id):
+            rep.error(f"B22: {ctx}.id must be a nonempty string")
+        elif dep_id in seen_dep_ids:
+            rep.error(f"B22: duplicate dependency id {dep_id!r}")
+        else:
+            seen_dep_ids.add(dep_id)
+
+        relation = dep.get("relation")
+        if not isinstance(relation, str) or relation not in relations:
+            rep.error(
+                f"B22: {ctx}.relation {relation!r} is not registered by any binding on this "
+                f"manifest's binding chain"
+            )
+
+        role = dep.get("role")
+        if not isinstance(role, str) or role not in DEPENDENCY_ROLES:
+            rep.error(f"B22: {ctx}.role must be one of {sorted(DEPENDENCY_ROLES)}, got {role!r}")
+
+        inv_id = dep.get("inventory")
+        inv_info = inv_by_id.get(inv_id) if isinstance(inv_id, str) else None
+        if inv_info is None:
+            rep.error(f"B22: {ctx}.inventory {inv_id!r} does not name a declared [[dependency_inventory]]")
+        else:
+            inv_info["count"] += 1
+            if isinstance(relation, str) and relation in relations and relation not in inv_info["covers"]:
+                rep.error(f"B22: {ctx}.relation {relation!r} is not in inventory {inv_id!r}'s covers")
+
+        consumed = dep.get("consumed")
+        if consumed == "delivered":
+            rep.error(f"B22: {ctx}.consumed 'delivered' is reserved (ERROR)")
+        elif consumed != "source":
+            rep.error(f"B22: {ctx}.consumed must be 'source' (the only value in this release), got {consumed!r}")
+
+        if not _is_nonempty_str(dep.get("name")):
+            rep.error(f"B22: {ctx}.name must be a nonempty string")
+
+        source_tbl = dep.get("source")
+        if not isinstance(source_tbl, dict):
+            rep.error(f"B22: {ctx}.source is REQUIRED and must be a table")
+        else:
+            commit = source_tbl.get("commit")
+            if not isinstance(commit, str) or not COMMIT_RE.fullmatch(commit):
+                rep.error(f"B22: {ctx}.source.commit must be 40 lowercase hex chars, got {commit!r}")
+            if "path" in source_tbl and not _valid_b1_path(source_tbl["path"]):
+                rep.error(f"B22: {ctx}.source.path must match the B1 path grammar, got {source_tbl['path']!r}")
+            extra_source = set(source_tbl) - {"commit", "path"}
+            if extra_source:
+                rep.error(f"B22: {ctx}.source carries unknown field(s) {sorted(extra_source)}")
+
+        for reserved in DEPENDENCY_RESERVED_TABLES:
+            if reserved in dep:
+                rep.error(f"B22: {ctx}.{reserved} is reserved (ERROR)")
+
+        lock_tbl = dep.get("lock")
+        is_lockfile = inv_info is not None and inv_info.get("source") == "lockfile"
+        if inv_info is not None and is_lockfile:
+            if not isinstance(lock_tbl, dict) or not _is_nonempty_str(lock_tbl.get("entry")):
+                rep.error(f"B22: {ctx}.lock.entry is REQUIRED when the cited inventory's source is 'lockfile'")
+        elif inv_info is not None and not is_lockfile:
+            if lock_tbl is not None:
+                rep.error(f"B22: {ctx}.lock is FORBIDDEN when the cited inventory's source is not 'lockfile'")
+        if isinstance(lock_tbl, dict):
+            if "checksum" in lock_tbl:
+                rep.error(f"B22: {ctx}.lock.checksum is reserved (ERROR)")
+            extra_lock = set(lock_tbl) - {"entry", "checksum"}
+            if extra_lock:
+                rep.error(f"B22: {ctx}.lock carries unknown field(s) {sorted(extra_lock)}")
+
+        binding_val = dep.get("binding")
+        if "binding" in dep and (not isinstance(binding_val, str) or binding_val not in DEPENDENCY_BINDING_VALUES):
+            rep.error(f"B22: {ctx}.binding must be one of {sorted(DEPENDENCY_BINDING_VALUES)}, got {binding_val!r}")
+
+        extra_dep = set(dep) - {
+            "id", "relation", "role", "inventory", "consumed", "name", "source", "lock", "binding",
+            *DEPENDENCY_RESERVED_TABLES,
+        }
+        if extra_dep:
+            rep.error(f"B22: {ctx} carries unknown field(s) {sorted(extra_dep)}")
+
+    for inv_id, info in inv_by_id.items():
+        if info["entries"] is not None and info["entries"] != info["count"]:
+            rep.error(
+                f"B22: dependency_inventory {inv_id!r}.entries ({info['entries']}) does not match "
+                f"the number of [[dependency]] rows citing it ({info['count']})"
+            )
 
 
 def known_leaf(paths):
@@ -1801,6 +2052,7 @@ def validate(path: Path, strict: bool, strict_weight: bool = False, *, root=None
                 value = value.get(part) if isinstance(value, dict) else None
             if value is not None: _read_document(rep, value, field)
     check_binding_chain(rep, bindings, doc)
+    check_dependency_declaration(rep, doc, bindings)
     for c in claims:
         if not isinstance(c, dict): continue
         for e in c.get("evidence", []) if isinstance(c.get("evidence", []), list) else []:
@@ -1839,6 +2091,18 @@ def selftest():
     return 0
 
 
+def route_documents(files, argv, *, bound_meaning=None, tool_name=None):
+    """Shared CLI boundary, loaded privately to avoid the two fixtures packages colliding."""
+    import importlib.util
+    from types import SimpleNamespace
+    protocol_tools = Path(__file__).resolve().parents[2] / 'protocol_acceptance/tools'
+    route_spec = importlib.util.spec_from_file_location('_format_version_route', protocol_tools / 'version_route.py')
+    route_module = importlib.util.module_from_spec(route_spec)
+    route_spec.loader.exec_module(route_module)
+    return route_module.route_format(SimpleNamespace(files=files), argv,
+                                     bound_meaning=bound_meaning, tool_name=tool_name)
+
+
 def main(argv, *, bound_meaning=None):
     import argparse
     parser = argparse.ArgumentParser(prog=Path(argv[0]).name)
@@ -1851,6 +2115,10 @@ def main(argv, *, bound_meaning=None):
     parser.add_argument('--selftest', action='store_true')
     parser.add_argument('files', nargs='*')
     args = parser.parse_args(argv[1:])
+    # Protocol-bound /0 packages belong entirely to the isolated frozen checker.
+    routed = route_documents(args.files, argv, bound_meaning=bound_meaning)
+    if routed is not None:
+        return routed
     if args.selftest: return selftest()
     if not args.files: parser.error('no FILE arguments given')
     exits = []
@@ -1956,7 +2224,7 @@ def check_record_hash(claim_id: str, idx: int, ev: dict,
     present-but-wrong hash is a detected falsehood, not an absence, and reporting it at exit 0 was
     the same "vouching by silence" the format forbids everywhere else. When the hash is ABSENT it
     is reported and NOT failed: making it mandatory changes what a conforming manifest is, which is
-    a spec decision and an owner call (proposed, not adopted -- see PROPOSALS-2026-08-25.md P9b)."""
+    a specification change; mandatory record hashes are not adopted."""
     ref = ev.get("record")
     if not isinstance(ref, str) or not ref:
         return None

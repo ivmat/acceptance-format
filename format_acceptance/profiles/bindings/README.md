@@ -35,7 +35,7 @@ generic                 the core: [subject].kind is an OPEN registry (spec/forma
 │       └── (a crate)   a specific subject; never a document, only a manifest
 ├── document            a written artifact: doc · spec · design               document.md
 ├── tool                a released tool or toolchain, used rather than built  tool.md
-├── estate-element      a subsystem / repo / service of this estate           estate-element.md
+├── estate-element      a subsystem / repo / service of a system           estate-element.md
 ├── built-artifact      the delivered package itself, not its source tree     built-artifact.md
 │                       (skeleton; empty until package-integrity has a subject, design §6.1)
 └── data · model · agent-output   named by the public kind registry; no node document yet

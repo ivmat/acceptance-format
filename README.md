@@ -1,12 +1,16 @@
 # Acceptance protocol + format
 
-**Acceptance 0.3.2 — locked, not ratified.** The 0.3.x release records requirements,
-evidence and a consumer's acceptance decision. Validation checks the records;
-it does not certify the software or ratify the specification.
+**Acceptance 0.4.0 — locked, not ratified.** This release records specifications,
+evidence and a consumer's acceptance decision, and can check acceptance across a stack of
+libraries. Validation checks the records; it does not certify the software or ratify the
+specification.
 
 The format describes claims and their evidence. The protocol connects a consumer's
-contract, a producer's package and a consumer's decision. Verification, conformance
+specification, a producer's package and a consumer's decision. Verification, conformance
 and troubleshooting profiles add domain rules. Assurance classes set evidence floors.
+
+For a longer overview, with one example walked through end to end, every use case, and what the
+format does and does not cover, see [OVERVIEW.md](OVERVIEW.md).
 
 ## What is this? (start here)
 
@@ -65,7 +69,7 @@ do not grade how good the software is.
 The protocol splits the work into three documents. When you check your own code, you
 write all three; you just wear a different hat for each:
 
-1. **Contract** — as the *consumer*, you write what the code must do: the requirements,
+1. **Specification** — as the *consumer*, you write what the code must do: the requirements,
    which ones are mandatory, and what evidence each one needs (for example: "at least T3,
    weighted, and shown able to fail"). Write it first, before the code, so the code cannot
    bend the target.
@@ -89,7 +93,7 @@ def slug(s):
     return re.sub(r"\s+", "-", s.strip().lower())
 ```
 
-**1. Contract.** Before writing it, you say what it must do and what evidence you will
+**1. Specification.** Before writing it, you say what it must do and what evidence you will
 accept:
 
 ```toml
@@ -127,7 +131,7 @@ bounds    = "bounded: 5 concrete input strings"
 
 Delete the `watched_fail` part and the validator says `WEIGHT REFUSED … no watched-fail
 witness`. The claim stays in the file, but it no longer counts as backed, so it does not
-meet the contract.
+meet the specification.
 
 **3. Decision.** You re-run `python3 test_slug.py`, see the expected output, and record
 *accepted*. If `slug()` changes later, that decision no longer applies until you check
@@ -135,6 +139,52 @@ again.
 
 This is simplified: the real files also carry hashes, evidence records and tool versions.
 The complete, working version is in [`examples/weighted-toy/`](examples/weighted-toy/).
+
+### Stacking: one library on another
+
+Code rarely stands alone: an app calls a library, which calls another library. Acceptance stacks
+the same way.
+
+- Each library is accepted by whoever uses it, with its own specification, package and decision.
+- The app's package lists every library it is built with, and the checker verifies that list
+  against `Cargo.lock`.
+- The app's specification can then require every one of those libraries to be accepted, by an
+  acceptor the app's team trusts:
+
+```toml
+[[requirement]]
+id = "runtime"
+statement = "All dependencies are accepted or explicitly inside the declared boundary."
+mandatory = true
+waivable = false
+domain = "correctness"
+clause_source = "consumer-statement"
+kind = "chain"
+
+  [requirement.chain]
+  relations = ["runtime"]
+  depth = "all"
+  level = "C2"                  # a valid acceptance decision, not just a listing
+  completeness = "verified"     # the list must match Cargo.lock
+  binds = "consumed"
+  acceptors = ["ochre-accepted"]
+  allow_conditions = false
+  unaccepted = "refuse"
+  max_elements = 500
+```
+
+The check is recursive. Accepting the app re-checks that each library's own acceptance still
+holds, including what that library was built on: remove one library's decision or change a byte of any source file
+its claims rely on (each is digested), and the app's check fails and names the library; let a library's
+acceptance expire, and the app's effect check (`check-decision --effect --now <date>`) fails and names it.
+
+Two honest limits. Each library is accepted at its own strength: "stack accepted" does not add
+those up into one guarantee for the whole app. And today the checker follows libraries inside one
+Cargo workspace; if any dependency in the closure comes from crates.io or git, the whole stack check
+is undecided (indeterminate), never accepted.
+
+The worked example is [`paint-stack/`](protocol_acceptance/examples/paint-stack/README.md):
+`geom-math` ← `raster-draw` ← `paint-app`.
 
 ### When to use it
 
@@ -166,14 +216,55 @@ Python 3.11+ is required. From this tree's root, validate the supplied Rust exam
 
 ```sh
 python3 format_acceptance/tools/check_acceptance.py --root . --strict --strict-weight protocol_acceptance/examples/rust-delivery/acceptance.toml
-python3 protocol_acceptance/tools/acceptance_protocol.py check-contract protocol_acceptance/examples/rust-delivery/acceptance-contract.toml
-python3 protocol_acceptance/tools/acceptance_protocol.py check-package protocol_acceptance/examples/rust-delivery/acceptance.toml --contract protocol_acceptance/examples/rust-delivery/acceptance-contract.toml --root .
-python3 protocol_acceptance/tools/acceptance_protocol.py check-decision protocol_acceptance/examples/rust-delivery/acceptance-decision.toml --contract protocol_acceptance/examples/rust-delivery/acceptance-contract.toml --package protocol_acceptance/examples/rust-delivery/acceptance.toml --root .
+python3 protocol_acceptance/tools/acceptance_protocol.py check-spec protocol_acceptance/examples/rust-delivery/acceptance-specification.toml
+python3 protocol_acceptance/tools/acceptance_protocol.py check-package protocol_acceptance/examples/rust-delivery/acceptance.toml --spec protocol_acceptance/examples/rust-delivery/acceptance-specification.toml --root .
+python3 protocol_acceptance/tools/acceptance_protocol.py check-decision protocol_acceptance/examples/rust-delivery/acceptance-decision.toml --spec protocol_acceptance/examples/rust-delivery/acceptance-specification.toml --package protocol_acceptance/examples/rust-delivery/acceptance.toml --root .
 bash gates/run_all.sh
 ```
 
 These commands check the supplied records. Reproducing the Rust evidence additionally
 requires the Rust and Kani toolchains; see the example's README.
+
+Check and render the supplied library stack from the example's directory:
+
+```sh
+cd protocol_acceptance/examples/paint-stack
+X=$(python3 -c 'import tomllib; print(tomllib.load(open("paint-app/acceptance-package.toml", "rb"))["subject"]["commit"])')
+python3 ../../tools/acceptance_protocol.py check-decision paint-app/acceptance-decision.toml --spec paint-app/acceptance-specification.toml --package paint-app/acceptance-package.toml --root ../../.. --store ochre-accepted=store/ochre-accepted --tree "$X=../../.."
+python3 ../../tools/acceptance_protocol.py render paint-app/acceptance-specification.toml paint-app/acceptance-package.toml paint-app/acceptance-decision.toml --root ../../.. --store ochre-accepted=store/ochre-accepted --tree "$X=../../.."
+cd ../../..
+```
+
+In clones, the renderer prints this note before the stack table (`<commit>` is the
+first twelve characters of the recorded subject commit):
+
+```text
+NOTE tree checkout: commit <commit> not present in this repository; recorded digests checked
+
+| Relation | Inventories / completeness | Boundary | Gaps |
+|---|---|---|---|
+| build-tool | uncovered |  |  |
+| language | uncovered |  |  |
+| platform | uncovered |  |  |
+| runtime | inv-cargo / verified |  |  |
+| verification-tool | uncovered |  |  |
+```
+
+The renderer ends with these lines (`<issued_at>` is the paint-app decision's timestamp):
+
+```text
+stack accepted over inv-cargo for runtime at <issued_at>
+not covered (trusted as the base, not checked): build-tool, language, platform, verification-tool
+accepted by Ochre Raster / maintainer, Studio Ochre / tools-lead under their own specifications
+raster-draw: declared binding: build-time-copy
+geom-math: declared binding: build-time-copy
+The label combines no assurance levels across the stack. Each element was accepted at its own floor; no failure bound for the whole stack follows.
+```
+
+The label covers runtime only. Toolchain and platform relations are trusted as the base
+and are not checked. With `--tree`, a checkout lacking the named commit (every clone of this repository)
+is treated as a non-checkout; only the recorded digests are checked. Outside a checkout the same
+limit applies: the presented bytes are not proven to be the commit's bytes.
 
 Read the [format](format_acceptance/spec/core.md),
 [protocol](protocol_acceptance/spec/protocol.md),
@@ -184,18 +275,23 @@ Read the [format](format_acceptance/spec/core.md),
 
 ## Known limits
 
-The Rust example ships as supplied, regenerated with typed `record:sha-512:` hashes; the
-weighted toy is typed the same way. IB-001/IB-002 band-wording warnings are accepted known
-limits if emitted; untyped legacy record-hash wire warnings remain only for the conformance
-profile's fixtures, which are copied read-only teaching material and are not migrated. The
-gate output records the warnings for this exact cut. See
-[KNOWN-LIMITS.md](KNOWN-LIMITS.md) for the mechanisms deferred to 0.4, and
-[ROADMAP.md](ROADMAP.md) for what 0.4 is planned (not final) to add.
+The Rust examples are regenerated at 0.4.0. Rechecking the records does not rerun the
+Rust or Kani tools. The weighted toy retains its historical evidence with updated bindings.
+For `--tree`, a checkout lacking the named commit (every clone of this repository) is treated as a
+non-checkout; only the recorded digests are checked.
+
+The 0.4.0 checker refuses 0.3 protocol documents. Use
+[tag v0.3.2](https://github.com/ivmat/acceptance-format/tree/v0.3.2) to check them, or use
+[the migration tool](protocol_acceptance/tools/acceptance_migrate.py):
+`python3 protocol_acceptance/tools/acceptance_migrate.py migrate SPEC_OR_PACKAGE...`
+previews the changes; `--write` applies them. Decisions are never rewritten: the consumer
+must re-issue them. See [KNOWN-LIMITS.md](KNOWN-LIMITS.md) for current limits and
+[ROADMAP.md](ROADMAP.md) for planned work.
 
 `EXPORT-PROVENANCE.json` identifies the exact source commit, family version, dirty
 state and SHA-256 of every exported file it lists; the two license files below are
 repository-resident and are not themselves exported files, so they carry no provenance
-entry. The source family version there is authoritative for later editorial 0.3.x exports.
+entry. The source family version there is authoritative for later editorial exports.
 
 Dual licensed under Apache-2.0 or MIT; see [LICENSE-APACHE](LICENSE-APACHE) and
 [LICENSE-MIT](LICENSE-MIT). [LICENSE-NOTES.md](LICENSE-NOTES.md) records the license

@@ -1,41 +1,41 @@
    Compiling iban-check v0.1.0 (<crate>)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.56s
-     Running tests/malformed.rs (target/debug/deps/malformed-a9d6891aeef87441)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.64s
+     Running tests/malformed.rs (target/debug/deps/malformed-46494b0b9056b130)
 
 running 9 tests
-test bad_checksum_on_otherwise_well_formed_input ... ok
 test bad_length_too_long_for_country ... ok
+test bad_checksum_on_otherwise_well_formed_input ... ok
 test bad_length_too_short_for_country ... ok
 test unknown_country_not_in_table ... ok
 test unknown_country_numeric_prefix ... ok
 test unknown_country_on_short_input ... ok
-test bad_character_is_reported_for_a_symbol ... FAILED
 test bad_character_is_reported_for_lowercase ... FAILED
 test each_error_kind_is_independently_reachable ... FAILED
+test bad_character_is_reported_for_a_symbol ... FAILED
 
 failures:
 
----- bad_character_is_reported_for_a_symbol stdout ----
-
-thread 'bad_character_is_reported_for_a_symbol' (31551496) panicked at tests/malformed.rs:11:5:
-assertion `left == right` failed
-  left: Err(BadLength)
- right: Err(BadCharacter)
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-
 ---- bad_character_is_reported_for_lowercase stdout ----
 
-thread 'bad_character_is_reported_for_lowercase' (31551497) panicked at tests/malformed.rs:19:5:
+thread 'bad_character_is_reported_for_lowercase' (6455736) panicked at tests/malformed.rs:19:5:
 assertion `left == right` failed
   left: Err(UnknownCountry)
  right: Err(BadCharacter)
 
 ---- each_error_kind_is_independently_reachable stdout ----
 
-thread 'each_error_kind_is_independently_reachable' (31551501) panicked at tests/malformed.rs:89:5:
-assertion `left == right` failed: expected all four IbanError variants, got {BadChecksum, BadLength, UnknownCountry}
+thread 'each_error_kind_is_independently_reachable' (6455740) panicked at tests/malformed.rs:89:5:
+assertion `left == right` failed: expected all four IbanError variants, got {UnknownCountry, BadChecksum, BadLength}
   left: 3
  right: 4
+
+---- bad_character_is_reported_for_a_symbol stdout ----
+
+thread 'bad_character_is_reported_for_a_symbol' (6455735) panicked at tests/malformed.rs:11:5:
+assertion `left == right` failed
+  left: Err(BadLength)
+ right: Err(BadCharacter)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 
 
 failures:

@@ -1,0 +1,236 @@
+Kani Rust Verifier 0.67.0 (cargo plugin)
+   Compiling raster-draw v0.1.0 (<WORKSPACE>/raster-draw)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s
+Checking harness verification::octant_adjacent_bounded...
+CBMC 6.8.0 (cbmc-6.8.0)
+CBMC version 6.8.0 (cbmc-6.8.0) 64-bit arm64 macos
+Reading GOTO program from file <WORKSPACE>/target/kani/aarch64-apple-darwin/debug/deps/raster_draw-61c347c84d678a50__RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.out
+Generating GOTO Program
+Adding CPROVER library (arm64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Running with 16 object bits, 48 offset bits (user-specified)
+Starting Bounded Model Checking
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 1 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 2 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 3 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 4 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 5 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 6 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 7 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 8 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.0 iteration 1 file raster-draw/src/lib.rs line 275 column 9 function verification::octant_adjacent_bounded thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.0 iteration 2 file raster-draw/src/lib.rs line 275 column 9 function verification::octant_adjacent_bounded thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.0 iteration 3 file raster-draw/src/lib.rs line 275 column 9 function verification::octant_adjacent_bounded thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.0 iteration 4 file raster-draw/src/lib.rs line 275 column 9 function verification::octant_adjacent_bounded thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.0 iteration 5 file raster-draw/src/lib.rs line 275 column 9 function verification::octant_adjacent_bounded thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.0 iteration 6 file raster-draw/src/lib.rs line 275 column 9 function verification::octant_adjacent_bounded thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_adjacent_bounded.0 iteration 7 file raster-draw/src/lib.rs line 275 column 9 function verification::octant_adjacent_bounded thread 0
+Runtime Symex: 0.0721341s
+size of program expression: 4124 steps
+slicing removed 2502 assignments
+Generated 416 VCC(s), 275 remaining after simplification
+Runtime Postprocess Equation: 0.00113592s
+Passing problem to propositional reduction
+converting SSA
+Runtime Convert SSA: 0.0151865s
+Running propositional reduction
+Post-processing
+Runtime Post-process: 4.875e-06s
+Solving with CaDiCaL 2.0.0
+18727 variables, 73047 clauses
+SAT checker: instance is SATISFIABLE
+Runtime Solver: 0.00823496s
+Runtime decision procedure: 0.0237124s
+Running propositional reduction
+Solving with CaDiCaL 2.0.0
+18728 variables, 73048 clauses
+SAT checker: instance is UNSATISFIABLE
+Runtime Solver: 0.00382379s
+Runtime decision procedure: 0.00392638s
+
+RESULTS:
+Check 1: verification::octant_adjacent_bounded.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:275:15 in function verification::octant_adjacent_bounded
+
+Check 2: verification::octant_adjacent_bounded.assertion.2
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:276:28 in function verification::octant_adjacent_bounded
+
+Check 3: verification::octant_adjacent_bounded.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:277:32 in function verification::octant_adjacent_bounded
+
+Check 4: verification::octant_adjacent_bounded.assertion.4
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:277:28 in function verification::octant_adjacent_bounded
+
+Check 5: verification::octant_adjacent_bounded.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:278:21 in function verification::octant_adjacent_bounded
+
+Check 6: verification::octant_adjacent_bounded.assertion.6
+	 - Status: SUCCESS
+	 - Description: "assertion failed: (x0 - x1).abs() <= 1"
+	 - Location: raster-draw/src/lib.rs:278:13 in function verification::octant_adjacent_bounded
+
+Check 7: verification::octant_adjacent_bounded.assertion.7
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:279:21 in function verification::octant_adjacent_bounded
+
+Check 8: verification::octant_adjacent_bounded.assertion.8
+	 - Status: SUCCESS
+	 - Description: "assertion failed: (y0 - y1).abs() <= 1"
+	 - Location: raster-draw/src/lib.rs:279:13 in function verification::octant_adjacent_bounded
+
+Check 9: verification::octant_adjacent_bounded.assertion.9
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:280:13 in function verification::octant_adjacent_bounded
+
+Check 10: verification::octant_adjacent_bounded.assertion.10
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:283:32 in function verification::octant_adjacent_bounded
+
+Check 11: verification::octant_adjacent_bounded.assertion.11
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:283:28 in function verification::octant_adjacent_bounded
+
+Check 12: verification::octant_adjacent_bounded.assertion.12
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:284:21 in function verification::octant_adjacent_bounded
+
+Check 13: verification::octant_adjacent_bounded.assertion.13
+	 - Status: SUCCESS
+	 - Description: "assertion failed: (xl - yl).abs() <= 1"
+	 - Location: raster-draw/src/lib.rs:284:13 in function verification::octant_adjacent_bounded
+
+Check 14: core::num::<impl i32>::abs.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to negate with overflow"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3563:17 in function core::num::<impl i32>::abs
+
+Check 15: fill_octant.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:77:24 in function fill_octant
+
+Check 16: fill_octant.assertion.2
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 17: fill_octant.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:81:9 in function fill_octant
+
+Check 18: fill_octant.assertion.4
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:82:9 in function fill_octant
+
+Check 19: fill_octant.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: raster-draw/src/lib.rs:84:20 in function fill_octant
+
+Check 20: fill_octant.assertion.6
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:84:20 in function fill_octant
+
+Check 21: fill_octant.assertion.7
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:84:13 in function fill_octant
+
+Check 22: fill_octant.assertion.8
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:86:13 in function fill_octant
+
+Check 23: fill_octant.assertion.9
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:87:24 in function fill_octant
+
+Check 24: fill_octant.assertion.10
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: raster-draw/src/lib.rs:87:20 in function fill_octant
+
+Check 25: fill_octant.assertion.11
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:87:20 in function fill_octant
+
+Check 26: fill_octant.assertion.12
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:87:13 in function fill_octant
+
+Check 27: fill_octant.pointer_dereference.1
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer NULL"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 28: fill_octant.pointer_dereference.2
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer invalid"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 29: fill_octant.pointer_dereference.3
+	 - Status: SUCCESS
+	 - Description: "dereference failure: deallocated dynamic object"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 30: fill_octant.pointer_dereference.4
+	 - Status: SUCCESS
+	 - Description: "dereference failure: dead object"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 31: fill_octant.pointer_dereference.5
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer outside object bounds"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 32: fill_octant.pointer_dereference.6
+	 - Status: SUCCESS
+	 - Description: "dereference failure: invalid integer address"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 33: verification::octant_adjacent_bounded.array_bounds.1
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:276:18 in function verification::octant_adjacent_bounded
+
+Check 34: verification::octant_adjacent_bounded.array_bounds.2
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:277:18 in function verification::octant_adjacent_bounded
+
+Check 35: verification::octant_adjacent_bounded.array_bounds.3
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:283:18 in function verification::octant_adjacent_bounded
+
+
+SUMMARY:
+ ** 0 of 35 failed
+
+VERIFICATION:- SUCCESSFUL
+Verification Time: 0.24535833s
+
+Manual Harness Summary:
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

@@ -1,6 +1,6 @@
    Compiling iban-check v0.1.0 (<crate>)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
-     Running tests/checksum.rs (target/debug/deps/checksum-4977eb0ec9bddc47)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running tests/checksum.rs (target/debug/deps/checksum-c420e6432573a5b8)
 
 running 3 tests
 test a_wrong_checksum_is_rejected ... ok

@@ -5,7 +5,7 @@ digest: The class profile model — flat acceptance meanings, refine-only artifa
 
 # Acceptance profiles and artifact bindings
 
-**Class text LOCKED at 0.3.2 (2026-09-27).** This text is frozen: a change needs a new `[[lock]]` entry
+**Class text LOCKED at 0.4.0 (2026-10-11).** This text is frozen: a change needs a new `[[lock]]` entry
 (new version + reason) in `CLASS-LOCK.toml`, enforced by `gates/check_class_lock.py`. Locked is not
 ratified: the status below stays CANDIDATE until the owning authority ratifies the class.
 
@@ -30,10 +30,10 @@ The built-artifact binding name and place are not yet confirmed: `built-artifact
 has a subject. `intent` is deferred. `unit-testing` and `obligation-discharge` are not
 meanings.
 
-## D1/A1 division of responsibilities
+## Division of responsibilities
 
 The following table is copied from [the binding-axis README](../profiles/bindings/README.md),
-its D1/A1 table citing protocol §6.6 and amendments A2/A3. Its historical “once extracted;
+its responsibility table citing protocol §6.6 and amendments A2/A3. Its historical “once extracted;
 until then verification-only” phrase records the scaffolding stage; B13 assigns 8a to
 the core in the target contract below.
 

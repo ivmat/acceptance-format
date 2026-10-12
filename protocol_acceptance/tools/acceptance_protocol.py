@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""acceptance_protocol.py — the reference tool for the acceptance PROTOCOL (`acceptance-protocol/0`).
+"""acceptance_protocol.py — the reference tool for the acceptance PROTOCOL (`acceptance-protocol/1`).
 
 Pure stdlib, python3.11+ (uses `tomllib`). No third-party dependencies.
 
@@ -18,25 +18,25 @@ such vocabulary lives in `profiles.py`, keyed by profile id, and is reached only
 
 Verbs (see `README.md` for the worked examples):
 
-    check-contract CONTRACT.toml [--previous OLD.toml] [--json]
-    check-package  PACKAGE.toml --contract CONTRACT.toml [--previous-contract OLD.toml]
+    check-spec SPEC.toml [--previous OLD.toml] [--json]
+    check-package  PACKAGE.toml --spec SPEC.toml [--previous-spec OLD.toml]
                    [--strict] [--json]
-    coverage       PACKAGE.toml --contract CONTRACT.toml [--json]
-    decide         PACKAGE.toml --contract CONTRACT.toml --issuer NAME --out DECISION.toml
+    coverage       PACKAGE.toml --spec SPEC.toml [--json]
+    decide         PACKAGE.toml --spec SPEC.toml --issuer NAME --out DECISION.toml
                    [--mode re-execute-all|spot-check|package-trusted]
-    check-decision DECISION.toml --contract CONTRACT.toml --package PACKAGE.toml
-                   [--previous-contract OLD.toml] [--json]
+    check-decision DECISION.toml --spec SPEC.toml --package PACKAGE.toml
+                   [--previous-spec OLD.toml] [--json]
                    [--effect [--now YYYY-MM-DD] [--allow-conditions]]
     check-states   [STATES.toml]
     transition     MACHINE FROM NAME [--states STATES.toml]
-    impact         DECISION.toml --contract C --package P --new-commit SHA
+    impact         DECISION.toml --spec C --package P --new-commit SHA
                    (--changed PATH... | --changed-file LIST.txt) [--new-package NEW_PACKAGE.toml]
                    [--out-events EVENTS.jsonl]
-    render         CONTRACT.toml PACKAGE.toml [DECISION.toml] [--out VIEW.md]
-    check-amendment AMENDMENT.toml --contract BASE.toml [--json]
-    apply-amendment AMENDMENT.toml --contract BASE.toml [--current CURRENT.toml] --out NEW.toml
+    render         SPEC.toml PACKAGE.toml [DECISION.toml] [--out VIEW.md]
+    check-amendment AMENDMENT.toml --spec BASE.toml [--json]
+    apply-amendment AMENDMENT.toml --spec BASE.toml [--current CURRENT.toml] --out NEW.toml
                    [--id AC-...] (--accept-by NAME | --dry-run)
-    amend          --from-decision DECISION.toml --contract CONTRACT.toml --out AMENDMENT.toml
+    amend          --from-decision DECISION.toml --spec SPEC.toml --out AMENDMENT.toml
     --selftest
 
 Exit codes: 0 = pass/valid, 1 = validation error(s), 2 = indeterminate/usage error, 99 = selftest mismatch.
@@ -50,13 +50,16 @@ inline at the function or comment that resolves it (e.g. the `record_tier`/`meth
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import datetime
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import tomllib
 from pathlib import Path
 
@@ -65,6 +68,7 @@ sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE.parent.parent / "format_acceptance" / "tools"))  # check_core, check_acceptance, acceptance_grammar
 
 import m11  # noqa: E402
+import chain as stacking  # noqa: E402
 
 
 def _load_private(path: Path, name: str):
@@ -99,18 +103,18 @@ PROFILES = _profiles.PROFILES
 # lives in profiles.py and is never named here (P11).
 # ---------------------------------------------------------------------------------------------
 
-PROTOCOL_ID = "acceptance-protocol/0"
+PROTOCOL_ID = "acceptance-protocol/1"
 
-CONTRACT_STATUSES = {"draft", "issued", "ratified", "superseded", "withdrawn"}
+SPECIFICATION_STATUSES = {"draft", "issued", "ratified", "superseded", "withdrawn"}
 ISSUED_BY_VALUES = {"consumer", "producer"}
 DOMAIN_VALUES = {
     "correctness", "safety", "security", "performance", "compatibility", "documentation",
-    "packaging", "process", "legal", "information-flow", "availability", "other",
+    "packaging", "process", "information-flow", "availability", "other",
 }
 # protocol.md §3: where a REQUIREMENT's text came from (distinct from the format's own per-claim
 # `clause_source` vocabulary in acceptance_grammar.py, which answers a different question).
-CONTRACT_CLAUSE_SOURCES = {"consumer-statement", "external-standard", "spec-document"}
-REQUIREMENT_KINDS = {"item", "cross-cutting"}
+SPECIFICATION_CLAUSE_SOURCES = {"consumer-statement", "external-standard", "spec-document"}
+REQUIREMENT_KINDS = {"item", "cross-cutting", "chain"}
 
 TIER_TOKENS = ["T1", "T2", "T3", "T4", "T5"]
 TIER_RANK = {t: 5 - i for i, t in enumerate(TIER_TOKENS)}  # T1=5 (strongest) .. T5=1
@@ -130,7 +134,7 @@ DISPOSITION_STATUSES = {
     "satisfied", "satisfied-with-conditions", "unsatisfied", "waived",
     "insufficient-evidence", "not-applicable",
 }
-# requirement-defect (§3.5): a deviation that asks for a CONTRACT change, not a waiver.
+# requirement-defect (§3.5): a deviation that asks for a SPECIFICATION change, not a waiver.
 DEVIATION_KINDS = {"unmet", "partial", "alternative", "not-applicable", "requirement-defect"}
 WAIVER_CODES = {"risk-accepted", "alternative-evidence", "not-applicable", "deferred", "other"}
 FILLER_ROLES = {"producer", "validator"}
@@ -138,11 +142,11 @@ CONDITION_OWNERS = {"producer", "consumer", "verifier"}
 DECISION_VERDICTS = {"accepted", "accepted-with-conditions", "rejected", "evidence-requested"}
 ACCEPTANCE_RULES = {"all-mandatory-satisfied"}
 
-# §3.4a — party boundary: declared once per contract, never branched on by a core check
-# except the two named in check_contract below (cross-org disclosure/integrity).
+# §3.4a — party boundary: declared once per specification, never branched on by a core check
+# except the two named in check_specification below (cross-org disclosure/integrity).
 PARTY_BOUNDARIES = {"internal", "cross-org"}
 BOUNDARY_TERM_FIELDS = {
-    "identity_scheme", "integrity", "transport", "disclosure", "rerun_location", "legal_ref",
+    "identity_scheme", "integrity", "transport", "disclosure", "rerun_location",
 }
 
 # §3.5 — iteration and tightening (P12).
@@ -182,7 +186,7 @@ def _nonempty(v) -> bool:
 
 
 # One wire form: the pre-lock m11.py wire form `sha-512:<hex>` (domain baked into the
-# hash bytes, not repeated in the wire string) is retired for the protocol's OWN contract/package/
+# hash bytes, not repeated in the wire string) is retired for the protocol's OWN specification/package/
 # decision hash fields (m11.py now writes `<domain>:sha-512:<hex>` for those three domains,
 # matching the format core's self-describing form exactly, protocol.md §7). A document that still
 # carries the bare form on one of these fields is an explicit ERROR, not merely a downstream
@@ -265,7 +269,7 @@ def is_rfc3339_datetime(s) -> bool:
 
 def duration_to_timedelta(s: str) -> datetime.timedelta:
     """Approximate conversion (Y=365d, M=30d — no calendar arithmetic dependency) used only to
-    derive a decision's `[validity].stale_after` DATE from a contract's ISO-8601 DURATION when
+    derive a decision's `[validity].stale_after` DATE from a specification's ISO-8601 DURATION when
     `decide` emits a skeleton. Documented approximation — see README "ambiguities resolved"."""
     m = _ISO8601_DURATION_RE.match(s)
     if not m:
@@ -339,7 +343,7 @@ def load_toml(path: Path, allow_semicolon: bool = False) -> tuple[dict | None, s
     The semicolon-shorthand retry is `states.toml`'s alone —
     `protocol_acceptance/spec/states.toml` is the only file this tool tolerates it for (not on this tool's
     touch-list, see `_desemicolon_toml`), and `allow_semicolon` defaults to False so every
-    protocol DOCUMENT (contract/package/decision/amendment) is held to strict TOML. Applying the
+    protocol DOCUMENT (specification/package/decision/amendment) is held to strict TOML. Applying the
     fallback to every document let an invalid-TOML document parse, hash and bind here while a
     conforming parser rejected it outright — a validity split on a hash-bound file.
     Callers pass `allow_semicolon=True` only when loading `states.toml` itself."""
@@ -371,6 +375,7 @@ class Reporter:
         self.errors: list[str] = []
         self.warnings: list[str] = []
         self.unknowns: list[str] = []
+        self.effect_failures: list[str] = []
 
     def error(self, msg: str) -> None:
         self.errors.append(msg)
@@ -401,8 +406,8 @@ class Reporter:
         self.unknowns.extend(f"{prefix}{m}" for m in unknowns)
 
 
-def requirement_by_id(contract: dict) -> dict[str, dict]:
-    reqs = contract.get("requirement")
+def requirement_by_id(specification: dict) -> dict[str, dict]:
+    reqs = specification.get("requirement")
     if not isinstance(reqs, list):
         return {}
     out = {}
@@ -427,14 +432,14 @@ def package_profile_id(package: dict) -> str | None:
     return None
 
 
-def producer_identity_set(contract: dict, package: dict) -> set[str]:
+def producer_identity_set(specification: dict, package: dict) -> set[str]:
     """protocol.md §4.1 rule 7 / Finding 7: the package's producer identity is
-    {parties.producer.name of the contract} ∪ {every [[filler]].party with role='producer'}. P5
-    and `independence` compare against this WHOLE set, never the contract's producer string
+    {parties.producer.name of the specification} ∪ {every [[filler]].party with role='producer'}. P5
+    and `independence` compare against this WHOLE set, never the specification's producer string
     alone — a package under `producer = "open"` MUST name at least one filler (checked in
     `check_package` rule 7); the caller decides what to do with an empty set."""
     names: set[str] = set()
-    pname = ((contract.get("parties") or {}).get("producer") or {}).get("name")
+    pname = ((specification.get("parties") or {}).get("producer") or {}).get("name")
     if _nonempty(pname):
         names.add(pname)
     for f in (package.get("filler") or []):
@@ -844,7 +849,7 @@ def meets_item_floor(
             if _nonempty(consumer_name) and author == consumer_name:
                 return False, (
                     "independence=third-party but a relied-on record's author is the "
-                    "contract's own consumer — third-party independence excludes both sides "
+                    "specification's own consumer — third-party independence excludes both sides "
                     "(§6.2 cond 8, §3.7)"
                 )
 
@@ -907,7 +912,7 @@ def meets_item_floor(
                 f"(§6.2 cond 11, §3.7, B21)"
             )
 
-    # 12 — Finding 2: every profile floor the contract DECLARES for this requirement is ALWAYS
+    # 12 — Finding 2: every profile floor the specification DECLARES for this requirement is ALWAYS
     # evaluated, never conditionally skipped because the package happens to use a different
     # profile. A floor declared under a profile id that is not the package's own, or for which no
     # binding is available, is NOT MET — fail-closed, never a silent pass and never a skip.
@@ -1056,8 +1061,8 @@ def compute_crosscutting_status(
     return "partial", basis, reasons
 
 
-def compute_coverage(contract: dict, package: dict, package_path: Path) -> dict:
-    """`coverage(contract, package)` — protocol.md §6, total and deterministic.
+def compute_coverage(specification: dict, package: dict, package_path: Path) -> dict:
+    """`coverage(specification, package)` — protocol.md §6, total and deterministic.
 
     `package_path` is REQUIRED (Finding 1): coverage must read the format validator's own
     effective-weight verdict (`claim_weight_grants`), which means running the bound profile's
@@ -1078,7 +1083,7 @@ def compute_coverage(contract: dict, package: dict, package_path: Path) -> dict:
           "ca_reporter": the package validator's Reporter (diagnostic only),
         }
     """
-    reqs = contract.get("requirement")
+    reqs = specification.get("requirement")
     reqs = [r for r in reqs if isinstance(r, dict)] if isinstance(reqs, list) else []
     claims = package.get("claim")
     claims = [c for c in claims if isinstance(c, dict)] if isinstance(claims, list) else []
@@ -1092,9 +1097,9 @@ def compute_coverage(contract: dict, package: dict, package_path: Path) -> dict:
     # shaped `captured_at_revision` field, so it is only ever satisfiable for a git-revision
     # (commit) identity — unchanged scope, §6.6 item 4, protocol.md §7.
     _subj_kind, subject_identity = check_core.subject_identity_value(package.get("subject") or {})
-    producer_names = producer_identity_set(contract, package)
-    # §3.7 (§6.2 cond 8 third-party branch): the contract's own consumer identity.
-    consumer_name = ((contract.get("parties") or {}).get("consumer") or {}).get("name")
+    producer_names = producer_identity_set(specification, package)
+    # §3.7 (§6.2 cond 8 third-party branch): the specification's own consumer identity.
+    consumer_name = ((specification.get("parties") or {}).get("consumer") or {}).get("name")
 
     profile_id = package_profile_id(package)
     profile = PROFILES.get(profile_id) if profile_id is not None else None
@@ -1132,14 +1137,16 @@ def compute_coverage(contract: dict, package: dict, package_path: Path) -> dict:
             continue
         mandatory = bool(req.get("mandatory"))
         kind = req.get("kind", "item")
-        if kind == "cross-cutting":
+        if kind == "chain":
+            status, basis, reasons = "partial", [], {"_chain": "chain evaluation required"}
+        elif kind == "cross-cutting":
             over = req.get("over")
             if isinstance(over, list) and (set(over) & crosscut_ids):
                 status, basis, reasons = "partial", [], {
                     "_nesting": (
                         f"'over' names a cross-cutting requirement id "
                         f"({sorted(set(over) & crosscut_ids)}) — no nesting in /0 (§3.1 rule 4, "
-                        f"Finding 18); this cross-cutting requirement is a contract error, never "
+                        f"Finding 18); this cross-cutting requirement is a specification error, never "
                         f"evaluated as satisfied"
                     )
                 }
@@ -1266,7 +1273,7 @@ def parse_assurance_class(value) -> tuple[str, int] | None:
 def resolve_assurance_class(rep: Reporter, ctx: str, value) -> dict | None:
     """Parses and resolves an `assurance_class` field to its level row, reporting a shape/lookup
     ERROR and returning None on any failure. `value` absent is NOT an error here — the caller
-    decides what absence means (contract-level: no class floors; requirement-level: no override)."""
+    decides what absence means (specification-level: no class floors; requirement-level: no override)."""
     parsed = parse_assurance_class(value)
     if parsed is None:
         rep.error(f"{ctx}: assurance_class must be a string \"<scheme>/<level>\", got {value!r} (§3.7)")
@@ -1313,7 +1320,7 @@ def _class_axis_violations(actual: dict, target: dict) -> list[str]:
     """Every axis on which `actual` is WEAKER than `target`. Shared by the maturity rule
     (actual = a requirement's evidence floor, target = its effective class's level row) and the
     per-requirement override "may only raise" check (actual = the override's level row,
-    target = the contract's level row) — both sides share the SAME axis names (`_CLASS_AXES`),
+    target = the specification's level row) — both sides share the SAME axis names (`_CLASS_AXES`),
     by design (§3.7)."""
     out: list[str] = []
     if TIER_RANK.get(actual.get("min_tier"), -1) < TIER_RANK.get(target.get("min_tier"), -1):
@@ -1515,37 +1522,37 @@ def check_assurance_table_monotonic() -> list[str]:
     return _monotonic_violations(table["levels"])
 
 
-def check_contract_assurance_class(rep: Reporter, contract: dict) -> None:
-    """protocol.md §3.7 — the maturity rule (0.3 closure §4d). Runs as part of `check_contract`.
+def check_specification_assurance_class(rep: Reporter, specification: dict) -> None:
+    """protocol.md §3.7 — the maturity rule (0.3 closure §4d). Runs as part of `check_specification`.
 
     1. Shape/lookup of `[acceptance].assurance_class` and every `[[requirement]].assurance_class`
        (already partly shape-checked in `_check_requirement_fields`; this function does the FULL
-       resolution and the cross-checks that need the whole contract).
+       resolution and the cross-checks that need the whole specification).
     2. Per-requirement override may only RAISE (§3.5-style tightening, applied WITHIN one
-       contract version, not across a `supersedes` chain).
-    3. Maturity rule: a `firm` requirement of a `final`-phase contract MUST meet its effective
+       specification version, not across a `supersedes` chain).
+    3. Maturity rule: a `firm` requirement of a `final`-phase specification MUST meet its effective
        class's floors (ERROR naming requirement, floor, class); any requirement while the
-       contract's phase is not `final` gets a NOTE (INFO — §5.2's existing "decisions there are
+       specification's phase is not `final` gets a NOTE (INFO — §5.2's existing "decisions there are
        already provisional" logic, never an error) listing the same gap. A `draft` requirement in
-       a `final`-phase contract is its OWN hard ERROR (§3.5,
+       a `final`-phase specification is its OWN hard ERROR (§3.5,
        `_check_requirement_fields`) — that combination never reaches this function's NOTE branch,
        so this rule never double-reports it.
-    4. `required_meaning`: contract-level (not per-requirement) — every meaning the contract's
+    4. `required_meaning`: specification-level (not per-requirement) — every meaning the specification's
        OWN assurance_class demands must appear in `[acceptance].profiles_required`, scoped by
        `when_kind` against `[subject].kind` when given.
     5. The spec-clarity summary line: firm vs draft requirement counts (always emitted).
     """
-    acceptance = contract.get("acceptance") if isinstance(contract.get("acceptance"), dict) else {}
+    acceptance = specification.get("acceptance") if isinstance(specification.get("acceptance"), dict) else {}
     phase = acceptance.get("phase") or "final"
     if phase not in PHASE_VALUES:
         phase = "final"  # already reported as a shape error elsewhere; do not cascade here
 
-    contract_class_value = acceptance.get("assurance_class")
-    contract_row = None
-    if contract_class_value is not None:
-        contract_row = resolve_assurance_class(rep, "[acceptance].assurance_class", contract_class_value)
+    specification_class_value = acceptance.get("assurance_class")
+    specification_row = None
+    if specification_class_value is not None:
+        specification_row = resolve_assurance_class(rep, "[acceptance].assurance_class", specification_class_value)
 
-    raw_reqs = contract.get("requirement")
+    raw_reqs = specification.get("requirement")
     raw_reqs = raw_reqs if isinstance(raw_reqs, list) else []
 
     firm_count = draft_count = 0
@@ -1566,18 +1573,18 @@ def check_contract_assurance_class(rep: Reporter, contract: dict) -> None:
         req_row = None
         if req_class_value is not None:
             req_row = resolve_assurance_class(rep, f"requirement {rid!r} assurance_class", req_class_value)
-            if req_row is not None and contract_row is not None:
-                raise_violations = _class_axis_violations(req_row, contract_row)
+            if req_row is not None and specification_row is not None:
+                raise_violations = _class_axis_violations(req_row, specification_row)
                 if raise_violations:
                     rep.error(
                         f"requirement {rid!r}: assurance_class override {req_class_value!r} is "
-                        f"WEAKER than the contract's assurance_class {contract_class_value!r} on: "
+                        f"WEAKER than the specification's assurance_class {specification_class_value!r} on: "
                         f"{'; '.join(raise_violations)} — a per-requirement override may only "
                         f"RAISE the class, never lower it (§3.7)"
                     )
 
-        effective_row = req_row if req_row is not None else contract_row
-        effective_ref = req_class_value if req_row is not None else contract_class_value
+        effective_row = req_row if req_row is not None else specification_row
+        effective_ref = req_class_value if req_row is not None else specification_class_value
         if effective_row is None:
             continue  # no class declared anywhere for this requirement — today's behavior (§3.7 item 2)
 
@@ -1601,10 +1608,10 @@ def check_contract_assurance_class(rep: Reporter, contract: dict) -> None:
         # this combination its OWN hard ERROR in `_check_requirement_fields`; no separate NOTE
         # here, so the same defect is never reported twice.
 
-    if contract_row is not None:
+    if specification_row is not None:
         profiles_required = set(acceptance.get("profiles_required") or [])
-        subject_kind = (contract.get("subject") or {}).get("kind") if isinstance(contract.get("subject"), dict) else None
-        for rm in contract_row.get("required_meaning") or []:
+        subject_kind = (specification.get("subject") or {}).get("kind") if isinstance(specification.get("subject"), dict) else None
+        for rm in specification_row.get("required_meaning") or []:
             if not isinstance(rm, dict):
                 continue
             profile = rm.get("profile")
@@ -1613,7 +1620,7 @@ def check_contract_assurance_class(rep: Reporter, contract: dict) -> None:
             if not applies or profile in profiles_required:
                 continue
             msg = (
-                f"assurance class {contract_class_value!r} requires profile {profile!r} in "
+                f"assurance class {specification_class_value!r} requires profile {profile!r} in "
                 f"[acceptance].profiles_required"
             )
             if when_kind:
@@ -1627,8 +1634,8 @@ def check_contract_assurance_class(rep: Reporter, contract: dict) -> None:
     rep.warn(f"NOTE (spec-clarity): {firm_count} firm / {draft_count} draft requirement(s)")
 
 
-def check_contract(doc: dict) -> Reporter:
-    rep = Reporter("contract")
+def check_specification(doc: dict) -> Reporter:
+    rep = Reporter("specification")
 
     document = doc.get("document")
     if not isinstance(document, dict):
@@ -1637,10 +1644,10 @@ def check_contract(doc: dict) -> Reporter:
     else:
         if document.get("protocol") != PROTOCOL_ID:
             rep.error(f"[document].protocol must be {PROTOCOL_ID!r}, got {document.get('protocol')!r}")
-        if not isinstance(document.get("minor"), int) or isinstance(document.get("minor"), bool):
-            rep.error("[document].minor must be an integer")
-        if document.get("kind") != "contract":
-            rep.error(f"[document].kind must be 'contract', got {document.get('kind')!r}")
+        if type(document.get("minor")) is not int or document.get("minor") != 0:
+            rep.error("unsupported minor for acceptance-protocol/1 (must be 0)")
+        if document.get("kind") != "specification":
+            rep.error(f"[document].kind must be 'specification', got {document.get('kind')!r}")
         if not _nonempty(document.get("id")):
             rep.error("[document].id must be a nonempty string")
         if not isinstance(document.get("version"), int) or isinstance(document.get("version"), bool):
@@ -1651,8 +1658,8 @@ def check_contract(doc: dict) -> Reporter:
         if issued_by not in ISSUED_BY_VALUES:
             rep.error(f"[document].issued_by must be one of {sorted(ISSUED_BY_VALUES)}, got {issued_by!r}")
         status = document.get("status")
-        if status not in CONTRACT_STATUSES:
-            rep.error(f"[document].status must be one of {sorted(CONTRACT_STATUSES)}, got {status!r}")
+        if status not in SPECIFICATION_STATUSES:
+            rep.error(f"[document].status must be one of {sorted(SPECIFICATION_STATUSES)}, got {status!r}")
 
     parties = doc.get("parties")
     consumer_name = None
@@ -1710,7 +1717,7 @@ def check_contract(doc: dict) -> Reporter:
                 )
             # The ratification requirement (§3.3, §3.4: [ratification] REQUIRED iff issued_by =
             # 'producer' and status = 'ratified') is ALREADY unconditional on boundary — a
-            # producer-drafted cross-org contract binds only once ratified, exactly like an
+            # producer-drafted cross-org specification binds only once ratified, exactly like an
             # internal one; no second, boundary-specific rule is added here (verified below,
             # reused as-is).
 
@@ -1752,7 +1759,7 @@ def check_contract(doc: dict) -> Reporter:
     # Policy (OPTIONAL, §3): `.hash`, when present,
     # is M11 over the policy bytes under the `normative-reference:` domain (the same domain the
     # format core uses for a governing-document digest); the retired bare `sha-512:<hex>` form is
-    # an explicit ERROR here too, same as contract/package/decision (§7, one wire form).
+    # an explicit ERROR here too, same as specification/package/decision (§7, one wire form).
     policy = doc.get("policy")
     if isinstance(policy, dict):
         _reject_bare_m11_wire(rep, policy.get("hash"), "normative-reference", "[policy].hash")
@@ -1822,7 +1829,7 @@ def check_contract(doc: dict) -> Reporter:
 
     # [document].dropped / .reopened / .amendments (§3.5, §3.6) — shape only here; the
     # cross-version semantics (dropped ids actually absent, reopened only when phase regresses)
-    # are checked by check_contract_tightening (--previous), which has both versions to compare.
+    # are checked by check_specification_tightening (--previous), which has both versions to compare.
     dropped = document.get("dropped")
     if dropped is not None:
         if not isinstance(dropped, list) or not all(
@@ -1886,13 +1893,14 @@ def check_contract(doc: dict) -> Reporter:
         _check_requirement_fields(rep, ctx, req, all_ids, phase, crosscut_ids)
 
     if mandatory_count < 1:
-        rep.error("contract must carry at least one mandatory requirement (§3.3)")
+        rep.error("specification must carry at least one mandatory requirement (§3.3)")
 
-    # §3.7: assurance class + spec maturity — the whole-contract cross-checks that need
+    # §3.7: assurance class + spec maturity — the whole-specification cross-checks that need
     # every requirement at once (override raise-only, the maturity rule, required_meaning,
     # the spec-clarity summary). Always runs; absent [acceptance].assurance_class everywhere
     # means no class floors apply and only the spec-clarity NOTE is emitted (§3.7 item 2).
-    check_contract_assurance_class(rep, doc)
+    check_specification_assurance_class(rep, doc)
+    stacking.check_specification(rep, doc)
 
     return rep
 
@@ -1901,11 +1909,11 @@ def _check_requirement_fields(
     rep: Reporter, ctx: str, req: dict, all_ids: set[str], phase: str,
     crosscut_ids: frozenset = frozenset(),
 ) -> None:
-    """The common per-requirement body of `check-contract`, factored out so `check-amendment` can
+    """The common per-requirement body of `check-spec`, factored out so `check-amendment` can
     validate a `[change.proposed]` full requirement table (add/modify ops) with the SAME rule.
 
     `crosscut_ids` (Finding 18) is the set of requirement ids whose `kind = "cross-cutting"` in
-    the CONTAINING contract — used to reject nesting in `over`. Empty by default for callers (the
+    the CONTAINING specification — used to reject nesting in `over`. Empty by default for callers (the
     amendment's per-op `[change.proposed]` check) that only see one requirement at a time."""
     if not _nonempty(req.get("statement")):
         rep.error(f"{ctx}: field 'statement' must be a nonempty string")
@@ -1917,8 +1925,8 @@ def _check_requirement_fields(
     if domain not in DOMAIN_VALUES:
         rep.error(f"{ctx}: domain must be one of {sorted(DOMAIN_VALUES)}, got {domain!r}")
     cs = req.get("clause_source")
-    if cs not in CONTRACT_CLAUSE_SOURCES:
-        rep.error(f"{ctx}: clause_source must be one of {sorted(CONTRACT_CLAUSE_SOURCES)}, got {cs!r}")
+    if cs not in SPECIFICATION_CLAUSE_SOURCES:
+        rep.error(f"{ctx}: clause_source must be one of {sorted(SPECIFICATION_CLAUSE_SOURCES)}, got {cs!r}")
     if "external_ref" in req and not _nonempty(req.get("external_ref")):
         rep.error(f"{ctx}: external_ref, if present, must be a nonempty string")
     if "parent" in req and not _nonempty(req.get("parent")):
@@ -1933,13 +1941,13 @@ def _check_requirement_fields(
         rep.error(f"{ctx}: firmness must be one of {sorted(FIRMNESS_VALUES)}, got {firmness!r}")
     if phase == "crystallizing" and firmness is None:
         rep.error(f"{ctx}: firmness is REQUIRED when [acceptance].phase = 'crystallizing' (§3.5)")
-    # A `final`-phase contract may carry ONLY `firm` requirements (§3.5/§3.7) —
+    # A `final`-phase specification may carry ONLY `firm` requirements (§3.5/§3.7) —
     # an absent firmness defaults to firm (above), so only an EXPLICIT 'draft' trips this. Distinct
-    # from the maturity rule (§3.7, `check_contract_assurance_class`): this is unconditional, not
+    # from the maturity rule (§3.7, `check_specification_assurance_class`): this is unconditional, not
     # scoped to a resolved assurance class, and fires even with no class declared anywhere.
     if phase == "final" and firmness == "draft":
         rep.error(
-            f"{ctx}: firmness must not be 'draft' in a 'final'-phase contract — a final contract "
+            f"{ctx}: firmness must not be 'draft' in a 'final'-phase specification — a final specification "
             f"requires every requirement to be firm (§3.5)"
         )
 
@@ -1951,6 +1959,10 @@ def _check_requirement_fields(
     kind = req.get("kind", "item")
     if kind not in REQUIREMENT_KINDS:
         rep.error(f"{ctx}: kind must be one of {sorted(REQUIREMENT_KINDS)}, got {kind!r}")
+        return
+
+    if kind == "chain":
+        stacking.check_requirement(rep, ctx, req)
         return
 
     has_evidence = isinstance(req.get("evidence"), dict)
@@ -1971,7 +1983,7 @@ def _check_requirement_fields(
                 if unresolved:
                     rep.error(f"{ctx}: 'over' names unresolved requirement id(s): {unresolved}")
                 # Finding 18 (§3.1 rule 4, no nesting in /0): `over` may name item requirements
-                # only — a cross-cutting requirement inside another's `over` is a contract error.
+                # only — a cross-cutting requirement inside another's `over` is a specification error.
                 nested = [o for o in over if o in crosscut_ids]
                 if nested:
                     rep.error(
@@ -2098,40 +2110,40 @@ def _check_evidence_floor(rep: Reporter, ctx: str, ev: dict) -> None:
                     rep.error(f"{ctx}: profile {pid!r} floor: {err} (Finding 10)")
 
 
-def check_contract_tightening(new_contract: dict, old_contract: dict) -> Reporter:
-    """protocol.md §3.5, checked by `check-contract --previous OLD.toml`. For every requirement id
+def check_specification_tightening(new_specification: dict, old_specification: dict) -> Reporter:
+    """protocol.md §3.5, checked by `check-spec --previous OLD.toml`. For every requirement id
     present in both versions: no floor may weaken unless the successor's requirement carries a
     full [requirement.relaxed] (WARNed, never silently accepted); every dropped id must be listed
     in [document].dropped; phase may not move backwards without [document].reopened."""
     rep = Reporter("tightening")
 
-    old_doc = old_contract.get("document") or {}
-    new_doc = new_contract.get("document") or {}
+    old_doc = old_specification.get("document") or {}
+    new_doc = new_specification.get("document") or {}
     if new_doc.get("supersedes") != old_doc.get("id"):
         rep.error(
-            f"--previous: the new contract's [document].supersedes ({new_doc.get('supersedes')!r}) "
-            f"must equal the previous contract's [document].id ({old_doc.get('id')!r})"
+            f"--previous: the new specification's [document].supersedes ({new_doc.get('supersedes')!r}) "
+            f"must equal the previous specification's [document].id ({old_doc.get('id')!r})"
         )
 
     # Q1 (BLOCKER, §3.5 "Projection pinning"): [subject].profile is INVARIANT across a
     # supersedes chain — a differing successor is a hard error, excusable by nothing (relaxed is
     # per-requirement, reopened is phase only; neither touches the projection). A different
-    # projection is a NEW contract (new id, no supersedes), never a tightening step.
-    old_subject = old_contract.get("subject") or {}
-    new_subject = new_contract.get("subject") or {}
+    # projection is a NEW specification (new id, no supersedes), never a tightening step.
+    old_subject = old_specification.get("subject") or {}
+    new_subject = new_specification.get("subject") or {}
     old_profile = old_subject.get("profile")
     new_profile = new_subject.get("profile")
     if old_profile != new_profile:
         rep.error(
             f"--previous: [subject].profile changed across the supersedes chain "
             f"({old_profile!r} -> {new_profile!r}) — the projection is INVARIANT across a chain; "
-            f"a different projection is a NEW contract (new id, no supersedes), never a "
+            f"a different projection is a NEW specification (new id, no supersedes), never a "
             f"tightening step (§3.5 Projection pinning)"
         )
 
     # Q1: [acceptance].profiles_required may only GAIN entries across the chain, never lose them.
-    old_profiles_required = set((old_contract.get("acceptance") or {}).get("profiles_required") or [])
-    new_profiles_required = set((new_contract.get("acceptance") or {}).get("profiles_required") or [])
+    old_profiles_required = set((old_specification.get("acceptance") or {}).get("profiles_required") or [])
+    new_profiles_required = set((new_specification.get("acceptance") or {}).get("profiles_required") or [])
     removed_profiles = old_profiles_required - new_profiles_required
     if removed_profiles:
         rep.error(
@@ -2140,8 +2152,8 @@ def check_contract_tightening(new_contract: dict, old_contract: dict) -> Reporte
             f"is a hard error (§3.5 Projection pinning)"
         )
 
-    old_phase = (old_contract.get("acceptance") or {}).get("phase") or "final"
-    new_phase = (new_contract.get("acceptance") or {}).get("phase") or "final"
+    old_phase = (old_specification.get("acceptance") or {}).get("phase") or "final"
+    new_phase = (new_specification.get("acceptance") or {}).get("phase") or "final"
     if PHASE_ORDER.get(new_phase, 2) < PHASE_ORDER.get(old_phase, 2):
         reopened = new_doc.get("reopened")
         if not (isinstance(reopened, dict) and all(_nonempty(reopened.get(k)) for k in ("reason", "by"))):
@@ -2151,13 +2163,13 @@ def check_contract_tightening(new_contract: dict, old_contract: dict) -> Reporte
             )
 
     # Finding 12 (§3.5, P5, "one authority identity"): `relaxed.by` is compared against the
-    # contract's [acceptance].authority — the SAME identity that accepts amendments and issues
+    # specification's [acceptance].authority — the SAME identity that accepts amendments and issues
     # decisions — never `parties.consumer.name` as a separate rule (that mismatch made an
     # authorized relax fail whenever the authority and the consumer party name differ).
-    authority_name = (new_contract.get("acceptance") or {}).get("authority")
+    authority_name = (new_specification.get("acceptance") or {}).get("authority")
 
-    old_by_id = requirement_by_id(old_contract)
-    new_by_id = requirement_by_id(new_contract)
+    old_by_id = requirement_by_id(old_specification)
+    new_by_id = requirement_by_id(new_specification)
 
     dropped_ids = {
         d.get("id") for d in (new_doc.get("dropped") or []) if isinstance(d, dict) and _nonempty(d.get("id"))
@@ -2214,6 +2226,8 @@ def check_contract_tightening(new_contract: dict, old_contract: dict) -> Reporte
             isinstance(relaxed, dict) and all(_nonempty(relaxed.get(k)) for k in ("reason", "by"))
             and (authority_name is None or relaxed.get("by") == authority_name)
         )
+
+        stacking.tightening(rep, rid, new_req, old_req, new_specification, old_specification, has_relaxed)
 
         # Finding 13 / §3.1 rule 1: a SEMANTIC replacement (statement/kind/domain changed) under
         # the SAME id is a rule-1 violation regardless of `relaxed` — relaxed only excuses a
@@ -2440,7 +2454,7 @@ def resolve_predecessor_chain(
     start_doc: dict, previous_paths: list | None, previous_dir: str | None,
 ) -> tuple[list[tuple[dict, Path]], list[str]]:
     """§3.3: "the chain is validated to its root" — resolves `start_doc`'s FULL `supersedes`
-    chain, nearest-predecessor-first, back to a contract carrying no `supersedes`. The caller
+    chain, nearest-predecessor-first, back to a specification carrying no `supersedes`. The caller
     supplies the chain either as `--previous OLD1 --previous OLD2 …` (newest first — consumed in
     that order as each successive ancestor is needed) and/or `--previous-dir DIR` (each ancestor
     resolved by its own `[document].id`, used once the explicit list is exhausted). An unavailable
@@ -2514,14 +2528,14 @@ def resolve_predecessor_chain(
     return chain, errors
 
 
-def check_contract_chain(
+def check_specification_chain(
     doc: dict, previous_paths: list | None, previous_dir: str | None,
 ) -> Reporter:
     """§3.3 "the chain is validated to its root": resolves the full predecessor chain
     (`resolve_predecessor_chain`) and, for every link, validates the PREDECESSOR's own structural
-    validity (`check_contract` — Finding 4: "a predecessor with an empty parties.consumer.name
-    must fail its own check-contract") AND the tightening step between it and its successor
-    (`check_contract_tightening`, which itself recomputes `retired_ids` as the union along the
+    validity (`check_specification` — Finding 4: "a predecessor with an empty parties.consumer.name
+    must fail its own check-spec") AND the tightening step between it and its successor
+    (`check_specification_tightening`, which itself recomputes `retired_ids` as the union along the
     chain rather than trusting the file). Running this pairwise all the way to the root, rather
     than only the single nearest predecessor, is what makes `retired_ids` a recomputed proof
     instead of a trusted field."""
@@ -2532,9 +2546,9 @@ def check_contract_chain(
 
     cur = doc
     for anc_doc, anc_path in chain:
-        struct_rep = check_contract(anc_doc)
+        struct_rep = check_specification(anc_doc)
         rep.merge(struct_rep, prefix=f"[predecessor {anc_path}] ")
-        rep.merge(check_contract_tightening(cur, anc_doc), prefix=f"[tightening vs {anc_path}] ")
+        rep.merge(check_specification_tightening(cur, anc_doc), prefix=f"[tightening vs {anc_path}] ")
         cur = anc_doc
 
     return rep
@@ -2544,17 +2558,17 @@ def check_contract_chain(
 # The amendment document — protocol.md §3.6
 # ---------------------------------------------------------------------------------------------
 
-def check_amendment(amendment: dict, base_contract: dict, base_contract_path: Path | None) -> Reporter:
-    """`check-amendment AMEND.toml --contract BASE.toml` (§3.6)."""
+def check_amendment(amendment: dict, base_specification: dict, base_specification_path: Path | None) -> Reporter:
+    """`check-amendment AMEND.toml --spec BASE.toml` (§3.6)."""
     rep = Reporter("amendment")
 
     # The successor's phase is INHERITED from the
-    # base contract — no `[[change]]` op touches `[acceptance].phase` (A5: it is requirement-scoped
+    # base specification — no `[[change]]` op touches `[acceptance].phase` (A5: it is requirement-scoped
     # by design), so the base's own phase IS the phase every `[change.proposed]` requirement will
     # be checked under once applied. A hardcoded "final" here made A4's new all-firm rule (§3.5)
     # unintentionally reject a `crystallizing` base's `draft` requirement in a `modify`/`tighten`
     # proposal, even though that SAME draft requirement is perfectly legal in the applied successor.
-    successor_phase = (base_contract.get("acceptance") or {}).get("phase") or "final"
+    successor_phase = (base_specification.get("acceptance") or {}).get("phase") or "final"
     if successor_phase not in PHASE_VALUES:
         successor_phase = "final"  # already reported as a shape error elsewhere; do not cascade here
 
@@ -2565,6 +2579,8 @@ def check_amendment(amendment: dict, base_contract: dict, base_contract_path: Pa
     else:
         if document.get("protocol") != PROTOCOL_ID:
             rep.error(f"[document].protocol must be {PROTOCOL_ID!r}")
+        if type(document.get("minor")) is not int or document.get("minor") != 0:
+            rep.error("unsupported minor for acceptance-protocol/1 (must be 0)")
         if document.get("kind") != "amendment":
             rep.error(f"[document].kind must be 'amendment', got {document.get('kind')!r}")
         if not _nonempty(document.get("id")):
@@ -2580,24 +2596,24 @@ def check_amendment(amendment: dict, base_contract: dict, base_contract_path: Pa
             rep.error("[document].from_decision, if present, must be a nonempty string")
 
     binds = amendment.get("binds")
-    bc = (binds or {}).get("contract") if isinstance(binds, dict) else None
+    bc = (binds or {}).get("specification") if isinstance(binds, dict) else None
     if not isinstance(bc, dict) or not _nonempty(bc.get("id")) or not _nonempty(bc.get("hash")):
-        rep.error("[binds].contract = {id, hash} must be present (§3.6 rule 1)")
+        rep.error("[binds].specification = {id, hash} must be present (§3.6 rule 1)")
     else:
-        _reject_bare_m11_wire(rep, bc.get("hash"), "contract", "[binds].contract.hash")
-        base_id = (base_contract.get("document") or {}).get("id")
+        _reject_bare_m11_wire(rep, bc.get("hash"), "specification", "[binds].specification.hash")
+        base_id = (base_specification.get("document") or {}).get("id")
         base_mismatch = bc.get("id") != base_id
-        if base_contract_path is not None:
+        if base_specification_path is not None:
             try:
-                recomputed = m11.digest_file("contract", base_contract_path)
+                recomputed = m11.digest_file("specification", base_specification_path)
                 if bc.get("hash") != recomputed:
                     base_mismatch = True
             except OSError as e:
-                rep.error(f"could not recompute base contract hash: {e}")
+                rep.error(f"could not recompute base specification hash: {e}")
         if base_mismatch:
             if document.get("status") != "stale":
                 rep.error(
-                    "[binds].contract does not match the presented BASE contract (base moved) — "
+                    "[binds].specification does not match the presented BASE specification (base moved) — "
                     "[document].status must be 'stale' (§3.6 rule 1)"
                 )
 
@@ -2609,15 +2625,15 @@ def check_amendment(amendment: dict, base_contract: dict, base_contract_path: Pa
         if fb.get("kind") not in REQUIREMENT_FEEDBACK_KINDS:
             rep.error(f"{fctx}: kind must be one of {sorted(REQUIREMENT_FEEDBACK_KINDS)}, got {fb.get('kind')!r}")
         rid = fb.get("requirement")
-        base_ids = set(requirement_by_id(base_contract))
+        base_ids = set(requirement_by_id(base_specification))
         if fb.get("kind") != "missing" and rid not in base_ids:
-            rep.error(f"{fctx}: requirement {rid!r} does not resolve to a base-contract requirement")
+            rep.error(f"{fctx}: requirement {rid!r} does not resolve to a base-specification requirement")
         if not _nonempty(fb.get("statement")):
             rep.error(f"{fctx}: statement must be a nonempty string")
         if not _nonempty(fb.get("proposed")):
             rep.error(f"{fctx}: proposed must be a nonempty string")
 
-    base_ids = set(requirement_by_id(base_contract))
+    base_ids = set(requirement_by_id(base_specification))
     added_ids: set[str] = set()
     for c in amendment.get("change") or []:
         if isinstance(c, dict) and c.get("op") == "add" and _nonempty(c.get("requirement")):
@@ -2637,10 +2653,10 @@ def check_amendment(amendment: dict, base_contract: dict, base_contract_path: Pa
             rep.error(f"{cctx}: 'requirement' must be a nonempty string")
         elif op == "add":
             if rid in base_ids:
-                rep.error(f"{cctx}: op='add' requirement id {rid!r} already exists in the base contract")
+                rep.error(f"{cctx}: op='add' requirement id {rid!r} already exists in the base specification")
         else:
             if rid not in base_ids:
-                rep.error(f"{cctx}: op={op!r} requirement id {rid!r} does not exist in the base contract")
+                rep.error(f"{cctx}: op={op!r} requirement id {rid!r} does not exist in the base specification")
 
         if op == "relax" and not _nonempty(c.get("reason")):
             rep.error(f"{cctx}: op='relax' requires a nonempty 'reason' (§3.6)")
@@ -2657,7 +2673,7 @@ def check_amendment(amendment: dict, base_contract: dict, base_contract_path: Pa
                 # set" — statement/kind/over/domain are identity, not floor; changing any of them
                 # via `modify` is a semantic replacement and must be an add+drop pair instead.
                 if op == "modify" and _nonempty(rid):
-                    base_req = requirement_by_id(base_contract).get(rid)
+                    base_req = requirement_by_id(base_specification).get(rid)
                     if base_req is not None:
                         for f in ("statement", "kind", "over", "domain"):
                             if f in proposed and proposed.get(f) != base_req.get(f, proposed.get(f)):
@@ -2700,10 +2716,10 @@ def _toml_scalar(v) -> str:
     raise TypeError(f"unsupported TOML scalar type: {type(v)}")
 
 
-def _render_contract_toml(doc: dict) -> str:
-    """A minimal, PURPOSE-BUILT serializer for the contract shape only (stdlib has no TOML
-    writer). Used by `apply-amendment` to emit the successor contract. Every value it writes was
-    validated by `_check_requirement_fields` / `check_contract` first."""
+def _render_specification_toml(doc: dict) -> str:
+    """A minimal, PURPOSE-BUILT serializer for the specification shape only (stdlib has no TOML
+    writer). Used by `apply-amendment` to emit the successor specification. Every value it writes was
+    validated by `_check_requirement_fields` / `check_specification` first."""
     lines: list[str] = []
     document = doc.get("document") or {}
     lines.append("[document]")
@@ -2720,7 +2736,7 @@ def _render_contract_toml(doc: dict) -> str:
     lines.append(f"consumer = {_toml_scalar(parties.get('consumer') or {})}")
     lines.append(f"producer = {_toml_scalar(parties.get('producer') or {})}")
     # §3.4a party boundary was silently dropped by this
-    # renderer — an amendment on a cross-org contract would erase its boundary declaration.
+    # renderer — an amendment on a cross-org specification would erase its boundary declaration.
     if "boundary" in parties:
         lines.append(f"boundary = {_toml_scalar(parties['boundary'])}")
     lines.append("")
@@ -2759,6 +2775,17 @@ def _render_contract_toml(doc: dict) -> str:
                    "assurance_class"):
             if k in req:
                 lines.append(f"{k} = {_toml_scalar(req[k])}")
+        if isinstance(req.get("chain"), dict):
+            lines.append("  [requirement.chain]")
+            for k, v in req["chain"].items():
+                if k != "boundary":
+                    lines.append(f"  {k} = {_toml_scalar(v)}")
+                elif not v:
+                    lines.append("  boundary = []")
+            for boundary in req["chain"].get("boundary", []):
+                lines.append("  [[requirement.chain.boundary]]")
+                for k, v in boundary.items():
+                    lines.append(f"  {k} = {_toml_scalar(v)}")
         if isinstance(req.get("relaxed"), dict):
             lines.append("  [requirement.relaxed]")
             for k, v in req["relaxed"].items():
@@ -2810,15 +2837,21 @@ def _render_contract_toml(doc: dict) -> str:
 
     acceptance = doc.get("acceptance") or {}
     lines.append("[acceptance]")
-    # `assurance_class` (the §3.7 contract-level
+    # `assurance_class` (the §3.7 specification-level
     # class) was silently dropped by this renderer — an amendment on any requirement would erase
-    # the contract's own declared class; that change is a successor
-    # contract's own decision, never an amendment side effect.
+    # the specification's own declared class; that change is a successor
+    # specification's own decision, never an amendment side effect.
     for k in ("rule", "consumer_verification", "authority", "verifiers", "decision_threshold",
                "profiles_required", "stale_after", "phase", "assurance_class"):
         if k in acceptance:
             lines.append(f"{k} = {_toml_scalar(acceptance[k])}")
     lines.append("")
+
+    for store in acceptance.get("authority_store", []):
+        lines.append("[[acceptance.authority_store]]")
+        for k, v in store.items():
+            lines.append(f"{k} = {_toml_scalar(v)}")
+        lines.append("")
 
     if isinstance(doc.get("ext"), dict):
         lines.append("[ext]")
@@ -2837,7 +2870,7 @@ def _render_amendment_toml(doc: dict) -> str:
             lines.append(f"{k} = {_toml_scalar(document[k])}")
     lines.append("")
     lines.append("[binds]")
-    lines.append(f"contract = {_toml_scalar((doc.get('binds') or {}).get('contract') or {})}")
+    lines.append(f"specification = {_toml_scalar((doc.get('binds') or {}).get('specification') or {})}")
     lines.append("")
     for fb in doc.get("feedback") or []:
         lines.append("[[feedback]]")
@@ -2861,23 +2894,23 @@ def _render_amendment_toml(doc: dict) -> str:
 
 
 def apply_amendment_build(
-    amendment: dict, base_contract: dict, new_id: str | None, authority_name: str | None,
+    amendment: dict, base_specification: dict, new_id: str | None, authority_name: str | None,
 ) -> tuple[dict | None, list[str]]:
-    """Builds the successor contract dict (§3.6 rule 2). Returns (new_contract, errors).
+    """Builds the successor specification dict (§3.6 rule 2). Returns (new_specification, errors).
 
     Finding 11: `relaxed`/`reopened`/`ratification`/`amendments` are stripped from the COPIED
     base — NEVER inherited (§3.5): an old relaxation must not excuse a later, different
     weakening. Only THIS amendment's `relax` ops re-add a FRESH `[requirement.relaxed]` on their
-    own target. `authority_name` (renamed from `consumer_name`) is the contract's
+    own target. `authority_name` (renamed from `consumer_name`) is the specification's
     `[acceptance].authority` — §3.6 rule 2 names the AUTHORITY as who accepts, not the consumer
     party name."""
     import copy
     errors: list[str] = []
-    new_contract = copy.deepcopy(base_contract)
-    base_doc = base_contract.get("document") or {}
+    new_specification = copy.deepcopy(base_specification)
+    base_doc = base_specification.get("document") or {}
     base_id = base_doc.get("id")
 
-    document = new_contract.setdefault("document", {})
+    document = new_specification.setdefault("document", {})
     new_version = (base_doc.get("version") or 1) + 1
     document["version"] = new_version
     document["id"] = new_id or f"{base_id}-v{new_version}"
@@ -2886,17 +2919,17 @@ def apply_amendment_build(
     document["status"] = "issued"
     # Finding 12 (§3.6 rule 2): "the successor is always authority-issued: issued_by='consumer',
     # status='issued', no [ratification] table — whatever the base's issued_by was, because the
-    # authority's application IS the buyer's word." Previously this inherited the BASE's
+    # authority's application IS the consumer's word." Previously this inherited the BASE's
     # issued_by, so a producer-ratified base produced a producer-issued, non-binding successor.
     document["issued_by"] = "consumer"
     document["issued_at"] = now_utc_iso()
     # Finding 12: `[ratification]` is a TOP-LEVEL table (`doc["ratification"]`), not
     # `document["ratification"]` — popping the wrong key left the real table in place on a
     # producer-ratified base's successor.
-    new_contract.pop("ratification", None)
+    new_specification.pop("ratification", None)
     document.pop("reopened", None)  # Finding 11: never inherited (§3.5)
 
-    reqs = new_contract.get("requirement") or []
+    reqs = new_specification.get("requirement") or []
     for r in reqs:
         if isinstance(r, dict):
             r.pop("relaxed", None)  # Finding 11: never inherited — only a fresh relax op re-adds it
@@ -2926,18 +2959,18 @@ def apply_amendment_build(
                 reqs[idx] = new_req
                 by_id[rid] = new_req
             else:
-                errors.append(f"modify: requirement {rid!r} not found in base contract")
+                errors.append(f"modify: requirement {rid!r} not found in base specification")
         elif op == "drop":
             if rid in by_id:
                 reqs.remove(by_id[rid])
                 del by_id[rid]
                 dropped.append({"id": rid, "reason": c.get("reason") or ""})
             else:
-                errors.append(f"drop: requirement {rid!r} not found in base contract")
+                errors.append(f"drop: requirement {rid!r} not found in base specification")
         elif op in ("tighten", "relax"):
             target = by_id.get(rid)
             if target is None:
-                errors.append(f"{op}: requirement {rid!r} not found in base contract")
+                errors.append(f"{op}: requirement {rid!r} not found in base specification")
                 continue
             ev = dict(target.get("evidence") or {})
             ev.update(proposed)
@@ -2945,12 +2978,12 @@ def apply_amendment_build(
             if op == "relax":
                 target["relaxed"] = {"reason": c.get("reason") or "", "by": authority_name or ""}
 
-    new_contract["requirement"] = reqs
+    new_specification["requirement"] = reqs
     if dropped:
         document["dropped"] = dropped
 
     # Finding 13: retired_ids = predecessor's retired_ids UNION this version's dropped ids —
-    # keeps `apply-amendment`'s own output consistent with what `check_contract_tightening` now
+    # keeps `apply-amendment`'s own output consistent with what `check_specification_tightening` now
     # requires.
     dropped_ids = {d["id"] for d in dropped if _nonempty(d.get("id"))}
     old_retired = set(base_doc.get("retired_ids") or [])
@@ -2958,10 +2991,10 @@ def apply_amendment_build(
     if new_retired:
         document["retired_ids"] = sorted(new_retired)
 
-    return new_contract, errors
+    return new_specification, errors
 
 
-def build_amendment_from_decision(decision: dict, contract: dict, contract_path: Path) -> dict:
+def build_amendment_from_decision(decision: dict, specification: dict, specification_path: Path) -> dict:
     """`amend --from-decision AD.toml` (§3.6 rule 4): materialises a decision's
     `[[requirement_feedback]]` as a proposed amendment. `missing` feedback becomes an `add` op
     with a STUB proposed requirement the consumer must edit; every other kind becomes feedback
@@ -2979,9 +3012,9 @@ def build_amendment_from_decision(decision: dict, contract: dict, contract_path:
             "from_decision": decision_id,
         },
         "binds": {
-            "contract": {
-                "id": (contract.get("document") or {}).get("id"),
-                "hash": m11.digest_file("contract", contract_path),
+            "specification": {
+                "id": (specification.get("document") or {}).get("id"),
+                "hash": m11.digest_file("specification", specification_path),
             },
         },
         "feedback": [],
@@ -3027,10 +3060,11 @@ def build_amendment_from_decision(decision: dict, contract: dict, contract_path:
 # ---------------------------------------------------------------------------------------------
 
 def check_package(
-    package: dict, contract: dict, package_path: Path, contract_path: Path, strict: bool,
-    previous_contract_path: Path | None = None,
+    package: dict, specification: dict, package_path: Path, specification_path: Path, strict: bool,
+    previous_specification_path: Path | None = None,
     previous_paths: list | None = None,
     previous_dir: str | None = None,
+    chain_context=None, chain_decision=None, chain_budget=None,
 ) -> tuple[Reporter, dict]:
     """Returns (Reporter, coverage_result). Coverage is ALWAYS computed and returned, even when
     structural rules fail, so the caller can always print the coverage table (§4.1 closing line).
@@ -3038,10 +3072,10 @@ def check_package(
     Finding 17: the package validator is reached ONLY through the profile binding
     (`PROFILES[profile_id]["package_validator"]`), never by calling `check_acceptance.py`
     directly by name — a profile with no validator of its own cannot be evaluated (§6.6 item 8).
-    Finding 4 (last sentence): "check-package runs check-contract on the bound contract" — the
-    contract's own STRUCTURAL validity is no longer assumed, it is re-proven here, and the WHOLE
+    Finding 4 (last sentence): "check-package runs check-spec on the bound specification" — the
+    specification's own STRUCTURAL validity is no longer assumed, it is re-proven here, and the WHOLE
     predecessor chain is validated to its root (§3.3), not merely the nearest predecessor.
-    `previous_contract_path` (singular, back-compat) is treated as the first `--previous` entry
+    `previous_specification_path` (singular, back-compat) is treated as the first `--previous` entry
     when `previous_paths` is not itself given."""
     rep = Reporter(str(package_path))
 
@@ -3068,79 +3102,79 @@ def check_package(
             for msg in constraints_check(package):
                 rep.warn(f"{msg} (§6.6 item 6 — a package-level profile constraint; check-decision ENFORCES this as an error)")
 
-    # Finding 4: the bound contract is itself re-validated here, not merely trusted because a
-    # producer's package.contract.hash happens to recompute over it.
-    contract_struct_rep = check_contract(contract)
-    rep.merge(contract_struct_rep, prefix="[check-contract] ")
-    supersedes = (contract.get("document") or {}).get("supersedes")
+    # Finding 4: the bound specification is itself re-validated here, not merely trusted because a
+    # producer's package.specification.hash happens to recompute over it.
+    specification_struct_rep = check_specification(specification)
+    rep.merge(specification_struct_rep, prefix="[check-spec] ")
+    supersedes = (specification.get("document") or {}).get("supersedes")
     if supersedes:
         effective_previous_paths = list(previous_paths) if previous_paths else []
-        if previous_contract_path is not None:
-            effective_previous_paths = [str(previous_contract_path)] + effective_previous_paths
+        if previous_specification_path is not None:
+            effective_previous_paths = [str(previous_specification_path)] + effective_previous_paths
         if not effective_previous_paths and not previous_dir:
             rep.error(
-                f"the bound contract supersedes {supersedes!r} but no --previous/--previous-dir "
+                f"the bound specification supersedes {supersedes!r} but no --previous/--previous-dir "
                 f"was given to validate the chain to its root (§3.3, §3.5, §5.0, Finding 4)"
             )
         else:
             rep.merge(
-                check_contract_chain(contract, effective_previous_paths, previous_dir),
-                prefix="[check-contract --previous chain] ",
+                check_specification_chain(specification, effective_previous_paths, previous_dir),
+                prefix="[check-spec --previous chain] ",
             )
 
-    req_by_id = requirement_by_id(contract)
+    req_by_id = requirement_by_id(specification)
 
-    # rule 1: [contract] present; hash recomputes; requirements_total matches.
-    pkg_contract = package.get("contract")
-    if not isinstance(pkg_contract, dict):
-        rep.error("[contract] section missing from the package (absent = producer-only manifest, §4)")
-        pkg_contract = {}
+    # rule 1: [specification] present; hash recomputes; requirements_total matches.
+    pkg_specification = package.get("specification")
+    if not isinstance(pkg_specification, dict):
+        rep.error("[specification] section missing from the package (absent = producer-only manifest, §4)")
+        pkg_specification = {}
     else:
-        if pkg_contract.get("id") != (contract.get("document") or {}).get("id"):
+        if pkg_specification.get("id") != (specification.get("document") or {}).get("id"):
             rep.error(
-                f"[contract].id ({pkg_contract.get('id')!r}) does not match the presented "
-                f"contract's [document].id ({(contract.get('document') or {}).get('id')!r})"
+                f"[specification].id ({pkg_specification.get('id')!r}) does not match the presented "
+                f"specification's [document].id ({(specification.get('document') or {}).get('id')!r})"
             )
-        _reject_bare_m11_wire(rep, pkg_contract.get("hash"), "contract", "[contract].hash")
+        _reject_bare_m11_wire(rep, pkg_specification.get("hash"), "specification", "[specification].hash")
         try:
-            recomputed = m11.digest_file("contract", contract_path)
+            recomputed = m11.digest_file("specification", specification_path)
         except (OSError, ValueError) as e:
-            rep.error(f"could not recompute contract hash: {e}")
+            rep.error(f"could not recompute specification hash: {e}")
             recomputed = None
-        if recomputed is not None and pkg_contract.get("hash") != recomputed:
+        if recomputed is not None and pkg_specification.get("hash") != recomputed:
             rep.error(
-                f"[contract].hash does not match M11('contract:', <presented contract file>) "
-                f"— got {pkg_contract.get('hash')!r}, recomputed {recomputed!r} (§4.1 rule 1, P7)"
+                f"[specification].hash does not match M11('specification:', <presented specification file>) "
+                f"— got {pkg_specification.get('hash')!r}, recomputed {recomputed!r} (§4.1 rule 1, P7)"
             )
         n_reqs = len(req_by_id)
-        if pkg_contract.get("requirements_total") != n_reqs:
+        if pkg_specification.get("requirements_total") != n_reqs:
             rep.error(
-                f"[contract].requirements_total ({pkg_contract.get('requirements_total')!r}) "
-                f"does not equal the contract's requirement count ({n_reqs}) (§4.1 rule 1)"
+                f"[specification].requirements_total ({pkg_specification.get('requirements_total')!r}) "
+                f"does not equal the specification's requirement count ({n_reqs}) (§4.1 rule 1)"
             )
         cov_tbl = package.get("coverage") or {}
-        if cov_tbl.get("clauses_total") != pkg_contract.get("requirements_total"):
+        if cov_tbl.get("clauses_total") != pkg_specification.get("requirements_total"):
             rep.error(
                 f"[coverage].clauses_total ({cov_tbl.get('clauses_total')!r}) does not equal "
-                f"[contract].requirements_total ({pkg_contract.get('requirements_total')!r}) "
+                f"[specification].requirements_total ({pkg_specification.get('requirements_total')!r}) "
                 f"(§4.1 rule 1)"
             )
 
     # rule 4 — Finding 7: binding = (issued AND issued_by == consumer) OR ratified. A
-    # producer-drafted contract that is merely `issued` (not `ratified`) is a PROPOSAL (§3.2);
-    # binding on status alone (ignoring issued_by) let an unratified producer-drafted contract
+    # producer-drafted specification that is merely `issued` (not `ratified`) is a PROPOSAL (§3.2);
+    # binding on status alone (ignoring issued_by) let an unratified producer-drafted specification
     # through.
-    contract_status = (contract.get("document") or {}).get("status")
-    contract_issued_by = (contract.get("document") or {}).get("issued_by")
+    specification_status = (specification.get("document") or {}).get("status")
+    specification_issued_by = (specification.get("document") or {}).get("issued_by")
     is_binding = (
-        (contract_status == "issued" and contract_issued_by == "consumer")
-        or contract_status == "ratified"
+        (specification_status == "issued" and specification_issued_by == "consumer")
+        or specification_status == "ratified"
     )
     if not is_binding:
         rep.error(
-            f"the bound contract is not BINDING (§3.2): status={contract_status!r}, "
-            f"issued_by={contract_issued_by!r} — a producer-drafted contract binds only once "
-            f"ratified; a package may bind only to a BINDING contract (§4.1 rule 4, Finding 7)"
+            f"the bound specification is not BINDING (§3.2): status={specification_status!r}, "
+            f"issued_by={specification_issued_by!r} — a producer-drafted specification binds only once "
+            f"ratified; a package may bind only to a BINDING specification (§4.1 rule 4, Finding 7)"
         )
 
     claims = package.get("claim")
@@ -3152,10 +3186,10 @@ def check_package(
         if clause is not None and clause not in req_by_id:
             rep.error(
                 f"claim {c.get('id') or idx!r}: clause {clause!r} is not a requirement id of "
-                f"the bound contract (§4.1 rule 2)"
+                f"the bound specification (§4.1 rule 2)"
             )
     for rid, req in sorted(req_by_id.items()):
-        if req.get("kind", "item") == "cross-cutting":
+        if req.get("kind", "item") in ("cross-cutting", "chain"):
             continue
         if not any(c.get("clause") == rid for c in claims):
             rep.error(f"requirement {rid!r}: no [[claim]] names it (omission is forbidden, §4.1 rule 2)")
@@ -3174,7 +3208,25 @@ def check_package(
                 _reject_bare_m11_wire(rep, i.get("digest"), "subject", f"{ictx}.digest")
 
     # coverage — always computed.
-    cov = compute_coverage(contract, package, package_path)
+    cov = compute_coverage(specification, package, package_path)
+    if any(r.get("kind") == "chain" for r in specification.get("requirement", [])) and specification_struct_rep.ok():
+        context = chain_context or stacking.Invocation(sys.modules[__name__], root=_ROOT_OVERRIDE)
+        at = (chain_decision or {}).get("document", {}).get("issued_at", now_utc_iso())
+        stacking.merge_coverage(cov, context.evaluate(specification, package, package_path, at, chain_decision, chain_budget))
+        rep.errors.extend(cov["chain"]["errors"])
+        rep.unknowns.extend(cov["chain"]["unknowns"])
+        rep.warnings.extend(context.checkout_notes)
+    if package.get("dependency_inventory") and not any(r.get("kind") == "chain" for r in specification.get("requirement", [])):
+        context = chain_context or stacking.Invocation(sys.modules[__name__], root=_ROOT_OVERRIDE)
+        try:
+            stacking.inventories(package, package_path, context.root_for(package, package_path), _profiles.CHAIN_READERS.get("/".join(package.get("format", {}).get("profile", "").split("/")[2:]), {}), checkout=context.checkout)
+        except stacking.Failure as exc:
+            (rep.unknowns if exc.status == "indeterminate" else rep.errors).append(exc.reason)
+        rep.warnings.extend(context.checkout_notes)
+    for rid, row in cov["requirements"].items():
+        if req_by_id.get(rid, {}).get("kind") == "chain":
+            for reason in row["reasons"].values():
+                rep.warn(f"chain {rid}: {reason}")
     for e in cov["record_errors"]:
         rep.error(e)
 
@@ -3189,7 +3241,7 @@ def check_package(
         dctx = f"deviation[{idx}] (requirement {d.get('requirement')!r})"
         req_id = d.get("requirement")
         if req_id not in req_by_id:
-            rep.error(f"{dctx}: 'requirement' does not resolve to a contract requirement id")
+            rep.error(f"{dctx}: 'requirement' does not resolve to a specification requirement id")
         kind = d.get("kind")
         if kind not in DEVIATION_KINDS:
             rep.error(f"{dctx}: kind must be one of {sorted(DEVIATION_KINDS)}, got {kind!r}")
@@ -3201,6 +3253,11 @@ def check_package(
         if not req.get("mandatory") or rep.unknowns:
             continue  # unresolved format validation cannot establish a missing deviation
         status = cov["requirements"].get(rid, {}).get("status")
+        reasons = cov["requirements"].get(rid, {}).get("reasons", {})
+        element_failures = cov["requirements"].get(rid, {}).get("element_failures", {})
+        if chain_decision is None and req.get("kind") == "chain" and reasons and all(element_failures.get(key, {}).get("unconfigured_store", False) for key in reasons):
+            rep.warn(f"NOTE requirement {rid!r}: store not configured; decision-time evaluation governs")
+            continue
         if status != "satisfied" and rid not in dev_by_req:
             rep.error(
                 f"requirement {rid!r} is mandatory and coverage computed {status!r} (not "
@@ -3215,14 +3272,14 @@ def check_package(
     if check_core.subject_identity_kind(package.get("subject") or {}) is None:
         rep.error(
             "[subject] must carry exactly one certified identity — commit (git-revision), digest "
-            "(content-digest) or components (B1) — for a package to bind to a contract "
+            "(content-digest) or components (B1) — for a package to bind to a specification "
             "(§4.1 rule 5)"
         )
 
     # rule 6: every profile in profiles_required appears, AND the package's OWN profile (Finding
-    # 2/17) is itself one the contract requires — "a package under a different profile is
+    # 2/17) is itself one the specification requires — "a package under a different profile is
     # invalid, it is not evaluated under a looser floor".
-    profiles_required = (contract.get("acceptance") or {}).get("profiles_required") or []
+    profiles_required = (specification.get("acceptance") or {}).get("profiles_required") or []
     fmt = package.get("format") or {}
     fillers = package.get("filler")
     fillers = [f for f in fillers if isinstance(f, dict)] if isinstance(fillers, list) else []
@@ -3237,7 +3294,7 @@ def check_package(
     if profiles_required and own_profile not in profiles_required:
         own_desc = "no [format].profile declared" if own_profile is None else repr(own_profile)
         rep.error(
-            f"the package's own profile ({own_desc}) is not one the contract requires "
+            f"the package's own profile ({own_desc}) is not one the specification requires "
             f"({profiles_required!r}) — a package under a different profile is invalid, it is "
             f"not evaluated under a looser floor (§4.1 rule 6, Finding 2)"
         )
@@ -3250,11 +3307,11 @@ def check_package(
             rep.error(f"filler[{idx}]: role must be one of {sorted(FILLER_ROLES)}, got {f.get('role')!r}")
 
     # rule 7 — Finding 7: producer identity set; producer = "open" REQUIRES >= 1 producer filler.
-    contract_producer_name = ((contract.get("parties") or {}).get("producer") or {}).get("name")
-    if contract_producer_name == "open":
+    specification_producer_name = ((specification.get("parties") or {}).get("producer") or {}).get("name")
+    if specification_producer_name == "open":
         if not any(f.get("role") == "producer" for f in fillers):
             rep.error(
-                "the contract's producer is 'open' but the package carries no [[filler]] with "
+                "the specification's producer is 'open' but the package carries no [[filler]] with "
                 "role='producer' naming who produced it (§4.1 rule 7)"
             )
 
@@ -3274,21 +3331,27 @@ def check_package(
 # ---------------------------------------------------------------------------------------------
 
 def build_decision_skeleton(
-    contract: dict, package: dict, package_path: Path, contract_path: Path,
-    issuer: str, mode: str | None,
+    specification: dict, package: dict, package_path: Path, specification_path: Path,
+    issuer: str, mode: str | None, chain_context=None,
 ) -> str:
-    cov = compute_coverage(contract, package, package_path)
-    req_by_id = requirement_by_id(contract)
+    cov = compute_coverage(specification, package, package_path)
+    issued_at = now_utc_iso()
+    if any(r.get("kind") == "chain" for r in specification.get("requirement", [])):
+        context = chain_context or stacking.Invocation(sys.modules[__name__], root=_ROOT_OVERRIDE)
+        stacking.merge_coverage(cov, context.evaluate(specification, package, package_path, issued_at))
+        if cov["chain"]["errors"] or cov["chain"]["snapshot"] is None:
+            raise stacking.Failure("; ".join(cov["chain"]["errors"] + cov["chain"]["unknowns"]))
+    req_by_id = requirement_by_id(specification)
 
-    contract_id = (contract.get("document") or {}).get("id")
-    contract_hash = m11.digest_file("contract", contract_path)
+    specification_id = (specification.get("document") or {}).get("id")
+    specification_hash = m11.digest_file("specification", specification_path)
     package_hash = m11.digest_file("manifest", package_path)
     # [binds].subject carries the SAME identity form the package declares — 'commit' for a
     # git-revision subject, 'digest' for content-digest or components (§7).
     subject_bind_field, subject_bind_value = _subject_binds_field(package.get("subject") or {})
 
     if mode is None:
-        mode = (contract.get("acceptance") or {}).get("consumer_verification") or "spot-check"
+        mode = (specification.get("acceptance") or {}).get("consumer_verification") or "spot-check"
 
     dev_by_req: dict[str, dict] = {}
     for d in package.get("deviation") or []:
@@ -3331,11 +3394,11 @@ def build_decision_skeleton(
     lines.append("minor      = 0")
     lines.append('kind       = "decision"')
     lines.append(f'id         = "AD-{today_utc_date()}-draft"')
-    lines.append(f'issued_at  = "{now_utc_iso()}"')
+    lines.append(f'issued_at  = "{issued_at}"')
     lines.append(f'issuer     = "{issuer}"')
     lines.append(f'verdict    = "{verdict}"')
-    contract_phase = (contract.get("acceptance") or {}).get("phase") or "final"
-    lines.append(f'provisional = {"true" if contract_phase != "final" else "false"}  # from contract phase {contract_phase!r} (§3.5)')
+    specification_phase = (specification.get("acceptance") or {}).get("phase") or "final"
+    lines.append(f'provisional = {"true" if specification_phase != "final" else "false"}  # from specification phase {specification_phase!r} (§3.5)')
     if verdict == "rejected":
         n = sum(1 for s in mandatory_statuses if s not in ("satisfied",))
         lines.append(
@@ -3344,9 +3407,17 @@ def build_decision_skeleton(
         )
     lines.append("")
     lines.append("[binds]")
-    lines.append(f'contract = {{ id = "{contract_id}", hash = "{contract_hash}" }}')
-    lines.append(f'package  = {{ hash = "{package_hash}" }}')
-    lines.append(f'subject  = {{ {subject_bind_field or "commit"} = "{subject_bind_value}" }}')
+    locator_root = chain_context.root_for(package, package_path) if chain_context else _ROOT_OVERRIDE
+    spec_locator = package_locator = ""
+    if locator_root is not None and "path" in package.get("subject", {}):
+        spec_locator = ", path = " + json.dumps(specification_path.resolve().relative_to(locator_root.resolve()).as_posix())
+        package_locator = ", path = " + json.dumps(package_path.resolve().relative_to(locator_root.resolve()).as_posix())
+    lines.append(f'specification = {{ id = "{specification_id}", hash = "{specification_hash}"{spec_locator} }}')
+    lines.append(f'package  = {{ hash = "{package_hash}"{package_locator} }}')
+    bound_subject = {subject_bind_field or "commit": subject_bind_value}
+    if "path" in package.get("subject", {}):
+        bound_subject["path"] = package["subject"]["path"]
+    lines.append("subject = { " + ", ".join(f"{k} = {json.dumps(v)}" for k, v in bound_subject.items()) + " }")
     lines.append("")
     lines.append("[verification]")
     lines.append(f'mode = "{mode}"')
@@ -3363,17 +3434,24 @@ def build_decision_skeleton(
         lines.append("[[disposition]]")
         lines.append(f'requirement = "{disp["requirement"]}"')
         lines.append(f'status      = "{disp["status"]}"')
-        lines.append(f'basis       = {json.dumps(disp["basis"])}')
+        if req_by_id[disp["requirement"]].get("kind") == "chain":
+            for field, status in (("chain_basis", "satisfied"), ("chain_boundary", "boundary"), ("chain_gaps", "gap")):
+                ids = sorted(r["dependency"] for r in cov["chain"]["rows"] if r["requirement"] == disp["requirement"] and r["status"] == status)
+                lines.append(f"{field} = {json.dumps(ids)}")
+        else:
+            lines.append(f'basis       = {json.dumps(disp["basis"])}')
         if "note" in disp:
             lines.append(f'note        = {json.dumps(disp["note"])}')
         lines.append("")
     lines.append("[validity]")
-    stale_after_duration = (contract.get("acceptance") or {}).get("stale_after")
+    stale_after_duration = (specification.get("acceptance") or {}).get("stale_after")
     if is_iso8601_duration(stale_after_duration):
         issued_dt = datetime.datetime.now(datetime.timezone.utc)
         stale_date = (issued_dt + duration_to_timedelta(stale_after_duration)).strftime("%Y-%m-%d")
-        lines.append(f'stale_after = "{stale_date}"  # derived from the contract stale_after '
+        lines.append(f'stale_after = "{stale_date}"  # derived from the specification stale_after '
                       f'({stale_after_duration}); approximate — see README')
+    if "chain" in cov:
+        lines.append(stacking.snapshot_toml(cov["chain"]["snapshot"], cov["chain"]["rows"]))
     return "\n".join(lines) + "\n"
 
 
@@ -3578,11 +3656,11 @@ def check_disposition_coverage_row(
     if status == "satisfied":
         if cov_status != "satisfied":
             return f"disposition 'satisfied' but coverage computed {cov_status!r} (§5.2)"
-        needs_run = verification_mode == "re-execute-all" or (
+        needs_run = req.get("kind") != "chain" and (verification_mode == "re-execute-all" or (
             # §3.7: `third-party` needs a recorded run too — it is STRICTER than
             # consumer-run (independent of both sides), never a weaker substitute for it.
             (req.get("evidence") or {}).get("independence") in ("consumer-run", "third-party")
-        )
+        ))
         if needs_run and not every_basis_claim_passes():
             return (
                 "disposition 'satisfied' requires a PASS [[verification.run]] on EVERY basis "
@@ -3678,14 +3756,14 @@ def check_disposition_coverage_row(
         # MANDATORY requirement is never dispositioned 'not-applicable' — it is dispositioned
         # 'waived' with [disposition.waiver].code = 'not-applicable' instead (needs
         # waivable=true + a full waiver); a NON-waivable mandatory requirement that is genuinely
-        # not-applicable is a CONTRACT DEFECT routed via [[deviation]] kind='requirement-defect'
+        # not-applicable is a SPECIFICATION DEFECT routed via [[deviation]] kind='requirement-defect'
         # / [[requirement_feedback]] (§3.5), not a disposition choice here.
         if req.get("mandatory"):
             return (
                 f"disposition 'not-applicable' is refused on MANDATORY requirement "
                 f"{req.get('id')!r} — disposition it 'waived' with "
                 f"[disposition.waiver].code = 'not-applicable' instead; a non-waivable mandatory "
-                f"requirement that is genuinely not-applicable is a CONTRACT DEFECT routed via "
+                f"requirement that is genuinely not-applicable is a SPECIFICATION DEFECT routed via "
                 f"[[deviation]] kind='requirement-defect' (§5.1, §5.2)"
             )
         devs = [
@@ -3700,19 +3778,20 @@ def check_disposition_coverage_row(
 
 
 def check_decision(
-    decision: dict, contract: dict, package: dict,
-    contract_path: Path, package_path: Path,
-    previous_contract_path: Path | None = None,
+    decision: dict, specification: dict, package: dict,
+    specification_path: Path, package_path: Path,
+    previous_specification_path: Path | None = None,
     previous_paths: list | None = None,
     previous_dir: str | None = None,
     verdict_rules: list[dict] | None = None,
     decision_path: Path | None = None,
+    chain_context=None, chain_budget=None,
 ) -> Reporter:
-    """§5.0: "Decision validity is transitive" — `contract_path`/`package_path` are REQUIRED
+    """§5.0: "Decision validity is transitive" — `specification_path`/`package_path` are REQUIRED
     (Finding 4): a decision cannot be checked without transitively re-validating what it decided
-    about. `previous_contract_path`/`previous_paths`/`previous_dir` are passed straight through to
-    `check_package`'s own `check-contract` chain validation (§3.3, Finding 4) when the bound
-    contract supersedes another. `verdict_rules` (Finding 10) is the `[[verdict_rule]]` row list
+    about. `previous_specification_path`/`previous_paths`/`previous_dir` are passed straight through to
+    `check_package`'s own `check-spec` chain validation (§3.3, Finding 4) when the bound
+    specification supersedes another. `verdict_rules` (Finding 10) is the `[[verdict_rule]]` row list
     §5.1 is evaluated against; None loads the real `states.toml` (a caller — the selftest's
     watched-break case — may inject a tampered list to prove the evaluator actually depends on
     it). `decision_path` (S4) is OPTIONAL and used only to resolve a `[derivation].evidence[].ref`
@@ -3720,6 +3799,14 @@ def check_decision(
     caller with no path on disk (or an evidence entry naming a remote resource) still gets full
     shape validation, just no digest recompute."""
     rep = Reporter("decision")
+    context = chain_context or stacking.Invocation(sys.modules[__name__], root=_ROOT_OVERRIDE)
+    effect_start = len(context.effect_failures)
+    rep.warnings.extend(context.listing_notes(decision))
+    try:
+        context.checkout(package, package_path)
+    except stacking.Failure as exc:
+        rep.error(exc.reason)
+    rep.warnings.extend(context.checkout_notes)
 
     document = decision.get("document")
     if not isinstance(document, dict):
@@ -3728,6 +3815,8 @@ def check_decision(
     else:
         if document.get("protocol") != PROTOCOL_ID:
             rep.error(f"[document].protocol must be {PROTOCOL_ID!r}")
+        if type(document.get("minor")) is not int or document.get("minor") != 0:
+            rep.error("unsupported minor for acceptance-protocol/1 (must be 0)")
         if document.get("kind") != "decision":
             rep.error(f"[document].kind must be 'decision', got {document.get('kind')!r}")
         if not _nonempty(document.get("id")):
@@ -3757,13 +3846,13 @@ def check_decision(
     if merits is False and not _nonempty(reason):
         rep.error("[document].reason must be a nonempty string when merits = false (§5.5)")
 
-    contract_authority = (contract.get("acceptance") or {}).get("authority")
-    producer_names = producer_identity_set(contract, package)  # Finding 7: the WHOLE set
+    specification_authority = (specification.get("acceptance") or {}).get("authority")
+    producer_names = producer_identity_set(specification, package)  # Finding 7: the WHOLE set
     issuer = document.get("issuer")
-    if issuer != contract_authority:
+    if issuer != specification_authority:
         rep.error(
-            f"issuer ({issuer!r}) must equal the contract's [acceptance].authority "
-            f"({contract_authority!r}) (P5)"
+            f"issuer ({issuer!r}) must equal the specification's [acceptance].authority "
+            f"({specification_authority!r}) (P5)"
         )
     if issuer is not None and issuer in producer_names:
         rep.error(
@@ -3772,7 +3861,7 @@ def check_decision(
         )
 
     # §5.4 — derived decisions: [derivation] present -> [document].recorded_by
-    # REQUIRED. issuer/authority is UNCHANGED (P5, above): the contract's named authority, never
+    # REQUIRED. issuer/authority is UNCHANGED (P5, above): the specification's named authority, never
     # the recorder. A recorder transcribes, never decides.
     derivation = decision.get("derivation")
     recorded_by = document.get("recorded_by")
@@ -3831,23 +3920,23 @@ def check_decision(
                                 )
 
         # recorded_by MAY equal the package's producer identity ONLY when the boundary is
-        # cross-org AND the contract's authority is a genuine third party (neither the named
+        # cross-org AND the specification's authority is a genuine third party (neither the named
         # consumer nor any producer identity) — otherwise an ERROR: a recorder transcribes, never
         # decides, and a producer recording its own internal decision collapses that separation.
         if _nonempty(recorded_by) and recorded_by in producer_names:
-            _parties = contract.get("parties") or {}
+            _parties = specification.get("parties") or {}
             _boundary = _parties.get("boundary") or "internal"
             _consumer_name = (_parties.get("consumer") or {}).get("name")
             _authority_is_third_party = (
-                _nonempty(contract_authority)
-                and contract_authority != _consumer_name
-                and contract_authority not in producer_names
+                _nonempty(specification_authority)
+                and specification_authority != _consumer_name
+                and specification_authority not in producer_names
             )
             if _boundary != "cross-org" or not _authority_is_third_party:
                 rep.error(
                     f"[document].recorded_by ({recorded_by!r}) is in the package's producer "
                     f"identity set — only legal when [parties].boundary = 'cross-org' and the "
-                    f"contract's authority is a genuine third party (neither consumer nor "
+                    f"specification's authority is a genuine third party (neither consumer nor "
                     f"producer); a recorder transcribes, never decides (S4)"
                 )
     elif _nonempty(recorded_by):
@@ -3856,25 +3945,25 @@ def check_decision(
             "whether a [derivation] table was intended (S4)"
         )
 
-    # provisional (§3.5): REQUIRED true when the bound contract's phase != final; must be absent
+    # provisional (§3.5): REQUIRED true when the bound specification's phase != final; must be absent
     # or false when phase == final.
-    contract_phase = (contract.get("acceptance") or {}).get("phase") or "final"
+    specification_phase = (specification.get("acceptance") or {}).get("phase") or "final"
     provisional = document.get("provisional")
-    if contract_phase != "final":
+    if specification_phase != "final":
         if provisional is not True:
             rep.error(
-                f"[document].provisional must be true — the bound contract's phase is "
-                f"{contract_phase!r}, not 'final' (§3.5)"
+                f"[document].provisional must be true — the bound specification's phase is "
+                f"{specification_phase!r}, not 'final' (§3.5)"
             )
     else:
         if provisional not in (None, False):
             rep.error(
-                f"[document].provisional must be absent or false when the bound contract's "
+                f"[document].provisional must be absent or false when the bound specification's "
                 f"phase is 'final', got {provisional!r} (§3.5)"
             )
 
     # requirement_feedback (§3.5): optional, any phase.
-    req_by_id_for_feedback = requirement_by_id(contract)
+    req_by_id_for_feedback = requirement_by_id(specification)
     for idx, fb in enumerate(decision.get("requirement_feedback") or []):
         fctx = f"requirement_feedback[{idx}]"
         if not isinstance(fb, dict):
@@ -3885,7 +3974,7 @@ def check_decision(
             rep.error(f"{fctx}: kind must be one of {sorted(REQUIREMENT_FEEDBACK_KINDS)}, got {kind!r}")
         rid = fb.get("requirement")
         if kind != "missing" and rid not in req_by_id_for_feedback:
-            rep.error(f"{fctx}: requirement {rid!r} does not resolve to a contract requirement (only kind='missing' may name a not-yet-existing id)")
+            rep.error(f"{fctx}: requirement {rid!r} does not resolve to a specification requirement (only kind='missing' may name a not-yet-existing id)")
         if not _nonempty(fb.get("statement")):
             rep.error(f"{fctx}: statement must be a nonempty string")
         if not _nonempty(fb.get("proposed")):
@@ -3896,13 +3985,13 @@ def check_decision(
         rep.error("[binds] section missing")
         binds = {}
     else:
-        bc = binds.get("contract") or {}
+        bc = binds.get("specification") or {}
         bp = binds.get("package") or {}
         bs = binds.get("subject") or {}
-        contract_id = (contract.get("document") or {}).get("id")
-        if bc.get("id") != contract_id:
-            rep.error(f"[binds].contract.id ({bc.get('id')!r}) != presented contract id ({contract_id!r})")
-        _reject_bare_m11_wire(rep, bc.get("hash"), "contract", "[binds].contract.hash")
+        specification_id = (specification.get("document") or {}).get("id")
+        if bc.get("id") != specification_id:
+            rep.error(f"[binds].specification.id ({bc.get('id')!r}) != presented specification id ({specification_id!r})")
+        _reject_bare_m11_wire(rep, bc.get("hash"), "specification", "[binds].specification.hash")
         _reject_bare_m11_wire(rep, bp.get("hash"), "manifest", "[binds].package.hash")
         # Protocol identity = format identity: [binds].subject MUST carry the SAME
         # identity FORM the presented package declares — 'commit' for git-revision, 'digest' for
@@ -3922,19 +4011,24 @@ def check_decision(
                 f"[binds].subject.{bs_id_field or pkg_id_field} ({bs_id_value!r}) != the presented "
                 f"package's [subject].{pkg_id_field} ({pkg_id_value!r}) — stale (P7)"
             )
+        if pkg_id_field == "commit" and not check_core.b1_git_revision_equal(bs, package.get("subject", {})):
+            rep.error("[binds].subject commit/path differs from package identity (B1)")
+        for key in ("specification", "package"):
+            if "path" in binds.get(key, {}) and not check_core._valid_b1_path(binds[key]["path"]):
+                rep.error(f"[binds].{key}.path violates B1 path grammar")
         # [binds] hashes must recompute over the PRESENTED files (§5, P7). A mismatch is staleness:
         # the exact file bytes checked here are no longer what the decision judged.
-        if contract_path is not None:
+        if specification_path is not None:
             try:
-                recomputed = m11.digest_file("contract", contract_path)
+                recomputed = m11.digest_file("specification", specification_path)
                 if bc.get("hash") != recomputed:
                     rep.error(
-                        f"[binds].contract.hash does not match M11('contract:', <presented "
-                        f"contract file>) — stale (P7): got {bc.get('hash')!r}, recomputed "
+                        f"[binds].specification.hash does not match M11('specification:', <presented "
+                        f"specification file>) — stale (P7): got {bc.get('hash')!r}, recomputed "
                         f"{recomputed!r}"
                     )
             except OSError as e:
-                rep.error(f"could not recompute contract hash: {e}")
+                rep.error(f"could not recompute specification hash: {e}")
         if package_path is not None:
             try:
                 recomputed = m11.digest_file("manifest", package_path)
@@ -3948,25 +4042,27 @@ def check_decision(
                 rep.error(f"could not recompute package hash: {e}")
 
     # -----------------------------------------------------------------------------------------
-    # Finding 4 — decision validity is TRANSITIVE (§5.0): re-run check-contract (with
-    # --previous when the bound contract supersedes another — the successor is fully validated
+    # Finding 4 — decision validity is TRANSITIVE (§5.0): re-run check-spec (with
+    # --previous when the bound specification supersedes another — the successor is fully validated
     # only via check-package below, which does exactly this) and the format validator +
     # check-package on the bound package. A decision whose bindings resolve to an INVALID
-    # contract or package is invalid even if its own hashes match; coverage output alone never
+    # specification or package is invalid even if its own hashes match; coverage output alone never
     # establishes validity.
     # -----------------------------------------------------------------------------------------
-    supersedes = (contract.get("document") or {}).get("supersedes")
-    if supersedes and previous_contract_path is None and not previous_paths and not previous_dir:
+    supersedes = (specification.get("document") or {}).get("supersedes")
+    if supersedes and previous_specification_path is None and not previous_paths and not previous_dir:
         rep.error(
-            f"the bound contract supersedes {supersedes!r} but no --previous/--previous-dir was "
+            f"the bound specification supersedes {supersedes!r} but no --previous/--previous-dir was "
             f"given to validate the chain to its root (§3.3, §3.5, §5.0, Finding 4)"
         )
     pkg_rep, cov = check_package(
-        package, contract, package_path, contract_path, strict=False,
-        previous_contract_path=previous_contract_path,
+        package, specification, package_path, specification_path, strict=False,
+        previous_specification_path=previous_specification_path,
         previous_paths=previous_paths, previous_dir=previous_dir,
+        chain_context=context, chain_decision=decision, chain_budget=chain_budget,
     )
-    rep.merge(pkg_rep, prefix="[check-contract/check-package/package-validator transitively] ")
+    rep.merge(pkg_rep, prefix="[check-spec/check-package/package-validator transitively] ")
+    rep.effect_failures.extend(context.effect_failures[effect_start:])
 
     # Finding 17: package-level profile constraints (e.g. verification/code/rust.md's `dirty` must be false)
     # (illustrative; profile vocabulary) are only WARNED by check-package (a producer may submit
@@ -3991,11 +4087,11 @@ def check_decision(
         mode = verification.get("mode")
         if mode not in MODE_RANK:
             rep.error(f"[verification].mode must be one of {VERIFICATION_MODES}, got {mode!r}")
-        contract_mode = (contract.get("acceptance") or {}).get("consumer_verification")
-        if mode in MODE_RANK and contract_mode in MODE_RANK and MODE_RANK[mode] < MODE_RANK[contract_mode]:
+        specification_mode = (specification.get("acceptance") or {}).get("consumer_verification")
+        if mode in MODE_RANK and specification_mode in MODE_RANK and MODE_RANK[mode] < MODE_RANK[specification_mode]:
             rep.error(
-                f"[verification].mode ({mode!r}) is weaker than the contract's "
-                f"consumer_verification ({contract_mode!r}) (§5)"
+                f"[verification].mode ({mode!r}) is weaker than the specification's "
+                f"consumer_verification ({specification_mode!r}) (§5)"
             )
         runs = verification.get("run")
         runs = [r for r in runs if isinstance(r, dict)] if isinstance(runs, list) else []
@@ -4017,7 +4113,7 @@ def check_decision(
             runs_by_claim.setdefault(r.get("claim"), []).append(r)
             all_runs.append(r)
 
-    req_by_id = requirement_by_id(contract)
+    req_by_id = requirement_by_id(specification)
     claim_ids = {c.get("id") for c in (package.get("claim") or []) if isinstance(c, dict)}
     all_claims = [c for c in (package.get("claim") or []) if isinstance(c, dict)]
 
@@ -4045,7 +4141,7 @@ def check_decision(
         dctx = f"disposition[{idx}]"
         rid = d.get("requirement")
         if rid not in req_by_id:
-            rep.error(f"{dctx}: requirement {rid!r} does not resolve to a contract requirement")
+            rep.error(f"{dctx}: requirement {rid!r} does not resolve to a specification requirement")
             continue
         dctx = f"disposition (requirement {rid!r})"
         if rid in seen_req_disp:
@@ -4054,7 +4150,7 @@ def check_decision(
         if d.get("status") not in DISPOSITION_STATUSES:
             rep.error(f"{dctx}: status must be one of {sorted(DISPOSITION_STATUSES)}, got {d.get('status')!r}")
             continue
-        basis = d.get("basis")
+        basis = [] if req_by_id[rid].get("kind") == "chain" else d.get("basis")
         cov_status = cov["requirements"].get(rid, {}).get("status")
         if not isinstance(basis, list) or not all(isinstance(b, str) for b in basis):
             rep.error(f"{dctx}: basis must be a list of strings")
@@ -4133,7 +4229,7 @@ def check_decision(
             condition_ids.add(cid)
         rid = c.get("requirement")
         if rid not in req_by_id:
-            rep.error(f"{cctx}: requirement {rid!r} does not resolve to a contract requirement")
+            rep.error(f"{cctx}: requirement {rid!r} does not resolve to a specification requirement")
         for f in ("statement", "discharged_by"):
             if not _nonempty(c.get(f)):
                 rep.error(f"{cctx}: field {f!r} must be a nonempty string")
@@ -4318,13 +4414,13 @@ def check_decision(
 
 
 def check_decision_effect(
-    decision: dict, contract: dict, rep: Reporter, now_date: str, allow_conditions: bool,
+    decision: dict, specification: dict, rep: Reporter, now_date: str, allow_conditions: bool,
+    *, chain_effect: bool = True,
 ) -> tuple[bool, str]:
-    """§5.0a / Finding 12: `check-decision --effect` — a gate that unlocks an effect (publish,
-    deploy, pay, merge) may act only on a decision that is VALID (§5.0, `rep.ok()` — computed by
+    """§5.0a / Finding 12: `check-decision --effect` — a gate that unlocks an effect (merge, publish, deploy) may act only on a decision that is VALID (§5.0, `rep.ok()` — computed by
     the caller BEFORE this is called), CURRENT (its bindings match the presented files — already
     part of `rep`'s hash-recompute checks), UNEXPIRED (`validity.stale_after`, when present, has
-    not passed `now_date`), issued under a `final`-phase contract, with `provisional` absent or
+    not passed `now_date`), issued under a `final`-phase specification, with `provisional` absent or
     false, and whose verdict is `accepted` — or `accepted-with-conditions` only where the CALLER's
     own policy says conditions may be outstanding (`--allow-conditions`). Fails closed: any
     missing/malformed field is treated as ineligible, never as "presumably fine". Returns
@@ -4332,10 +4428,13 @@ def check_decision_effect(
     if not rep.ok():
         return False, "decision is not VALID — check-decision reported errors or INDETERMINATE findings (§5.0)"
 
+    if chain_effect and rep.effect_failures:
+        return False, "ineligible at D: " + "; ".join(rep.effect_failures)
+
     document = decision.get("document") or {}
-    phase = (contract.get("acceptance") or {}).get("phase") or "final"
+    phase = (specification.get("acceptance") or {}).get("phase") or "final"
     if phase != "final":
-        return False, f"bound contract's [acceptance].phase is {phase!r}, not 'final' (§5.0a)"
+        return False, f"bound specification's [acceptance].phase is {phase!r}, not 'final' (§5.0a)"
 
     provisional = document.get("provisional")
     if provisional not in (None, False):
@@ -4343,32 +4442,32 @@ def check_decision_effect(
 
     validity = decision.get("validity") or {}
     stale_after = validity.get("stale_after")
-    contract_stale_after_dur = (contract.get("acceptance") or {}).get("stale_after")
+    specification_stale_after_dur = (specification.get("acceptance") or {}).get("stale_after")
 
     # Finding 9 (§5.0a): "unexpired... and it is required, and capped at issued_at + the
-    # contract's stale_after, whenever the contract sets one" — an ABSENT validity.stale_after, or
+    # specification's stale_after, whenever the specification sets one" — an ABSENT validity.stale_after, or
     # one set past the ceiling (e.g. deleted, or hand-edited to a far-future date), previously left
-    # the decision eligible forever whenever the contract itself declared an expiry.
-    if is_iso8601_duration(contract_stale_after_dur):
+    # the decision eligible forever whenever the specification itself declared an expiry.
+    if is_iso8601_duration(specification_stale_after_dur):
         if stale_after is None:
             return False, (
-                f"the contract sets [acceptance].stale_after = {contract_stale_after_dur!r} but "
+                f"the specification sets [acceptance].stale_after = {specification_stale_after_dur!r} but "
                 f"the decision's [validity].stale_after is absent — REQUIRED and capped at "
-                f"issued_at + the contract's duration (§5.0a, Finding 9)"
+                f"issued_at + the specification's duration (§5.0a, Finding 9)"
             )
         if not is_iso_date(stale_after):
             return False, f"[validity].stale_after {stale_after!r} is not a valid ISO date (§5.0a)"
         issued_at = document.get("issued_at")
         # Finding 6: an absent or unparseable issued_at must make the decision INELIGIBLE — this
-        # branch only runs when the contract sets a stale_after duration, i.e. exactly when the
+        # branch only runs when the specification sets a stale_after duration, i.e. exactly when the
         # cap this issued_at feeds is REQUIRED. The old code let `ceiling_date` fall through to
         # None on a parse failure, and the `if ceiling_date is not None` guard below then SKIPPED
-        # the cap entirely — fail-open on the publish/pay/deploy gate this function exists to
+        # the cap entirely — fail-open on the merge, publish, deploy gate this function exists to
         # close. There is no "skip the cap" outcome any more: either it computes, or the decision
         # is refused.
         if not _nonempty(issued_at):
             return False, (
-                f"the contract sets [acceptance].stale_after = {contract_stale_after_dur!r} but "
+                f"the specification sets [acceptance].stale_after = {specification_stale_after_dur!r} but "
                 f"[document].issued_at is absent — required to compute the issued_at + duration "
                 f"ceiling (§5.0a, Finding 6/9)"
             )
@@ -4377,14 +4476,14 @@ def check_decision_effect(
         except ValueError:
             return False, (
                 f"[document].issued_at {issued_at!r} is not a valid RFC 3339 datetime — the "
-                f"issued_at + the contract's stale_after ceiling cannot be computed, refused "
+                f"issued_at + the specification's stale_after ceiling cannot be computed, refused "
                 f"fail-closed rather than skipped (§5.0a, Finding 6)"
             )
-        ceiling_date = (issued_dt + duration_to_timedelta(contract_stale_after_dur)).strftime("%Y-%m-%d")
+        ceiling_date = (issued_dt + duration_to_timedelta(specification_stale_after_dur)).strftime("%Y-%m-%d")
         if stale_after > ceiling_date:
             return False, (
                 f"[validity].stale_after ({stale_after}) exceeds the ceiling issued_at + "
-                f"the contract's stale_after duration ({ceiling_date}) — later than the "
+                f"the specification's stale_after duration ({ceiling_date}) — later than the "
                 f"ceiling is an error, earlier is allowed (§5.0a, Finding 9)"
             )
     elif stale_after is not None and not is_iso_date(stale_after):
@@ -4802,7 +4901,7 @@ def classify_evidence_record(
 
 
 def compute_impact(
-    decision: dict, contract: dict, package: dict, new_commit: str, changed_paths: set,
+    decision: dict, specification: dict, package: dict, new_commit: str, changed_paths: set,
     new_package: dict | None = None,
 ):
     """Returns a dict: {stale, old_commit, new_commit, records: [...], unsupported_requirements: [...],
@@ -4819,9 +4918,9 @@ def compute_impact(
     claims_by_id = {
         c.get("id"): c for c in (package.get("claim") or []) if isinstance(c, dict) and _nonempty(c.get("id"))
     }
-    req_by_id = requirement_by_id(contract)
-    authority = (contract.get("acceptance") or {}).get("authority")
-    stale_after_dur = (contract.get("acceptance") or {}).get("stale_after")
+    req_by_id = requirement_by_id(specification)
+    authority = (specification.get("acceptance") or {}).get("authority")
+    stale_after_dur = (specification.get("acceptance") or {}).get("stale_after")
     required_by = None
     if is_iso8601_duration(stale_after_dur):
         required_by = (
@@ -4873,7 +4972,7 @@ def compute_impact(
         duty = {
             "id": duty_id,
             "natural_key": f"reverify:{decision_id}:{cid}",
-            "scope": (contract.get("subject") or {}).get("name") or "unknown",
+            "scope": (specification.get("subject") or {}).get("name") or "unknown",
             "source": (package.get("spec") or {}).get("path") or "acceptance.toml",
             "source_revision": new_commit,
             "trigger": {"kind": "subject-changed", "from": old_commit, "to": new_commit},
@@ -4929,11 +5028,18 @@ def compute_impact(
 # ---------------------------------------------------------------------------------------------
 
 def render_markdown(
-    contract: dict, package: dict, decision: dict | None,
-    contract_path: Path, package_path: Path, decision_path: Path | None,
+    specification: dict, package: dict, decision: dict | None,
+    specification_path: Path, package_path: Path, decision_path: Path | None, chain_context=None,
 ) -> str:
-    cov = compute_coverage(contract, package, package_path)
-    req_by_id = requirement_by_id(contract)
+    decision_ok = False
+    context = chain_context
+    cov = compute_coverage(specification, package, package_path)
+    if any(r.get("kind") == "chain" for r in specification.get("requirement", [])):
+        context = chain_context or stacking.Invocation(sys.modules[__name__], root=_ROOT_OVERRIDE)
+        if decision is not None:
+            decision_ok = check_decision(decision, specification, package, specification_path, package_path, decision_path=decision_path, chain_context=context, previous_paths=context.previous_paths, previous_dir=context.previous_dir).ok()
+        stacking.merge_coverage(cov, context.evaluate(specification, package, package_path, (decision or {}).get("document", {}).get("issued_at", now_utc_iso()), decision))
+    req_by_id = requirement_by_id(specification)
     claims_by_clause: dict[str, list[dict]] = {}
     for c in package.get("claim") or []:
         if isinstance(c, dict):
@@ -4950,9 +5056,9 @@ def render_markdown(
                 conditions_by_id[c["id"]] = c
 
     try:
-        contract_hash = m11.digest_file("contract", contract_path)
+        specification_hash = m11.digest_file("specification", specification_path)
     except OSError:
-        contract_hash = "?"
+        specification_hash = "?"
     try:
         package_hash = m11.digest_file("manifest", package_path)
     except OSError:
@@ -4965,11 +5071,11 @@ def render_markdown(
             decision_hash = "?"
 
     lines: list[str] = []
-    lines.append(f"# Acceptance view — {(contract.get('document') or {}).get('id')}")
+    lines.append(f"# Acceptance view — {(specification.get('document') or {}).get('id')}")
     lines.append("")
-    lines.append(f"- contract: `{(contract.get('document') or {}).get('id')}` — `{contract_hash}`")
+    lines.append(f"- specification: `{(specification.get('document') or {}).get('id')}` — `{specification_hash}`")
     lines.append(f"- package: `{(package.get('subject') or {}).get('name')}` — `{package_hash}`")
-    phase = (contract.get("acceptance") or {}).get("phase") or "final"
+    phase = (specification.get("acceptance") or {}).get("phase") or "final"
     lines.append(f"- phase: `{phase}`")
     upstream_status = (package.get("spec") or {}).get("upstream_status")
     if _nonempty(upstream_status):
@@ -5032,7 +5138,7 @@ def render_markdown(
 
     if decision is not None and decision.get("requirement_feedback"):
         lines.append("")
-        lines.append("## Requirement feedback (§3.5) — for the next contract version")
+        lines.append("## Requirement feedback (§3.5) — for the next specification version")
         lines.append("")
         for fb in decision.get("requirement_feedback") or []:
             if not isinstance(fb, dict):
@@ -5042,7 +5148,10 @@ def render_markdown(
                 f"— proposed: {fb.get('proposed')}"
             )
 
-    return "\n".join(lines) + "\n"
+    if context is not None and context.checkout_notes:
+        lines.append("")
+        lines.extend(context.checkout_notes)
+    return "\n".join(lines) + "\n" + stacking.render(specification, package, cov, decision, decision_ok)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -5062,14 +5171,14 @@ def _print_report(rep: Reporter, ok_word: str = "PASS") -> None:
         print(f"FAIL {rep.path} ({len(rep.errors)} error{'s' if len(rep.errors) != 1 else ''})")
 
 
-def cmd_check_contract(args) -> int:
-    path = Path(args.contract)
+def cmd_check_specification(args) -> int:
+    path = Path(args.specification)
     doc, err = load_toml(path)
     if err:
         print(f"ERROR {path}: {err}")
         print(f"FAIL {path} (1 error)")
         return 1
-    rep = check_contract(doc)
+    rep = check_specification(doc)
     rep.path = str(path)
     # Finding 4 (§3.3): `--previous` is repeatable (newest-first: nearest predecessor first)
     # and/or `--previous-dir DIR` (each ancestor resolved by its own [document].id) — the WHOLE
@@ -5084,7 +5193,7 @@ def cmd_check_contract(args) -> int:
                 f"given to validate the chain to its root (§3.3)"
             )
         else:
-            rep.merge(check_contract_chain(doc, previous_list, previous_dir), prefix="[--previous chain] ")
+            rep.merge(check_specification_chain(doc, previous_list, previous_dir), prefix="[--previous chain] ")
     elif previous_list or previous_dir:
         rep.error("--previous/--previous-dir given but [document].supersedes is absent — nothing to validate against (§3.3)")
     if args.json:
@@ -5096,21 +5205,21 @@ def cmd_check_contract(args) -> int:
 
 def cmd_check_package(args) -> int:
     package_path = Path(args.package)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     package, perr = load_toml(package_path)
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     if perr or cerr:
-        for p, e in ((package_path, perr), (contract_path, cerr)):
+        for p, e in ((package_path, perr), (specification_path, cerr)):
             if e:
                 print(f"ERROR {p}: {e}")
         print(f"FAIL {package_path} (usage)")
         return 1
-    previous_contract_path = Path(args.previous_contract) if getattr(args, "previous_contract", None) else None
+    previous_specification_path = Path(args.previous_specification) if getattr(args, "previous_specification", None) else None
     previous_list = getattr(args, "previous", None) or []
     previous_dir = getattr(args, "previous_dir", None)
     rep, cov = check_package(
-        package, contract, package_path, contract_path, args.strict, previous_contract_path,
-        previous_paths=previous_list, previous_dir=previous_dir,
+        package, specification, package_path, specification_path, args.strict, previous_specification_path,
+        previous_paths=previous_list, previous_dir=previous_dir, chain_context=args.chain_context,
     )
     rep.path = str(package_path)
     if args.json:
@@ -5136,15 +5245,15 @@ def _coverage_json(cov: dict) -> dict:
 
 def cmd_coverage(args) -> int:
     package_path = Path(args.package)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     package, perr = load_toml(package_path)
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     if perr or cerr:
-        for p, e in ((package_path, perr), (contract_path, cerr)):
+        for p, e in ((package_path, perr), (specification_path, cerr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 1
-    cov = compute_coverage(contract, package, package_path)
+    cov = compute_coverage(specification, package, package_path)
     if args.json:
         print(json.dumps(_coverage_json(cov), indent=2))
     else:
@@ -5154,15 +5263,15 @@ def cmd_coverage(args) -> int:
 
 def cmd_decide(args) -> int:
     package_path = Path(args.package)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     package, perr = load_toml(package_path)
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     if perr or cerr:
-        for p, e in ((package_path, perr), (contract_path, cerr)):
+        for p, e in ((package_path, perr), (specification_path, cerr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 2
-    text = build_decision_skeleton(contract, package, package_path, contract_path, args.issuer, args.mode)
+    text = build_decision_skeleton(specification, package, package_path, specification_path, args.issuer, args.mode, chain_context=args.chain_context)
     Path(args.out).write_text(text, encoding="utf-8")
     print(f"wrote decision skeleton to {args.out}")
     return 0
@@ -5170,22 +5279,22 @@ def cmd_decide(args) -> int:
 
 def cmd_check_decision(args) -> int:
     decision_path = Path(args.decision)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     package_path = Path(args.package)
     decision, derr = load_toml(decision_path)
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     package, perr = load_toml(package_path)
     if derr or cerr or perr:
-        for p, e in ((decision_path, derr), (contract_path, cerr), (package_path, perr)):
+        for p, e in ((decision_path, derr), (specification_path, cerr), (package_path, perr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 1
-    previous_contract_path = Path(args.previous_contract) if getattr(args, "previous_contract", None) else None
+    previous_specification_path = Path(args.previous_specification) if getattr(args, "previous_specification", None) else None
     previous_list = getattr(args, "previous", None) or []
     previous_dir = getattr(args, "previous_dir", None)
     rep = check_decision(
-        decision, contract, package, contract_path, package_path, previous_contract_path,
-        previous_paths=previous_list, previous_dir=previous_dir, decision_path=decision_path,
+        decision, specification, package, specification_path, package_path, previous_specification_path,
+        previous_paths=previous_list, previous_dir=previous_dir, decision_path=decision_path, chain_context=args.chain_context,
     )
     rep.path = str(decision_path)
 
@@ -5194,7 +5303,7 @@ def cmd_check_decision(args) -> int:
     if getattr(args, "effect", False):
         now_date = args.now or today_utc_date()
         effect_eligible, effect_reason = check_decision_effect(
-            decision, contract, rep, now_date, args.allow_conditions,
+            decision, specification, rep, now_date, args.allow_conditions,
         )
 
     if args.json:
@@ -5251,13 +5360,13 @@ def cmd_transition(args) -> int:
 
 def cmd_impact(args) -> int:
     decision_path = Path(args.decision)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     package_path = Path(args.package)
     decision, derr = load_toml(decision_path)
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     package, perr = load_toml(package_path)
     if derr or cerr or perr:
-        for p, e in ((decision_path, derr), (contract_path, cerr), (package_path, perr)):
+        for p, e in ((decision_path, derr), (specification_path, cerr), (package_path, perr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 2
@@ -5279,7 +5388,7 @@ def cmd_impact(args) -> int:
             print(f"ERROR {new_package_path}: {nperr}")
             return 2
 
-    result = compute_impact(decision, contract, package, args.new_commit, changed_paths, new_package)
+    result = compute_impact(decision, specification, package, args.new_commit, changed_paths, new_package)
 
     if result["stale"]:
         print(f"decision {(decision.get('document') or {}).get('id')} -> stale "
@@ -5308,9 +5417,9 @@ def cmd_impact(args) -> int:
 
 
 def cmd_render(args) -> int:
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     package_path = Path(args.package)
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     package, perr = load_toml(package_path)
     decision = None
     decision_path = None
@@ -5321,11 +5430,11 @@ def cmd_render(args) -> int:
             print(f"ERROR {decision_path}: {derr}")
             return 2
     if cerr or perr:
-        for p, e in ((contract_path, cerr), (package_path, perr)):
+        for p, e in ((specification_path, cerr), (package_path, perr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 2
-    text = render_markdown(contract, package, decision, contract_path, package_path, decision_path)
+    text = render_markdown(specification, package, decision, specification_path, package_path, decision_path, chain_context=args.chain_context)
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
         print(f"wrote {args.out}")
@@ -5336,15 +5445,15 @@ def cmd_render(args) -> int:
 
 def cmd_check_amendment(args) -> int:
     amend_path = Path(args.amendment)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     amendment, aerr = load_toml(amend_path)
-    base, berr = load_toml(contract_path)
+    base, berr = load_toml(specification_path)
     if aerr or berr:
-        for p, e in ((amend_path, aerr), (contract_path, berr)):
+        for p, e in ((amend_path, aerr), (specification_path, berr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 1
-    rep = check_amendment(amendment, base, contract_path)
+    rep = check_amendment(amendment, base, specification_path)
     rep.path = str(amend_path)
     if args.json:
         print(json.dumps({"path": str(amend_path), "errors": rep.errors, "warnings": rep.warnings, "ok": rep.ok()}, indent=2))
@@ -5353,31 +5462,90 @@ def cmd_check_amendment(args) -> int:
     return 0 if rep.ok() else 1
 
 
+class AmendmentLockError(OSError):
+    """The current pointer could not be exclusively locked."""
+
+
+@contextmanager
+def _amendment_pointer_lock(pointer_path: Path):
+    """Never steal an existing lock, including one left by a crashed applier.
+
+    Catchable CLI termination unwinds the same finally as returns and exceptions.
+    SIGKILL/power loss cannot run cleanup; the remaining lock fails closed.
+    """
+    lock_path = pointer_path.with_name(pointer_path.name + ".lock")
+    fd = None
+    handlers = {}
+
+    def interrupted(signum, _frame):
+        raise SystemExit(128 + signum)
+
+    try:
+        if threading.current_thread() is threading.main_thread():
+            termination_signals = [signal.SIGINT, signal.SIGTERM]
+            if hasattr(signal, "SIGHUP"):
+                termination_signals.append(signal.SIGHUP)
+            for signum in termination_signals:
+                handlers[signum] = signal.signal(signum, interrupted)
+        try:
+            fd = os.open(lock_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError as e:
+            raise AmendmentLockError(
+                f"amendment lock exists: {lock_path}; another applier may be active or the "
+                "lock may be stale. Refusing to steal it. After confirming no applier is "
+                "active, inspect the pointer and successor before manually removing the lock."
+            ) from e
+        # Metadata is diagnostic only: PID reuse/age never authorizes stealing a lock.
+        os.write(fd, f"pid={os.getpid()}\n".encode("ascii"))
+        yield
+    finally:
+        try:
+            if fd is not None:
+                try:
+                    os.close(fd)
+                finally:
+                    lock_path.unlink()
+        finally:
+            for signum, handler in handlers.items():
+                signal.signal(signum, handler)
+
+
+def _write_amendment_pointer(pointer_path: Path, document: dict):
+    """Publish a complete pointer by same-directory atomic replace, under the lock."""
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=pointer_path.parent,
+                                         prefix=f".{pointer_path.name}.tmp-", delete=False) as f:
+            temp_path = Path(f.name)
+            f.write(json.dumps(document, indent=2) + "\n")
+        os.replace(temp_path, pointer_path)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+
+
 def cmd_apply_amendment(args) -> int:
     """Finding 6: validity (does the amendment's own [binds] recompute over SOME version of the
-    contract, structurally self-consistent?) is checked by `check_amendment` — that is a question
+    specification, structurally self-consistent?) is checked by `check_amendment` — that is a question
     about the DOCUMENT. Applicability (is it usable RIGHT NOW?) is a separate question checked
     HERE: status must be `proposed` (a `rejected`/`stale`/`accepted`/`superseded` amendment is
     NEVER applied, whatever its `[binds]` say), and the amendment's bound hash must equal the hash
-    of `--current` (a caller-chosen file — defaults to `--contract` — useful to prove a base is
+    of `--current` (a caller-chosen file — defaults to `--spec` — useful to prove a base is
     stale before touching any files, but NOT by itself the atomicity mechanism §3.6 rule 1
     requires: "a stateless 'compare against a file the caller chose' is not this rule").
 
     §3.6 rule 1 (Finding 6): the consumer keeps a CURRENT POINTER — a small record
-    (`--pointer PATH`, default `<contract dir>/acceptance-contract.current`, `{id, hash}`) that
+    (`--pointer PATH`, default `<specification dir>/acceptance-specification.current`, `{id, hash}`) that
     NAMES the current version, independent of any file the caller happens to pass. This command
-    reads it (creating it from `--contract` on first use, and saying so), refuses UNLESS the
-    amendment's `[binds].contract` equals it, and — after the successor is fully built and
-    written — advances the pointer to the successor's own {id, hash} via `os.replace` (an atomic
-    rename on POSIX and Windows). Two applications against the same base cannot both succeed: the
-    first one to write the successor also moves the pointer, so the second one's pointer-read
-    finds a different id/hash and is refused with "base is not current (pointer moved)"."""
+    holds an exclusive-creation sibling lock from before the first pointer read/create through
+    successor issuance and atomic pointer replacement. A concurrent applier refuses the lock;
+    a later applier refuses the moved pointer. Existing locks are never silently stolen."""
     amend_path = Path(args.amendment)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     amendment, aerr = load_toml(amend_path)
-    base, berr = load_toml(contract_path)
+    base, berr = load_toml(specification_path)
     if aerr or berr:
-        for p, e in ((amend_path, aerr), (contract_path, berr)):
+        for p, e in ((amend_path, aerr), (specification_path, berr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 2
@@ -5393,14 +5561,14 @@ def cmd_apply_amendment(args) -> int:
             return 2
         if args.accept_by != authority_name:
             print(
-                f"usage error: --accept-by {args.accept_by!r} does not equal the base contract's "
+                f"usage error: --accept-by {args.accept_by!r} does not equal the base specification's "
                 f"[acceptance].authority ({authority_name!r}) — only the authority accepts "
                 f"(§3.6 rule 2, P5)",
                 file=sys.stderr,
             )
             return 2
 
-    rep = check_amendment(amendment, base, contract_path)
+    rep = check_amendment(amendment, base, specification_path)
     _print_report(rep, ok_word="STRUCTURE OK (valid)")
     if not rep.ok():
         return 1
@@ -5414,36 +5582,46 @@ def cmd_apply_amendment(args) -> int:
         )
         return 1
 
-    current_path = Path(args.current) if getattr(args, "current", None) else contract_path
-    bc = (amendment.get("binds") or {}).get("contract") or {}
+    current_path = Path(args.current) if getattr(args, "current", None) else specification_path
+    bc = (amendment.get("binds") or {}).get("specification") or {}
     try:
-        current_hash = m11.digest_file("contract", current_path)
+        current_hash = m11.digest_file("specification", current_path)
     except OSError as e:
-        print(f"ERROR: could not recompute --current contract hash: {e}")
+        print(f"ERROR: could not recompute --current specification hash: {e}")
         return 1
     if bc.get("hash") != current_hash:
         print(
-            f"apply-amendment REFUSED: base not current — [binds].contract.hash "
+            f"apply-amendment REFUSED: base not current — [binds].specification.hash "
             f"({bc.get('hash')!r}) does not equal the recomputed hash of --current "
             f"({current_path}) ({current_hash!r}). Application atomically verifies the "
-            f"consumer's CURRENT contract hash; validating a historical base is insufficient "
+            f"consumer's CURRENT specification hash; validating a historical base is insufficient "
             f"(§3.6 rule 1, Finding 6)"
         )
         return 1
 
-    # Finding 6 (§3.6 rule 1) — the CURRENT POINTER, the atomicity mechanism: created from
-    # --contract on first use, then read-refuse-write-advance on every application after that.
-    pointer_path = Path(args.pointer) if getattr(args, "pointer", None) else (contract_path.parent / "acceptance-contract.current")
+    # Resolve aliases before choosing the lock so symlink/relative spellings share it.
+    try:
+        pointer_path = (Path(args.pointer) if getattr(args, "pointer", None) else
+                        specification_path.parent / "acceptance-specification.current").resolve()
+        with _amendment_pointer_lock(pointer_path):
+            return _apply_amendment_locked(args, amendment, base, authority_name, bc,
+                                           current_hash, pointer_path)
+    except OSError as e:
+        print(f"apply-amendment REFUSED: {e}")
+        return 1
+
+
+def _apply_amendment_locked(args, amendment, base, authority_name, bc, current_hash,
+                            pointer_path: Path) -> int:
+    # Caller holds the lock across first-use initialization, validation and advancement.
     if not pointer_path.exists():
         base_id = (base.get("document") or {}).get("id")
         try:
-            pointer_path.write_text(
-                json.dumps({"id": base_id, "hash": current_hash}, indent=2) + "\n", encoding="utf-8",
-            )
+            _write_amendment_pointer(pointer_path, {"id": base_id, "hash": current_hash})
         except OSError as e:
             print(f"ERROR: could not create --pointer {pointer_path}: {e}")
             return 1
-        print(f"created current-pointer {pointer_path} from --contract (first use, §3.6 rule 1)")
+        print(f"created current-pointer {pointer_path} from --spec (first use, §3.6 rule 1)")
         pointer_doc = {"id": base_id, "hash": current_hash}
     else:
         try:
@@ -5454,41 +5632,41 @@ def cmd_apply_amendment(args) -> int:
     if not isinstance(pointer_doc, dict) or bc.get("id") != pointer_doc.get("id") or bc.get("hash") != pointer_doc.get("hash"):
         print(
             f"apply-amendment REFUSED: base is not current (pointer moved) — the current-pointer "
-            f"{pointer_path} names {pointer_doc!r}, but the amendment's [binds].contract names "
+            f"{pointer_path} names {pointer_doc!r}, but the amendment's [binds].specification names "
             f"{bc!r}. Two applications against the same base cannot both succeed: rebase against "
             f"the successor (§3.6 rule 1, Finding 6)"
         )
         return 1
 
-    new_contract, build_errors = apply_amendment_build(amendment, base, args.id, authority_name)
+    new_specification, build_errors = apply_amendment_build(amendment, base, args.id, authority_name)
     if build_errors:
         for e in build_errors:
             print(f"ERROR: {e}")
         return 1
 
-    # Finding 11: the successor is FULLY validated (check-contract, not just tightening) before
+    # Finding 11: the successor is FULLY validated (check-spec, not just tightening) before
     # it is ever written.
-    full_rep = check_contract(new_contract)
+    full_rep = check_specification(new_specification)
     for line in full_rep.lines():
         print(line)
     if not full_rep.ok():
-        print("apply-amendment REFUSED: the successor fails check-contract (§3.6 rule 2, Finding 11)")
+        print("apply-amendment REFUSED: the successor fails check-spec (§3.6 rule 2, Finding 11)")
         return 1
 
-    tight_rep = check_contract_tightening(new_contract, base)
+    tight_rep = check_specification_tightening(new_specification, base)
     for line in tight_rep.lines():
         print(line)
     if not tight_rep.ok():
-        print("apply-amendment REFUSED: the successor fails check-contract --previous (§3.6 rule 2)")
+        print("apply-amendment REFUSED: the successor fails check-spec --previous (§3.6 rule 2)")
         return 1
 
-    text = _render_contract_toml(new_contract)
+    text = _render_specification_toml(new_specification)
 
     # Validating the IN-MEMORY successor is not
     # enough — a lossy renderer can drop a field the in-memory check saw and still pass, because
     # it never re-checks what was actually WRITTEN. Re-parse the rendered text and re-run the
     # SAME two checks against the reparsed document before issuance. This catches a rendered
-    # successor that fails to parse, fails check-contract, or fails the tightening rule; it does NOT
+    # successor that fails to parse, fails check-spec, or fails the tightening rule; it does NOT
     # by itself catch a dropped OPTIONAL field that leaves a still-valid document — field
     # preservation is asserted by the round-trip fixtures (cv2-1-*) and their mutation entries.
     try:
@@ -5497,19 +5675,19 @@ def cmd_apply_amendment(args) -> int:
         print(f"apply-amendment REFUSED: the rendered successor is not valid TOML: {e} "
               f"(§3.6 rule 2 — the tool must never issue a document it cannot itself re-read)")
         return 1
-    reparsed_rep = check_contract(reparsed)
+    reparsed_rep = check_specification(reparsed)
     for line in reparsed_rep.lines():
         print(line)
     if not reparsed_rep.ok():
-        print("apply-amendment REFUSED: the RENDERED successor fails check-contract on re-parse "
+        print("apply-amendment REFUSED: the RENDERED successor fails check-spec on re-parse "
               "— the renderer dropped or corrupted a field the in-memory successor carried "
               "(§3.6 rule 2, External review finding 1)")
         return 1
-    reparsed_tight_rep = check_contract_tightening(reparsed, base)
+    reparsed_tight_rep = check_specification_tightening(reparsed, base)
     for line in reparsed_tight_rep.lines():
         print(line)
     if not reparsed_tight_rep.ok():
-        print("apply-amendment REFUSED: the RENDERED successor fails check-contract --previous "
+        print("apply-amendment REFUSED: the RENDERED successor fails check-spec --previous "
               "on re-parse — the renderer dropped or corrupted a field the in-memory successor "
               "carried (§3.6 rule 2, External review finding 1)")
         return 1
@@ -5524,26 +5702,24 @@ def cmd_apply_amendment(args) -> int:
         # Finding 6 (§3.6 rule 1): "writes the successor, and advances the pointer... in that
         # order" — write first (already done above), THEN advance the pointer atomically
         # (os.replace: write to a temp file in the SAME directory, then rename over the pointer).
-        new_hash = m11.digest_bytes("contract", text.encode("utf-8"))
-        new_id = new_contract.get("document", {}).get("id")
-        tmp_fd_path = pointer_path.parent / f".{pointer_path.name}.tmp-{os.getpid()}"
-        tmp_fd_path.write_text(json.dumps({"id": new_id, "hash": new_hash}, indent=2) + "\n", encoding="utf-8")
-        os.replace(tmp_fd_path, pointer_path)
+        new_hash = m11.digest_bytes("specification", text.encode("utf-8"))
+        new_id = new_specification.get("document", {}).get("id")
+        _write_amendment_pointer(pointer_path, {"id": new_id, "hash": new_hash})
         print(f"advanced current-pointer {pointer_path} -> {new_id!r} (§3.6 rule 1)")
     return 0
 
 
 def cmd_amend(args) -> int:
     decision_path = Path(args.from_decision)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     decision, derr = load_toml(decision_path)
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     if derr or cerr:
-        for p, e in ((decision_path, derr), (contract_path, cerr)):
+        for p, e in ((decision_path, derr), (specification_path, cerr)):
             if e:
                 print(f"ERROR {p}: {e}")
         return 2
-    amend_doc = build_amendment_from_decision(decision, contract, contract_path)
+    amend_doc = build_amendment_from_decision(decision, specification, specification_path)
     text = _render_amendment_toml(amend_doc)
     Path(args.out).write_text(text, encoding="utf-8")
     print(f"wrote amendment skeleton to {args.out}")
@@ -5552,7 +5728,7 @@ def cmd_amend(args) -> int:
 
 # ---------------------------------------------------------------------------------------------
 # `project-brief` / `assemble-package` — the worker-brief adapter's two sections. Two mechanical
-# projections: a contract projects DOWN into an existing `worker-brief/v1`
+# projections: a specification projects DOWN into an existing `worker-brief/v1`
 # shape (no new brief format — §1); a worker's report assembles UP into a protocol package (§2).
 # `fill.toml` is the ONE surface a worker hand-types (statements, grade proposal, bounds text,
 # watched-fail narrative, deviation text, and an explicit weight DOWNGRADE only — §2's own
@@ -5634,10 +5810,10 @@ def parse_window_brief_yaml(text: str) -> dict:
     return out
 
 
-# --- project-brief (contract -> brief, worker-brief.md §1) --------------------------------------
+# --- project-brief (specification -> brief, worker-brief.md §1) --------------------------------------
 
-def resolve_recipe(contract: dict, requirement: dict, profile: dict | None) -> tuple[dict | None, str]:
-    """worker-brief.md §1 `done_criteria` source order: (1) the contract's own
+def resolve_recipe(specification: dict, requirement: dict, profile: dict | None) -> tuple[dict | None, str]:
+    """worker-brief.md §1 `done_criteria` source order: (1) the specification's own
     `[requirement.evidence.recipe]`, the consumer's mechanical source; (2) the profile's recipe
     carrier for the requirement's pattern (a template filled with the subject's paths — see
     `profiles.rust_recipe_carrier`'s documented gap: no profile implements one yet, so this tier
@@ -5647,7 +5823,7 @@ def resolve_recipe(contract: dict, requirement: dict, profile: dict | None) -> t
     ev = requirement.get("evidence") or {}
     recipe = ev.get("recipe")
     if isinstance(recipe, dict) and _nonempty(recipe.get("command")) and _nonempty(recipe.get("expect")):
-        return recipe, "contract"
+        return recipe, "specification"
     carrier = (profile or {}).get("recipe_carrier")
     if callable(carrier):
         got = carrier(requirement)
@@ -5718,9 +5894,9 @@ def touch_list_from_scope(scope_text: str) -> dict[str, str]:
     return items
 
 
-def _requirement_map(contract: dict) -> dict[str, dict]:
+def _requirement_map(specification: dict) -> dict[str, dict]:
     return {
-        r["id"]: r for r in (contract.get("requirement") or [])
+        r["id"]: r for r in (specification.get("requirement") or [])
         if isinstance(r, dict) and _nonempty(r.get("id"))
     }
 
@@ -5733,7 +5909,7 @@ def _requirement_plan_line(req: dict) -> str:
     return f"{rid}: {req.get('statement', '')}"
 
 
-def _requirement_done_criteria_line(req: dict, contract: dict, profile: dict | None) -> tuple[str, str]:
+def _requirement_done_criteria_line(req: dict, specification: dict, profile: dict | None) -> tuple[str, str]:
     """Returns (line, recipe_source)."""
     rid = req["id"]
     if req.get("kind") == "cross-cutting":
@@ -5741,20 +5917,20 @@ def _requirement_done_criteria_line(req: dict, contract: dict, profile: dict | N
         fields = (req.get("demands") or {}).get("fields") or {}
         demand = "; ".join(f"{k} = {v!r}" for k, v in fields.items()) or "(no field demand declared)"
         return f"{rid} (cross-cutting, over {over}): demand {demand}", "cross-cutting"
-    recipe, source = resolve_recipe(contract, req, profile)
+    recipe, source = resolve_recipe(specification, req, profile)
     if source == "worker-proposed":
         return f"{rid}: recipe proposed by worker (fill.toml [[claim]] requirement={rid!r} [claim.recipe])", source
     return f"{rid}: `{recipe['command']}` -> expect: {recipe['expect']!r} (source: {source})", source
 
 
 def build_brief_fields(
-    contract: dict, contract_path: Path, allowed_writes_value: str | None, profile: dict | None,
+    specification: dict, specification_path: Path, allowed_writes_value: str | None, profile: dict | None,
 ) -> tuple[dict, list[str]]:
     """worker-brief.md §1's projection, field by field. Returns (fields, warnings)."""
     warnings: list[str] = []
-    document = contract.get("document") or {}
-    subject = contract.get("subject") or {}
-    reqs = contract.get("requirement") or []
+    document = specification.get("document") or {}
+    subject = specification.get("subject") or {}
+    reqs = specification.get("requirement") or []
 
     writes_str, touch_items = _load_touch_list(allowed_writes_value)
     if not touch_items:
@@ -5769,22 +5945,22 @@ def build_brief_fields(
     for r in reqs:
         if not isinstance(r, dict) or not _nonempty(r.get("id")):
             continue
-        line, source = _requirement_done_criteria_line(r, contract, profile)
+        line, source = _requirement_done_criteria_line(r, specification, profile)
         done_lines.append(line)
-        if source in ("contract", "profile"):
-            recipe, _ = resolve_recipe(contract, r, profile)
+        if source in ("specification", "profile"):
+            recipe, _ = resolve_recipe(specification, r, profile)
             oracle_lines.append(f"{r['id']}: {recipe['command']}")
     oracle_lines.append(
-        "assemble-package BRIEF.yaml REPORT_DIR --contract "
-        f"{contract_path.name} --out acceptance.toml --fill fill.toml"
+        "assemble-package BRIEF.yaml REPORT_DIR --spec "
+        f"{specification_path.name} --out acceptance.toml --fill fill.toml"
     )
     oracle_lines.append("python3 tools/check_acceptance.py --strict --strict-weight acceptance.toml")
     oracle_lines.append(
         f"python3 protocol_acceptance/tools/acceptance_protocol.py check-package acceptance.toml "
-        f"--contract {contract_path.name} --strict"
+        f"--spec {specification_path.name} --strict"
     )
 
-    decisions = [f"phase: {(contract.get('acceptance') or {}).get('phase', 'unknown')}"]
+    decisions = [f"phase: {(specification.get('acceptance') or {}).get('phase', 'unknown')}"]
     for r in reqs:
         if isinstance(r, dict) and r.get("firmness") == "draft":
             decisions.append(
@@ -5796,15 +5972,15 @@ def build_brief_fields(
     provenance = "owner-ruled" if (issued_by == "consumer" and status_ok) else "owner-ruled"
     if not (issued_by == "consumer" and status_ok):
         warnings.append(
-            f"contract [document].status={document.get('status')!r}/issued_by={issued_by!r} is "
+            f"specification [document].status={document.get('status')!r}/issued_by={issued_by!r} is "
             "not (consumer, issued-or-ratified) — worker-brief.md §1's 'iff' does not literally "
             "hold; provenance is still recorded as owner-ruled (the brief is a machine projection, "
-            "never owner-verbatim), but the caller should confirm this contract is fit to project"
+            "never owner-verbatim), but the caller should confirm this specification is fit to project"
         )
 
     fields = {
         "schema": "worker-brief/v1",
-        "title": f"contract {document.get('id', '?')} -> brief ({subject.get('name', '?')})",
+        "title": f"specification {document.get('id', '?')} -> brief ({subject.get('name', '?')})",
         "prepared": today_utc_date(),
         "provenance": provenance,
         "goal": (subject.get("description") or "").split(". ")[0].rstrip(".") + ".",
@@ -5816,7 +5992,7 @@ def build_brief_fields(
         "allowed_writes": writes_str or "(unspecified — orchestrator must supply --allowed-writes)",
         "status": "ready",
         "note": (
-            f"generated by acceptance_protocol.py project-brief from {contract_path.name} — "
+            f"generated by acceptance_protocol.py project-brief from {specification_path.name} — "
             "DO NOT HAND-EDIT, re-run to regenerate. Deliberately OMITS floors, hashes, the "
             "authority, disposition vocabulary and lifecycle (worker-brief.md §1)."
         ),
@@ -5829,36 +6005,36 @@ def _token_count(text: str) -> int:
 
 
 def cmd_project_brief(args) -> int:
-    contract_path = Path(args.contract)
-    contract, cerr = load_toml(contract_path)
+    specification_path = Path(args.specification)
+    specification, cerr = load_toml(specification_path)
     if cerr:
-        print(f"ERROR {contract_path}: {cerr}")
+        print(f"ERROR {specification_path}: {cerr}")
         return 2
-    profile_id = (contract.get("subject") or {}).get("profile")
+    profile_id = (specification.get("subject") or {}).get("profile")
     if not _nonempty(profile_id):
-        print(f"ERROR {contract_path}: [subject].profile must be a nonempty string (§3.1 rule "
+        print(f"ERROR {specification_path}: [subject].profile must be a nonempty string (§3.1 rule "
               f"7) — no compatibility default is assumed")
         return 2
     profile = PROFILES.get(profile_id)
 
-    fields, warnings = build_brief_fields(contract, contract_path, args.allowed_writes, profile)
+    fields, warnings = build_brief_fields(specification, specification_path, args.allowed_writes, profile)
     brief_text = render_window_brief_yaml(fields)
     Path(args.out).write_text(brief_text, encoding="utf-8")
 
-    contract_text = contract_path.read_text(encoding="utf-8")
+    specification_text = specification_path.read_text(encoding="utf-8")
     stats = {
-        "lines_contract": len(contract_text.splitlines()),
+        "lines_specification": len(specification_text.splitlines()),
         "lines_brief": len(brief_text.splitlines()),
-        "tokens_contract": _token_count(contract_text),
+        "tokens_specification": _token_count(specification_text),
         "tokens_brief": _token_count(brief_text),
     }
-    ratio_lines = stats["lines_brief"] / stats["lines_contract"] if stats["lines_contract"] else 0.0
-    ratio_tokens = stats["tokens_brief"] / stats["tokens_contract"] if stats["tokens_contract"] else 0.0
+    ratio_lines = stats["lines_brief"] / stats["lines_specification"] if stats["lines_specification"] else 0.0
+    ratio_tokens = stats["tokens_brief"] / stats["tokens_specification"] if stats["tokens_specification"] else 0.0
     print(
-        f"[project-brief] lines: contract={stats['lines_contract']} brief={stats['lines_brief']} "
-        f"(brief is {ratio_lines:.0%} of contract); "
-        f"tokens (whitespace-split, an approximation): contract={stats['tokens_contract']} "
-        f"brief={stats['tokens_brief']} (brief is {ratio_tokens:.0%} of contract)",
+        f"[project-brief] lines: specification={stats['lines_specification']} brief={stats['lines_brief']} "
+        f"(brief is {ratio_lines:.0%} of specification); "
+        f"tokens (whitespace-split, an approximation): specification={stats['tokens_specification']} "
+        f"brief={stats['tokens_brief']} (brief is {ratio_tokens:.0%} of specification)",
         file=sys.stderr,
     )
     for w in warnings:
@@ -5978,11 +6154,11 @@ def _render_package(model: dict) -> str:
         ("dirty", _pq(model["subject"]["dirty"])),
     ])
     lines.append("")
-    lines.append("[contract]")
+    lines.append("[specification]")
     lines += _kv_block([
-        ("id", _pq(model["contract"]["id"])),
-        ("hash", _pq(model["contract"]["hash"])),
-        ("requirements_total", _pq(model["contract"]["requirements_total"])),
+        ("id", _pq(model["specification"]["id"])),
+        ("hash", _pq(model["specification"]["hash"])),
+        ("requirements_total", _pq(model["specification"]["requirements_total"])),
     ])
     lines.append("")
     lines.append("[spec]")
@@ -6103,13 +6279,13 @@ def _render_package(model: dict) -> str:
 
 
 def assemble_package(
-    brief_fields: dict, report_dir: Path, contract: dict, contract_path: Path,
+    brief_fields: dict, report_dir: Path, specification: dict, specification_path: Path,
     fill: dict, out_path: Path, profile: dict | None,
 ) -> tuple[str, list[str]]:
     """worker-brief.md §2. Returns (package_text, warnings). Raises AssembleError on a structural
     problem (missing manifest run, transcript/command mismatch, unresolvable recipe, ...)."""
     warnings: list[str] = []
-    reqs = _requirement_map(contract)
+    reqs = _requirement_map(specification)
     touch_items = touch_list_from_scope(brief_fields.get("scope", ""))
 
     manifest_path = report_dir / "manifest.toml"
@@ -6135,37 +6311,37 @@ def assemble_package(
     # out with the same small pattern `touch_list_from_scope` uses for the touch-list itself.
     m = re.search(r"allowed_writes: (\S.*)$", brief_fields.get("scope", ""), re.MULTILINE)
     glob_spec = m.group(1).strip() if m else ""
-    subject_rel = _glob_root(glob_spec) or (contract.get("subject") or {}).get("name", "")
+    subject_rel = _glob_root(glob_spec) or (specification.get("subject") or {}).get("name", "")
     dirty_out = _git(["status", "--short", "--", str((report_dir / subject_rel).resolve().relative_to(repo_root))], repo_root)
     dirty = bool(dirty_out.strip())
 
-    contract_subject_profile = (contract.get("subject") or {}).get("profile")
-    if not _nonempty(contract_subject_profile):
+    specification_subject_profile = (specification.get("subject") or {}).get("profile")
+    if not _nonempty(specification_subject_profile):
         raise AssembleError(
             "[subject].profile must be a nonempty string (§3.1 rule 7) — no compatibility "
             "default is assumed for the assembled package's [format].profile"
         )
-    contract_hash = m11.digest_file("contract", contract_path)
+    specification_hash = m11.digest_file("specification", specification_path)
     fmt = {
         "id": "acceptance/0",
         "protocol": PROTOCOL_ID,
-        "profile": contract_subject_profile,
+        "profile": specification_subject_profile,
     }
     subject = {
-        "name": (contract.get("subject") or {}).get("name", ""),
-        "kind": (contract.get("subject") or {}).get("kind", ""),
+        "name": (specification.get("subject") or {}).get("name", ""),
+        "kind": (specification.get("subject") or {}).get("kind", ""),
         "commit": subject_commit,
         "dirty": dirty,
     }
-    contract_block = {
-        "id": (contract.get("document") or {}).get("id", ""),
-        "hash": contract_hash,
-        "requirements_total": len(contract.get("requirement") or []),
+    specification_block = {
+        "id": (specification.get("document") or {}).get("id", ""),
+        "hash": specification_hash,
+        "requirements_total": len(specification.get("requirement") or []),
     }
     spec_block = {
-        "path": os.path.relpath(contract_path, start=out_path.parent),
-        "version": f"{contract_block['id']}@v{(contract.get('document') or {}).get('version', 1)}",
-        "axis": f"the requirements of contract {contract_block['id']}",
+        "path": os.path.relpath(specification_path, start=out_path.parent),
+        "version": f"{specification_block['id']}@v{(specification.get('document') or {}).get('version', 1)}",
+        "axis": f"the requirements of specification {specification_block['id']}",
     }
 
     subject_dir = report_dir / subject_rel
@@ -6249,13 +6425,13 @@ def assemble_package(
         rid = fc["requirement"]
         req = reqs.get(rid)
         if req is None:
-            raise AssembleError(f"fill.toml claim {cid!r}: requirement {rid!r} is not in the contract")
+            raise AssembleError(f"fill.toml claim {cid!r}: requirement {rid!r} is not in the specification")
         if req.get("kind") == "cross-cutting":
             cross_fcs.append(fc)
             continue
 
         item = touch_items.get(rid) or f"{subject['name']} (requirement {rid})"
-        recipe, source = resolve_recipe(contract, req, profile)
+        recipe, source = resolve_recipe(specification, req, profile)
         if source == "worker-proposed":
             fc_recipe = fc.get("recipe")
             if not isinstance(fc_recipe, dict) or not _nonempty(fc_recipe.get("command")):
@@ -6357,7 +6533,7 @@ def assemble_package(
     )
 
     model = {
-        "header_comment": header, "format": fmt, "subject": subject, "contract": contract_block,
+        "header_comment": header, "format": fmt, "subject": subject, "specification": specification_block,
         "spec": spec_block,
         "coverage": {"clauses_total": len(reqs), "claims_total": len(claims)},
         "claims": claims, "deviations": deviations, "fillers": fillers,
@@ -6384,25 +6560,25 @@ def assemble_package(
 def cmd_assemble_package(args) -> int:
     brief_path = Path(args.brief)
     report_dir = Path(args.report_dir)
-    contract_path = Path(args.contract)
+    specification_path = Path(args.specification)
     fill_path = Path(args.fill) if args.fill else None
 
     brief_fields = parse_window_brief_yaml(brief_path.read_text(encoding="utf-8"))
-    contract, cerr = load_toml(contract_path)
+    specification, cerr = load_toml(specification_path)
     if cerr:
-        print(f"ERROR {contract_path}: {cerr}")
+        print(f"ERROR {specification_path}: {cerr}")
         return 2
     fill = tomllib.loads(fill_path.read_text(encoding="utf-8")) if fill_path else {}
-    profile_id = (contract.get("subject") or {}).get("profile")
+    profile_id = (specification.get("subject") or {}).get("profile")
     if not _nonempty(profile_id):
-        print(f"ERROR {contract_path}: [subject].profile must be a nonempty string (§3.1 rule "
+        print(f"ERROR {specification_path}: [subject].profile must be a nonempty string (§3.1 rule "
               f"7) — no compatibility default is assumed")
         return 2
     profile = PROFILES.get(profile_id)
 
     try:
         _text, warnings = assemble_package(
-            brief_fields, report_dir, contract, contract_path, fill, Path(args.out), profile,
+            brief_fields, report_dir, specification, specification_path, fill, Path(args.out), profile,
         )
     except AssembleError as e:
         print(f"ERROR: {e}")
@@ -6417,7 +6593,7 @@ def cmd_assemble_package(args) -> int:
 # --selftest — one chain per bound profile (moved out of this file into
 # `fixtures/<profile>_chain.py`, one module per bound profile — see PROFILE_CHAINS below). Each
 # chain module owns its own profile's fixture data (tempfile.TemporaryDirectory, never the repo)
-# and exercises the SAME core this file implements end to end: contract -> package -> decision.
+# and exercises the SAME core this file implements end to end: specification -> package -> decision.
 # protocol.md section numbers are cited per case name inside each chain; every rule this tool
 # enforces gets one fixture that passes and one that fails on exactly that rule (worker-brief W4).
 # ---------------------------------------------------------------------------------------------
@@ -6435,7 +6611,7 @@ PROFILE_CHAINS = {
 # Class-rung fixture chains — not tied to one profile (protocol.md P11), so they are run
 # separately from PROFILE_CHAINS and labelled "[core]" rather than a profile id. This file adds the
 # first one: assurance class + spec maturity (§3.7).
-CORE_CHAINS = ["assurance_class_chain"]
+CORE_CHAINS = ["assurance_class_chain", "version_route_cases", "chain_cases"]
 
 
 def run_selftest() -> int:
@@ -6469,23 +6645,23 @@ def build_argparser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="acceptance_protocol.py", description=__doc__)
     sub = p.add_subparsers(dest="verb", required=True)
 
-    sp = sub.add_parser("check-contract")
-    sp.add_argument("contract")
+    sp = sub.add_parser("check-spec", aliases=["check-contract"])
+    sp.add_argument("specification")
     sp.add_argument("--previous", action="append", default=None,
-                     help="repeatable, newest-first: the contract's predecessor, then ITS predecessor, etc. (§3.3, Finding 4)")
+                     help="repeatable, newest-first: the specification's predecessor, then ITS predecessor, etc. (§3.3, Finding 4)")
     sp.add_argument("--previous-dir", default=None,
-                     help="a directory of predecessor contracts, each resolved by its own [document].id (§3.3, Finding 4)")
+                     help="a directory of predecessor specifications, each resolved by its own [document].id (§3.3, Finding 4)")
     sp.add_argument("--json", action="store_true")
-    sp.set_defaults(func=cmd_check_contract)
+    sp.set_defaults(func=cmd_check_specification)
 
     sp = sub.add_parser("check-package")
     sp.add_argument("package")
-    sp.add_argument("--contract", required=True)
-    sp.add_argument("--previous-contract", default=None, help="the contract's predecessor, when it supersedes another (Finding 4, §5.0/§3.5)")
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
+    sp.add_argument("--previous-spec", "--previous-contract", default=None, dest="previous_specification", help="the specification's predecessor, when it supersedes another (Finding 4, §5.0/§3.5)")
     sp.add_argument("--previous", action="append", default=None,
                      help="repeatable, newest-first: the whole predecessor chain (§3.3, Finding 4)")
     sp.add_argument("--previous-dir", default=None,
-                     help="a directory of predecessor contracts, each resolved by its own [document].id (§3.3, Finding 4)")
+                     help="a directory of predecessor specifications, each resolved by its own [document].id (§3.3, Finding 4)")
     sp.add_argument("--strict", action="store_true")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--root", type=Path, default=None,
@@ -6494,7 +6670,7 @@ def build_argparser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("coverage")
     sp.add_argument("package")
-    sp.add_argument("--contract", required=True)
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--root", type=Path, default=None,
                      help="B6 repository root for evidence pointers when the tree has no .git (e.g. a source archive)")
@@ -6502,7 +6678,7 @@ def build_argparser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("decide")
     sp.add_argument("package")
-    sp.add_argument("--contract", required=True)
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
     sp.add_argument("--issuer", required=True)
     sp.add_argument("--out", required=True)
     sp.add_argument("--mode", choices=VERIFICATION_MODES, default=None)
@@ -6512,13 +6688,13 @@ def build_argparser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("check-decision")
     sp.add_argument("decision")
-    sp.add_argument("--contract", required=True)
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
     sp.add_argument("--package", required=True)
-    sp.add_argument("--previous-contract", default=None, help="the bound contract's predecessor, when it supersedes another (Finding 4, §5.0/§3.5)")
+    sp.add_argument("--previous-spec", "--previous-contract", default=None, dest="previous_specification", help="the bound specification's predecessor, when it supersedes another (Finding 4, §5.0/§3.5)")
     sp.add_argument("--previous", action="append", default=None,
                      help="repeatable, newest-first: the whole predecessor chain (§3.3, Finding 4)")
     sp.add_argument("--previous-dir", default=None,
-                     help="a directory of predecessor contracts, each resolved by its own [document].id (§3.3, Finding 4)")
+                     help="a directory of predecessor specifications, each resolved by its own [document].id (§3.3, Finding 4)")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--effect", action="store_true", help="also evaluate §5.0a effect eligibility (Finding 12); exit reflects effect eligibility, not mere validity")
     sp.add_argument("--now", default=None, help="YYYY-MM-DD; default today (UTC) — used only by --effect's unexpired check")
@@ -6540,7 +6716,7 @@ def build_argparser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("impact")
     sp.add_argument("decision")
-    sp.add_argument("--contract", required=True)
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
     sp.add_argument("--package", required=True)
     sp.add_argument("--new-commit", required=True)
     sp.add_argument("--changed", nargs="*", default=None)
@@ -6550,7 +6726,7 @@ def build_argparser() -> argparse.ArgumentParser:
     sp.set_defaults(func=cmd_impact)
 
     sp = sub.add_parser("render")
-    sp.add_argument("contract")
+    sp.add_argument("specification")
     sp.add_argument("package")
     sp.add_argument("decision", nargs="?", default=None)
     sp.add_argument("--out", default=None)
@@ -6560,17 +6736,17 @@ def build_argparser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("check-amendment")
     sp.add_argument("amendment")
-    sp.add_argument("--contract", required=True)
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
     sp.add_argument("--json", action="store_true")
     sp.set_defaults(func=cmd_check_amendment)
 
     sp = sub.add_parser("apply-amendment")
     sp.add_argument("amendment")
-    sp.add_argument("--contract", required=True)
-    sp.add_argument("--current", default=None, help="a caller-chosen file to diagnose against (Finding 6); default = --contract; NOT the atomicity mechanism (see --pointer)")
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
+    sp.add_argument("--current", default=None, help="a caller-chosen file to diagnose against (Finding 6); default = --spec; NOT the atomicity mechanism (see --pointer)")
     sp.add_argument("--pointer", default=None,
                      help="the current-pointer record {id, hash} (§3.6 rule 1, Finding 6); default = "
-                          "<contract dir>/acceptance-contract.current; created from --contract on first use")
+                          "<specification dir>/acceptance-specification.current; created from --spec on first use")
     sp.add_argument("--out", default=None)
     sp.add_argument("--id", default=None)
     sp.add_argument("--accept-by", default=None)
@@ -6579,12 +6755,12 @@ def build_argparser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("amend")
     sp.add_argument("--from-decision", required=True, dest="from_decision")
-    sp.add_argument("--contract", required=True)
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
     sp.add_argument("--out", required=True)
     sp.set_defaults(func=cmd_amend)
 
-    sp = sub.add_parser("project-brief", help="worker-brief.md §1: contract -> minimal brief (worker-brief/v1)")
-    sp.add_argument("contract")
+    sp = sub.add_parser("project-brief", help="worker-brief.md §1: specification -> minimal brief (worker-brief/v1)")
+    sp.add_argument("specification")
     sp.add_argument("--out", required=True)
     sp.add_argument("--allowed-writes", default=None,
                      help="a path to a small TOML file with `writes` (the orchestrator's write-scope glob) "
@@ -6595,12 +6771,32 @@ def build_argparser() -> argparse.ArgumentParser:
     sp = sub.add_parser("assemble-package", help="worker-brief.md §2: a worker's report -> protocol package")
     sp.add_argument("brief")
     sp.add_argument("report_dir")
-    sp.add_argument("--contract", required=True)
+    sp.add_argument("--spec", "--contract", required=True, dest="specification")
     sp.add_argument("--out", required=True)
     sp.add_argument("--fill", default=None, help="the worker's fill.toml (the semantic slice; §2)")
     sp.set_defaults(func=cmd_assemble_package)
 
+    for name in ("check-package", "decide", "check-decision", "render"):
+        sub.choices[name].add_argument("--store", action="append", default=[])
+        sub.choices[name].add_argument("--tree", action="append", default=[])
     return p
+
+
+# Deprecated command and option aliases keep working, each printing exactly one
+# stderr line the first (and only) time this invocation uses it.
+_DEPRECATED_ALIASES = [
+    ("check-contract", "check-spec"),
+    ("--previous-contract", "--previous-spec"),
+    ("--contract", "--spec"),
+]
+
+
+def _warn_deprecated_aliases(argv: list[str]) -> None:
+    verb = argv[0] if argv else None
+    flags = {token.split("=", 1)[0] for token in argv[1:]}
+    for old, new in _DEPRECATED_ALIASES:
+        if old == verb or old in flags:
+            print(f"DEPRECATED: '{old}' is '{new}' since 0.4.0", file=sys.stderr)
 
 
 def main(argv: list[str]) -> int:
@@ -6614,11 +6810,36 @@ def main(argv: list[str]) -> int:
         print("usage: acceptance_protocol.py VERB ...  (or --selftest)", file=sys.stderr)
         return 2
 
+    _warn_deprecated_aliases(argv[1:])
     parser = build_argparser()
     args = parser.parse_args(argv[1:])
     global _ROOT_OVERRIDE
     _ROOT_OVERRIDE = getattr(args, "root", None)
-    return args.func(args)
+
+    # acceptance-protocol/0 vs /1 routing (version_route.py) runs BEFORE this tool's own
+    # code sees any document — a mix is an ERROR with no frozen-checker call; an all-/0 invocation
+    # is handed to the frozen 0.3.2 checker verbatim; an all-/1 invocation (or a peek failure)
+    # falls through to this tool's own code unchanged.
+    import version_route
+    routed = version_route.route(args.verb, argv[1:], args)
+    if routed is not None:
+        return routed
+
+    try:
+        args.chain_context = stacking.Invocation(
+            sys.modules[__name__], stacking.mappings(getattr(args, "store", [])),
+            stacking.mappings(getattr(args, "tree", []), tree=True), _ROOT_OVERRIDE,
+            (getattr(args, "now", None) or today_utc_date()) if getattr(args, "effect", False) else None,
+            previous_paths=getattr(args, "previous", None), previous_dir=getattr(args, "previous_dir", None),
+        )
+        if _ROOT_OVERRIDE is None and getattr(args, "package", None):
+            presented, error = load_toml(Path(args.package))
+            if not error:
+                _ROOT_OVERRIDE = args.chain_context.trees.get(presented.get("subject", {}).get("commit"))
+        return args.func(args)
+    except stacking.Failure as exc:
+        print(f"ERROR {exc.reason}")
+        return 2 if exc.status == "indeterminate" else 1
 
 
 if __name__ == "__main__":

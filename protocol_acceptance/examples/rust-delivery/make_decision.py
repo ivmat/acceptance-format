@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """make_decision.py — produces `acceptance-decision.toml`, the CONSUMER's decision (protocol.md
 §5), by ACTUALLY RE-RUNNING every basis claim's `self_verify.command` against the delivered crate
-and recording the real observed tail — this is the "re-execute-all" verification mode the contract
+and recording the real observed tail — this is the "re-execute-all" verification mode the specification
 demands (`[acceptance].consumer_verification = "re-execute-all"`), not a rubber stamp.
 
 Pure stdlib, python3.11+. Imports `protocol_acceptance/tools/m11.py` (hashing) and
@@ -10,7 +10,7 @@ are computed by the SAME reference function `check-decision` will use to check t
 rather than a hand-typed duplicate that could drift) — both pure-stdlib themselves.
 
 DO NOT HAND-EDIT the generated acceptance-decision.toml — re-run this script (after re-running
-gen_package.py, if the crate or contract changed).
+gen_package.py, if the crate or specification changed).
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 CRATE_DIR = SCRIPT_DIR / "iban-check"
-CONTRACT_PATH = SCRIPT_DIR / "acceptance-contract.toml"
+SPECIFICATION_PATH = SCRIPT_DIR / "acceptance-specification.toml"
 PACKAGE_PATH = SCRIPT_DIR / "acceptance.toml"
 DECISION_OUT = SCRIPT_DIR / "acceptance-decision.toml"
 
@@ -89,24 +89,35 @@ def main(argv: list[str]) -> int:
         print(f"error: {PACKAGE_PATH} does not exist — run gen_package.py first", file=sys.stderr)
         return 2
 
-    contract = load_toml(CONTRACT_PATH)
+    specification = load_toml(SPECIFICATION_PATH)
     package = load_toml(PACKAGE_PATH)
     repo_root = Path(subprocess.run(
         ["git", "rev-parse", "--show-toplevel"], cwd=str(SCRIPT_DIR),
         capture_output=True, text=True, check=True,
     ).stdout.strip())
 
-    contract_hash = m11.digest_file("contract", CONTRACT_PATH)
+    specification_hash = m11.digest_file("specification", SPECIFICATION_PATH)
     package_hash = m11.digest_file("manifest", PACKAGE_PATH)
     subject_commit = package["subject"]["commit"]
-    contract_id = contract["document"]["id"]
+    checkout_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=repo_root, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--", str(CRATE_DIR)], cwd=repo_root,
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    if checkout_commit != subject_commit or dirty:
+        print("error: consumer requires a clean crate checkout at the package's exact subject commit; "
+              "refusing evidence execution", file=sys.stderr)
+        return 2
+    specification_id = specification["document"]["id"]
 
-    cov = AP.compute_coverage(contract, package, PACKAGE_PATH)
+    cov = AP.compute_coverage(specification, package, PACKAGE_PATH)
     print("[make_decision] coverage:")
     AP.print_coverage_table(cov)
 
     claims_by_id = {c["id"]: c for c in package.get("claim", []) if isinstance(c, dict) and "id" in c}
-    req_by_id = AP.requirement_by_id(contract)
+    req_by_id = AP.requirement_by_id(specification)
 
     # ------------------------------------------------------------------
     # RE-EXECUTE every basis claim's self_verify.command for real (re-execute-all mode).
@@ -207,7 +218,7 @@ def main(argv: list[str]) -> int:
     issued_dt = datetime.datetime.now(datetime.timezone.utc)
     issued_at = issued_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     stale_after_date = (issued_dt + AP.duration_to_timedelta(
-        contract["acceptance"]["stale_after"]
+        specification["acceptance"]["stale_after"]
     )).date().isoformat()
 
     lines: list[str] = []
@@ -216,18 +227,18 @@ def main(argv: list[str]) -> int:
     lines.append("# actual observed tail below, rather than trusting the package's own say-so about itself.")
     lines.append("")
     lines.append("[document]")
-    lines.append('protocol   = "acceptance-protocol/0"')
+    lines.append('protocol   = "acceptance-protocol/1"')
     lines.append("minor      = 0")
     lines.append('kind       = "decision"')
     lines.append(f"id         = {q(DECISION_ID)}")
     lines.append(f"issued_at  = {q(issued_at)}")
     lines.append(f"issuer     = {q(ISSUER)}")
     lines.append(f"verdict    = {q(verdict)}")
-    lines.append("# provisional omitted: the bound contract's [acceptance].phase = \"final\",")
+    lines.append("# provisional omitted: the bound specification's [acceptance].phase = \"final\",")
     lines.append("# so provisional must be absent or false (protocol.md §3.5) — omitted here.")
     lines.append("")
     lines.append("[binds]")
-    lines.append(f'contract = {{ id = {q(contract_id)}, hash = {q(contract_hash)} }}')
+    lines.append(f'specification = {{ id = {q(specification_id)}, hash = {q(specification_hash)} }}')
     lines.append(f'package  = {{ hash = {q(package_hash)} }}')
     lines.append(f'subject  = {{ commit = {q(subject_commit)} }}')
     lines.append("")

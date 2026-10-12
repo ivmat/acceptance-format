@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """selftest_templates.py — proves the two adoption templates in this directory actually work:
 
-1. `kani-crate.contract.toml` passes `acceptance_protocol.py check-contract` AS SHIPPED (a
-   requester contract skeleton needs no fake data to be well-formed — every `<FILL: ...>` marker
+1. `kani-crate.specification.toml` passes `acceptance_protocol.py check-spec` AS SHIPPED (a
+   consumer specification skeleton needs no fake data to be well-formed — every `<FILL: ...>` marker
    sits in a free-text field).
 2. `kani-crate.acceptance.toml` (a producer PACKAGE skeleton) does NOT pass as shipped — its
    `<FILL: ...>` markers sit in fields the format actually type-checks (a commit, a hash, a record
@@ -10,10 +10,10 @@
    selftest asserts that refusal happens (the "state precisely why a skeleton cannot" half).
 3. A FIXTURE FILLER substitutes real values for every marker (a real 40-hex commit from a throwaway
    git repo, a real evidence record file, its real `record:` hash via `hashdomains.py`, a real
-   `artifact:` toolchain digest, and a `contract:` hash recomputed over a same-way-filled copy of
-   the contract) and re-validates: the FILLED package passes
+   `artifact:` toolchain digest, and a `specification:` hash recomputed over a same-way-filled copy of
+   the specification) and re-validates: the FILLED package passes
    `check_acceptance.py --strict --strict-weight`.
-4. The filled contract/package pair passes the adoption guide's real `check-package` and
+4. The filled specification/package pair passes the adoption guide's real `check-package` and
    `coverage` CLIs, with R1 satisfied and R2 deviation-declared.
 
 Run directly: `python3 selftest_templates.py`. Stdlib only. Exit 0/1.
@@ -46,14 +46,14 @@ def run(argv: list[str], cwd: Path) -> subprocess.CompletedProcess:
                            timeout=120)
 
 
-def check_contract_template_passes() -> list[str]:
-    result = run([str(ACCEPTANCE_PROTOCOL), "check-contract",
-                  str(HERE / "kani-crate.contract.toml")], cwd=HERE)
+def check_specification_template_passes() -> list[str]:
+    result = run([str(ACCEPTANCE_PROTOCOL), "check-spec",
+                  str(HERE / "kani-crate.specification.toml")], cwd=HERE)
     if result.returncode != 0:
-        return [f"kani-crate.contract.toml FAILED check-contract as shipped "
+        return [f"kani-crate.specification.toml FAILED check-spec as shipped "
                 f"(exit {result.returncode}, expected exactly 0):\n{result.stdout}{result.stderr}"]
     if "Traceback" in result.stderr:
-        return [f"check-contract raised an unhandled exception:\n{result.stderr}"]
+        return [f"check-spec raised an unhandled exception:\n{result.stderr}"]
     return []
 
 
@@ -95,7 +95,7 @@ def _git(repo: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def _sha256_git_commit(repo: Path) -> str:
+def _git_commit(repo: Path) -> str:
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "probe@example.invalid")
     _git(repo, "config", "user.name", "probe")
@@ -104,10 +104,13 @@ def _sha256_git_commit(repo: Path) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def fill(text: str, values: dict[str, str]) -> str:
+def fill(text: str, values: list[str]) -> str:
     """Replace every `<FILL: ...>` marker in document order with the next value in `values`'
     ordered list — the filler is positional and dumb ON PURPOSE, matching a real producer's own
     generator script (never hand-edited, see the templates' own header comment)."""
+    count = len(FILL_RE.findall(text))
+    if count != len(values):
+        raise ValueError(f"marker/value count mismatch: {count} markers, {len(values)} values")
     it = iter(values)
     def _sub(_match):
         return next(it)
@@ -118,7 +121,7 @@ def build_filled_package(workdir: Path) -> Path:
     workdir.mkdir(parents=True, exist_ok=True)
     (workdir / "src").mkdir(exist_ok=True)
     (workdir / "src" / "lib.rs").write_text("// probe crate\n", encoding="utf-8")
-    commit = _sha256_git_commit(workdir)
+    commit = _git_commit(workdir)
 
     evidence_dir = workdir / "evidence"
     evidence_dir.mkdir(exist_ok=True)
@@ -142,16 +145,16 @@ def build_filled_package(workdir: Path) -> Path:
     cargo_lock_digest = hashdomains.digest("artifact:", cargo_lock_bytes)
     rust_toolchain_digest = hashdomains.digest("artifact:", rust_toolchain_bytes)
 
-    contract_template = (HERE / "kani-crate.contract.toml").read_text(encoding="utf-8")
-    contract_values = [
+    specification_template = (HERE / "kani-crate.specification.toml").read_text(encoding="utf-8")
+    specification_values = [
         "probe-crate", "2026-01-01T00:00:00Z", "your-team", "probe-maintainer",
         "probe-crate", "the crate this template validates against",
         "the parser never panics on any input up to 64 bytes", "your-team / lead",
     ]
-    filled_contract = fill(contract_template, contract_values)
-    contract_path = workdir / "acceptance-contract.toml"
-    contract_path.write_text(filled_contract, encoding="utf-8")
-    contract_hash = hashdomains.digest("contract:", filled_contract.encode("utf-8"))
+    filled_specification = fill(specification_template, specification_values)
+    specification_path = workdir / "acceptance-specification.toml"
+    specification_path.write_text(filled_specification, encoding="utf-8")
+    specification_hash = hashdomains.digest("specification:", filled_specification.encode("utf-8"))
 
     package_template = (HERE / "kani-crate.acceptance.toml").read_text(encoding="utf-8")
     # ORDER MUST MATCH the template's own `<FILL: ...>` markers top to bottom exactly (28 markers,
@@ -161,8 +164,8 @@ def build_filled_package(workdir: Path) -> Path:
     package_values = [
         "probe-crate",                              # [subject].name
         commit,                                     # [subject].commit
-        "AC-probe-crate-0001",                      # [contract].id
-        contract_hash,                              # [contract].hash
+        "AC-probe-crate-0001",                      # [specification].id
+        specification_hash,                              # [specification].hash
         "AC-probe-crate-0001@v1",                   # [spec].version
         "AC-probe-crate-0001",                      # [spec].axis
         "src/lib.rs",                               # K-001 item
@@ -215,23 +218,23 @@ def check_filled_pair_protocol_clis() -> list[str]:
     """Exercise the guide's package-level commands, not merely format-level validation."""
     with tempfile.TemporaryDirectory(prefix="templates_selftest_protocol_pair_") as td:
         package_path = build_filled_package(Path(td))
-        contract_path = package_path.with_name("acceptance-contract.toml")
+        specification_path = package_path.with_name("acceptance-specification.toml")
         errors = []
         result = run([str(ACCEPTANCE_PROTOCOL), "check-package", package_path.name,
-                      "--contract", contract_path.name], cwd=package_path.parent)
+                      "--spec", specification_path.name], cwd=package_path.parent)
         out = result.stdout + result.stderr
         if result.returncode != 0:
-            errors.append("filled contract/package pair FAILED check-package (expected exit 0):\n"
+            errors.append("filled specification/package pair FAILED check-package (expected exit 0):\n"
                           + out)
         elif "R1: satisfied" not in out or "R2: deviation-declared" not in out:
             errors.append("check-package passed but did not report R1 satisfied and R2 "
                           f"deviation-declared:\n{out}")
 
         result = run([str(ACCEPTANCE_PROTOCOL), "coverage", package_path.name,
-                      "--contract", contract_path.name], cwd=package_path.parent)
+                      "--spec", specification_path.name], cwd=package_path.parent)
         out = result.stdout + result.stderr
         if result.returncode != 0:
-            errors.append("filled contract/package pair FAILED coverage (expected exit 0):\n" + out)
+            errors.append("filled specification/package pair FAILED coverage (expected exit 0):\n" + out)
         elif "R1: satisfied" not in out or "R2: deviation-declared" not in out:
             errors.append("coverage passed but did not report R1 satisfied and R2 "
                           f"deviation-declared:\n{out}")
@@ -310,7 +313,7 @@ def check_weighted_claim_needs_witness() -> list[str]:
 
 def main() -> int:
     errors = []
-    errors += check_contract_template_passes()
+    errors += check_specification_template_passes()
     errors += check_package_skeleton_fails_clearly()
     errors += check_filled_package_passes()
     errors += check_filled_pair_protocol_clis()
@@ -320,7 +323,7 @@ def main() -> int:
         for e in errors:
             print(f"  {e}")
         return 1
-    print("SELFTEST PASS: selftest_templates (5 controls: contract-as-shipped, "
+    print("SELFTEST PASS: selftest_templates (5 controls: specification-as-shipped, "
           "package-skeleton-refuses-clearly, package-filled-passes, "
           "filled-pair-check-package-and-coverage, weighted-claim-needs-its-own-witness)")
     return 0

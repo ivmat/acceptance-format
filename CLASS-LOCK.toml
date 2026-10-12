@@ -33,7 +33,7 @@ ratified = false
 [[lock]]
 version = "0.3.2"
 date = "2026-09-27"
-reason = "Class text snapshot for this release. Editorial update: repaired dangling internal references, across three rounds (no normative change). Fold 4: dropped remaining internal-only prose (work-package self-references, a dangling section citation, a stale unsupplied-documents claim, an internal roadmap/scoreboard citation, an owner attribution) in favor of equivalent public-facing statements; no rule or registry changed. Fold 5: dropped two further dangling internal review-round citations from core.md/profiles.md (rule text unchanged), replaced a reference to an unshipped development-only mutation-audit script in protocol.md with a plain note that the audit lives upstream, and reworded protocol.md's description of `tools/check_acceptance.py` to match how this release's own README and adoption guide already describe it; no rule or registry changed."
+reason = "Class text snapshot for this release. Editorial update: repaired dangling internal references, across three rounds (no normative change). Fold 4: dropped remaining internal-only prose (work-package self-references, a dangling section citation, a stale unsupplied-documents claim, an internal roadmap/scoreboard citation, an internal attribution) in favor of equivalent public-facing statements; no rule or registry changed. Fold 5: dropped two further dangling internal review-round citations from core.md/profiles.md (rule text unchanged), replaced a reference to an unshipped development-only mutation-audit script in protocol.md with a plain note that the audit lives upstream, and reworded protocol.md's description of `tools/check_acceptance.py` to match how this release's own README and adoption guide already describe it; no rule or registry changed."
 ratified = false
 
 [lock.files]
@@ -44,3 +44,18 @@ ratified = false
 "protocol_acceptance/spec/protocol.md" = "740f841fd6ed7bad5a631d087b5f059e265444136ddd51ed32abc36c05207eb3"
 "protocol_acceptance/spec/states.toml" = "e536de5f8941e38b2e55b592d8885556a6f9fc2444aee756053e2acfc97ccc31"
 "protocol_acceptance/spec/assurance-classes.toml" = "9c2c0ad6f5db2ab1b0639a68dcc5b6390af3e1f29e5ed779a5db4033adc73b2d"
+
+[[lock]]
+version = "0.4.0"
+date = "2026-10-11"
+reason   = "Renames the first document to specification and introduces acceptance-protocol/1. Removes outer commercial and legal concerns while retaining authority, delegation and effect eligibility. Adds B1 path locators, B22 dependency declarations, store: locators, chain requirements and a consumer-configured directory store. Section 6.7 defines the scoped stack label without combined assurance. The --tree checkout check compares declared files with commit blobs when the named commit is available; otherwise it checks recorded digests and reports the missing commit."
+ratified = false
+
+[lock.files]
+"format_acceptance/spec/core.md" = "765769858ead77b3bd62597d2f8019da7b7ecf835f3ba57094a6d6c9a55447b0"
+"format_acceptance/spec/format.md" = "8a3cfc7215fae6116d7858423bfa019fc36033df35634f0e61086f34645c3863"
+"format_acceptance/spec/profiles.md" = "121f69050baa0e441244e2c19ac5f6a0ee83488f0df78a03d41b68061054009c"
+"format_acceptance/spec/hash-domains.md" = "33cedb347aa92a02a2dda190347bab382d58184eb67441c86e52aa17b468e331"
+"protocol_acceptance/spec/protocol.md" = "cb94c352d08c4cb8bca25e9977614827cdd814fde82923b1beeda295b243c772"
+"protocol_acceptance/spec/states.toml" = "922806748589f4e1a1511ed1ab3fe20a7347c95e37e58d70089a2a68a4aa8367"
+"protocol_acceptance/spec/assurance-classes.toml" = "bfa7f2e5e25bdc7caded4054b648f6a14e19f87567a118ca5e0b8d402831c7f1"

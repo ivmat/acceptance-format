@@ -8,7 +8,7 @@ profile), the same way `verification_chain.py` carries the rest of the profile-b
 cases — no new profile vocabulary of its own.
 
 Case groups (protocol.md §3.7, the maturity rule):
-  - class floors met / not met on a firm requirement of a final-phase contract (ERROR)
+  - class floors met / not met on a firm requirement of a final-phase specification (ERROR)
   - the same gap on a draft requirement, or in phase exploratory/crystallizing (NOTE, not error)
   - per-requirement assurance_class override: raises the class (accepted), lowers it (refused)
   - required_meaning: a class-required profile missing from profiles_required, scoped by
@@ -24,8 +24,8 @@ import tempfile
 from pathlib import Path
 
 from acceptance_protocol import (
-    PROTOCOL_ID, _monotonic_violations, check_assurance_table_monotonic, check_contract,
-    check_contract_tightening, check_package, load_toml,
+    PROTOCOL_ID, _monotonic_violations, check_assurance_table_monotonic, check_specification,
+    check_specification_tightening, check_package, load_toml,
 )
 from fixtures._support import Cases, write
 
@@ -34,9 +34,9 @@ import m11
 _SUBJECT_COMMIT = "c1a55" + "0" * 35  # 40 lowercase hex chars
 
 
-def _contract_toml(
-    *, contract_id: str = "AC-TEST-CLASS-1",
-    contract_class: str | None = "baseline/3",
+def _specification_toml(
+    *, specification_id: str = "AC-TEST-CLASS-1",
+    specification_class: str | None = "baseline/3",
     phase: str = "final",
     subject_kind: str = "other",
     profiles_required: str = '["acceptance/verification"]',
@@ -45,15 +45,15 @@ def _contract_toml(
     req_class_override: str | None = None,
     policy_block: str = "",
 ) -> str:
-    class_line = f'assurance_class          = "{contract_class}"\n' if contract_class else ""
+    class_line = f'assurance_class          = "{specification_class}"\n' if specification_class else ""
     firmness_line = f'firmness      = "{req_firmness}"\n' if req_firmness else ""
     override_line = f'assurance_class = "{req_class_override}"\n' if req_class_override else ""
     return f'''
 [document]
 protocol   = "{PROTOCOL_ID}"
 minor      = 0
-kind       = "contract"
-id         = "{contract_id}"
+kind       = "specification"
+id         = "{specification_id}"
 version    = 1
 issued_at  = "2026-09-24T10:00:00Z"
 issued_by  = "consumer"
@@ -61,7 +61,7 @@ status     = "issued"
 
 [parties]
 consumer = {{ name = "Acme Class Test", contact = "class@acme.example" }}
-producer = {{ name = "supplier-class-test" }}
+producer = {{ name = "producer-class-test" }}
 
 [subject]
 kind         = "{subject_kind}"
@@ -260,7 +260,7 @@ def run() -> list[tuple[str, bool, object]]:
 
     # --- F6 (2026-09-24): [policy].hash is self-describing
     # ('normative-reference:sha-512:<hex>'); the retired bare 'sha-512:<hex>' form is an ERROR,
-    # same as contract/package/decision (§7, one wire form). ---
+    # same as specification/package/decision (§7, one wire form). ---
     _f6_lenient_floor = '''  [requirement.evidence]
   min_tier          = "T5"
   weighted_required = false
@@ -273,30 +273,30 @@ def run() -> list[tuple[str, bool, object]]:
         td = Path(tdstr)
         c_bare = write(
             td, "f6-policy-bare.toml",
-            _contract_toml(
-                req_evidence=_f6_lenient_floor, contract_class=None,
+            _specification_toml(
+                req_evidence=_f6_lenient_floor, specification_class=None,
                 policy_block=(
-                    '\n[policy]\nref  = "https://acme.example/supplier-policy/v3"\n'
+                    '\n[policy]\nref  = "https://acme.example/acceptance-policy/v3"\n'
                     'hash = "sha-512:' + ('ab' * 64) + '"\n'
                 ),
             ),
         )
         doc_bare, _e = load_toml(c_bare)
-        rep_bare = check_contract(doc_bare)
+        rep_bare = check_specification(doc_bare)
         cases.expect_fail("f6-policy-hash-bare-wire-form-is-error-FAIL", rep_bare, "retired bare")
 
         c_ok = write(
             td, "f6-policy-ok.toml",
-            _contract_toml(
-                req_evidence=_f6_lenient_floor, contract_class=None,
+            _specification_toml(
+                req_evidence=_f6_lenient_floor, specification_class=None,
                 policy_block=(
-                    '\n[policy]\nref  = "https://acme.example/supplier-policy/v3"\n'
+                    '\n[policy]\nref  = "https://acme.example/acceptance-policy/v3"\n'
                     'hash = "normative-reference:sha-512:' + ('ab' * 64) + '"\n'
                 ),
             ),
         )
         doc_ok, _e = load_toml(c_ok)
-        rep_ok = check_contract(doc_ok)
+        rep_ok = check_specification(doc_ok)
         cases.check(
             "f6-policy-hash-self-describing-form-ok-PASS",
             not any("policy" in e for e in rep_ok.errors), rep_ok.errors,
@@ -305,28 +305,28 @@ def run() -> list[tuple[str, bool, object]]:
     # --- A: class floors on a firm, final-phase requirement ----------------------------------
     with tempfile.TemporaryDirectory() as tdstr:
         td = Path(tdstr)
-        c_path = write(td, "a1.toml", _contract_toml(req_evidence=_FLOOR_BASELINE_3_MET))
+        c_path = write(td, "a1.toml", _specification_toml(req_evidence=_FLOOR_BASELINE_3_MET))
         doc, _e = load_toml(c_path)
-        rep = check_contract(doc)
+        rep = check_specification(doc)
         cases.check("baseline-3-firm-final-meets-floor-PASS", rep.ok(), rep.errors)
 
-        c_path2 = write(td, "a2.toml", _contract_toml(req_evidence=_FLOOR_BASELINE_0))
+        c_path2 = write(td, "a2.toml", _specification_toml(req_evidence=_FLOOR_BASELINE_0))
         doc2, _e = load_toml(c_path2)
-        rep2 = check_contract(doc2)
+        rep2 = check_specification(doc2)
         cases.expect_fail("baseline-3-firm-final-below-floor-FAIL", rep2, "below its assurance class")
 
     # --- B: draft requirement / non-final phase -- NOTE, never an error ----------------------
-    # b1's contract is `crystallizing`, not `final` (A4, 0.3.1 errata: a draft requirement in a
-    # FINAL contract is now a hard ERROR — see the G section below; a draft requirement is only
+    # b1's specification is `crystallizing`, not `final` (A4, 0.3.1 errata: a draft requirement in a
+    # FINAL specification is now a hard ERROR — see the G section below; a draft requirement is only
     # ever a spec-clarity NOTE outside `final`).
     with tempfile.TemporaryDirectory() as tdstr:
         td = Path(tdstr)
         c_path = write(
             td, "b1.toml",
-            _contract_toml(req_evidence=_FLOOR_BASELINE_0, req_firmness="draft", phase="crystallizing"),
+            _specification_toml(req_evidence=_FLOOR_BASELINE_0, req_firmness="draft", phase="crystallizing"),
         )
         doc, _e = load_toml(c_path)
-        rep = check_contract(doc)
+        rep = check_specification(doc)
         cases.check("draft-requirement-below-floor-is-PASS-not-error", rep.ok(), rep.errors)
         cases.check(
             "draft-requirement-below-floor-emits-NOTE",
@@ -336,10 +336,10 @@ def run() -> list[tuple[str, bool, object]]:
 
         c_path2 = write(
             td, "b2.toml",
-            _contract_toml(req_evidence=_FLOOR_BASELINE_0, phase="exploratory"),
+            _specification_toml(req_evidence=_FLOOR_BASELINE_0, phase="exploratory"),
         )
         doc2, _e = load_toml(c_path2)
-        rep2 = check_contract(doc2)
+        rep2 = check_specification(doc2)
         cases.check("exploratory-phase-below-floor-is-PASS-not-error", rep2.ok(), rep2.errors)
         cases.check(
             "exploratory-phase-below-floor-emits-NOTE",
@@ -347,53 +347,53 @@ def run() -> list[tuple[str, bool, object]]:
             rep2.warnings,
         )
 
-    # --- A4 (0.3.1 errata, §3.5/§3.7): a `final`-phase contract MUST have every requirement
-    # `firm` — a `draft` requirement in a `final` contract is a hard ERROR, not a NOTE. -------
+    # --- A4 (0.3.1 errata, §3.5/§3.7): a `final`-phase specification MUST have every requirement
+    # `firm` — a `draft` requirement in a `final` specification is a hard ERROR, not a NOTE. -------
     with tempfile.TemporaryDirectory() as tdstr:
         td = Path(tdstr)
-        # RED: a final-phase contract with one draft requirement.
+        # RED: a final-phase specification with one draft requirement.
         c_path = write(
             td, "a4-red.toml",
-            _contract_toml(req_evidence=_FLOOR_BASELINE_3_MET, phase="final", req_firmness="draft"),
+            _specification_toml(req_evidence=_FLOOR_BASELINE_3_MET, phase="final", req_firmness="draft"),
         )
         doc, _e = load_toml(c_path)
-        rep = check_contract(doc)
+        rep = check_specification(doc)
         cases.expect_fail(
             "final-phase-draft-requirement-is-ERROR-A4", rep,
-            "firmness must not be 'draft' in a 'final'-phase contract",
+            "firmness must not be 'draft' in a 'final'-phase specification",
         )
 
-        # GREEN: the SAME contract with the requirement explicitly firm (still final-phase).
+        # GREEN: the SAME specification with the requirement explicitly firm (still final-phase).
         c_path2 = write(
             td, "a4-green.toml",
-            _contract_toml(req_evidence=_FLOOR_BASELINE_3_MET, phase="final", req_firmness="firm"),
+            _specification_toml(req_evidence=_FLOOR_BASELINE_3_MET, phase="final", req_firmness="firm"),
         )
         doc2, _e = load_toml(c_path2)
-        rep2 = check_contract(doc2)
+        rep2 = check_specification(doc2)
         cases.check("final-phase-firm-requirement-is-PASS-A4", rep2.ok(), rep2.errors)
 
-        # GREEN: absent firmness defaults to firm — a final-phase contract that never sets
+        # GREEN: absent firmness defaults to firm — a final-phase specification that never sets
         # firmness at all (every other fixture in this file) must still pass (no regression).
         c_path3 = write(
             td, "a4-green-default.toml",
-            _contract_toml(req_evidence=_FLOOR_BASELINE_3_MET, phase="final"),
+            _specification_toml(req_evidence=_FLOOR_BASELINE_3_MET, phase="final"),
         )
         doc3, _e = load_toml(c_path3)
-        rep3 = check_contract(doc3)
+        rep3 = check_specification(doc3)
         cases.check("final-phase-absent-firmness-defaults-firm-PASS-A4", rep3.ok(), rep3.errors)
 
-        # Review fold: a draft requirement BELOW its class floor, in a `final`-phase contract, is
-        # ONLY the A4 firmness ERROR — `check_contract_assurance_class`'s maturity-gap NOTE branch
+        # Review fold: a draft requirement BELOW its class floor, in a `final`-phase specification, is
+        # ONLY the A4 firmness ERROR — `check_specification_assurance_class`'s maturity-gap NOTE branch
         # must NOT also fire for the same requirement (the defect is reported once, not twice).
         c_path4 = write(
             td, "a4-red-below-floor.toml",
-            _contract_toml(req_evidence=_FLOOR_BASELINE_0, phase="final", req_firmness="draft"),
+            _specification_toml(req_evidence=_FLOOR_BASELINE_0, phase="final", req_firmness="draft"),
         )
         doc4, _e = load_toml(c_path4)
-        rep4 = check_contract(doc4)
+        rep4 = check_specification(doc4)
         cases.expect_fail(
             "final-phase-draft-below-floor-is-ONLY-firmness-ERROR-A4", rep4,
-            "firmness must not be 'draft' in a 'final'-phase contract",
+            "firmness must not be 'draft' in a 'final'-phase specification",
         )
         cases.check(
             "final-phase-draft-below-floor-emits-NO-duplicate-maturity-NOTE-A4",
@@ -407,10 +407,10 @@ def run() -> list[tuple[str, bool, object]]:
         # `True` unconditionally).
         c_path5 = write(
             td, "a4-crystallizing-draft-below-floor.toml",
-            _contract_toml(req_evidence=_FLOOR_BASELINE_0, phase="crystallizing", req_firmness="draft"),
+            _specification_toml(req_evidence=_FLOOR_BASELINE_0, phase="crystallizing", req_firmness="draft"),
         )
         doc5, _e = load_toml(c_path5)
-        rep5 = check_contract(doc5)
+        rep5 = check_specification(doc5)
         cases.check("crystallizing-draft-below-floor-is-PASS-not-error-A4", rep5.ok(), rep5.errors)
         cases.check(
             "crystallizing-draft-below-floor-emits-NOTE-A4",
@@ -423,27 +423,27 @@ def run() -> list[tuple[str, bool, object]]:
         td = Path(tdstr)
         c_path = write(
             td, "c1.toml",
-            _contract_toml(
-                contract_class="baseline/1", req_evidence=_FLOOR_BASELINE_3_MET,
+            _specification_toml(
+                specification_class="baseline/1", req_evidence=_FLOOR_BASELINE_3_MET,
                 req_class_override="baseline/3",
             ),
         )
         doc, _e = load_toml(c_path)
-        rep = check_contract(doc)
+        rep = check_specification(doc)
         cases.check("override-raises-baseline-1-to-3-is-PASS", rep.ok(), rep.errors)
 
         c_path2 = write(
             td, "c2.toml",
-            _contract_toml(
-                contract_class="baseline/3", req_evidence=_FLOOR_BASELINE_3_MET,
+            _specification_toml(
+                specification_class="baseline/3", req_evidence=_FLOOR_BASELINE_3_MET,
                 req_class_override="baseline/1",
             ),
         )
         doc2, _e = load_toml(c_path2)
-        rep2 = check_contract(doc2)
+        rep2 = check_specification(doc2)
         cases.expect_fail(
             "override-lowers-baseline-3-to-1-is-FAIL", rep2,
-            "WEAKER than the contract's assurance_class",
+            "WEAKER than the specification's assurance_class",
         )
 
     # --- D: required_meaning, scoped by [subject].kind ----------------------------------------
@@ -451,13 +451,13 @@ def run() -> list[tuple[str, bool, object]]:
         td = Path(tdstr)
         c_path = write(
             td, "d1.toml",
-            _contract_toml(
+            _specification_toml(
                 req_evidence=_FLOOR_BASELINE_3_MET, subject_kind="application-delivery",
                 profiles_required='["acceptance/verification"]',
             ),
         )
         doc, _e = load_toml(c_path)
-        rep = check_contract(doc)
+        rep = check_specification(doc)
         cases.expect_fail(
             "required-meaning-missing-for-application-delivery-FAIL", rep,
             "requires profile 'acceptance/troubleshooting'",
@@ -465,17 +465,17 @@ def run() -> list[tuple[str, bool, object]]:
 
         c_path2 = write(
             td, "d2.toml",
-            _contract_toml(
+            _specification_toml(
                 req_evidence=_FLOOR_BASELINE_3_MET, subject_kind="application-delivery",
                 profiles_required='["acceptance/verification", "acceptance/troubleshooting"]',
             ),
         )
         doc2, _e = load_toml(c_path2)
-        rep2 = check_contract(doc2)
+        rep2 = check_specification(doc2)
         cases.check("required-meaning-present-is-PASS", rep2.ok(), rep2.errors)
 
         # subject.kind = "other" (the A/B/C default) never matches troubleshooting's when_kind —
-        # already exercised by A1's clean PASS above, restated here by name for W4 traceability.
+        # already exercised by A1's clean PASS above, restated here by name.
         cases.check(
             "required-meaning-not-applicable-for-non-matching-kind-is-PASS-see-A1",
             True, None,
@@ -494,52 +494,52 @@ def run() -> list[tuple[str, bool, object]]:
         td = Path(tdstr)
         old_path = write(
             td, "e-old.toml",
-            _contract_toml(
-                contract_id="AC-TEST-CLASS-TIGHT", contract_class=None,
+            _specification_toml(
+                specification_id="AC-TEST-CLASS-TIGHT", specification_class=None,
                 req_evidence=tight_base_ev.format(indep="consumer-run"),
             ),
         )
         old_doc, _e = load_toml(old_path)
 
-        raise_text = _contract_toml(
-            contract_id="AC-TEST-CLASS-TIGHT-2", contract_class=None,
+        raise_text = _specification_toml(
+            specification_id="AC-TEST-CLASS-TIGHT-2", specification_class=None,
             req_evidence=tight_base_ev.format(indep="third-party"),
         ).replace('status     = "issued"', 'status     = "issued"\nsupersedes = "AC-TEST-CLASS-TIGHT"')
         new_path = write(td, "e-new.toml", raise_text)
         new_doc, _e = load_toml(new_path)
-        tight_raise = check_contract_tightening(new_doc, old_doc)
+        tight_raise = check_specification_tightening(new_doc, old_doc)
         cases.check(
             "tightening-independence-consumer-run-to-third-party-is-PASS",
             tight_raise.ok(), tight_raise.errors,
         )
 
-        lower_text = _contract_toml(
-            contract_id="AC-TEST-CLASS-TIGHT-3", contract_class=None,
+        lower_text = _specification_toml(
+            specification_id="AC-TEST-CLASS-TIGHT-3", specification_class=None,
             req_evidence=tight_base_ev.format(indep="consumer-run"),
         ).replace('status     = "issued"', 'status     = "issued"\nsupersedes = "AC-TEST-CLASS-TIGHT"')
         # base for THIS comparison is third-party (simulate a chain step tightened to third-party,
         # then an attempted step back down to consumer-run without `relaxed`).
-        third_party_base_text = _contract_toml(
-            contract_id="AC-TEST-CLASS-TIGHT", contract_class=None,
+        third_party_base_text = _specification_toml(
+            specification_id="AC-TEST-CLASS-TIGHT", specification_class=None,
             req_evidence=tight_base_ev.format(indep="third-party"),
         )
         third_party_base_path = write(td, "e-tp-base.toml", third_party_base_text)
         third_party_base_doc, _e = load_toml(third_party_base_path)
         lower_path = write(td, "e-lower.toml", lower_text)
         lower_doc, _e = load_toml(lower_path)
-        tight_lower = check_contract_tightening(lower_doc, third_party_base_doc)
+        tight_lower = check_specification_tightening(lower_doc, third_party_base_doc)
         cases.expect_fail(
             "tightening-independence-third-party-to-consumer-run-without-relaxed-FAIL",
             tight_lower, "independence weakened",
         )
 
     # --- E (continued) + F: the coverage() floor checks themselves ---------------------------
-    def _coverage_contract(evidence_block: str) -> str:
+    def _coverage_specification(evidence_block: str) -> str:
         return f'''
 [document]
 protocol   = "{PROTOCOL_ID}"
 minor      = 0
-kind       = "contract"
+kind       = "specification"
 id         = "AC-TEST-CLASS-COV"
 version    = 1
 issued_at  = "2026-09-24T10:00:00Z"
@@ -548,7 +548,7 @@ status     = "issued"
 
 [parties]
 consumer = {{ name = "Acme Class Test", contact = "class@acme.example" }}
-producer = {{ name = "supplier-class-test" }}
+producer = {{ name = "producer-class-test" }}
 
 [subject]
 kind         = "other"
@@ -604,9 +604,9 @@ status    = "evidenced"
 id      = "acceptance/0"
 profile = "acceptance/verification"
 
-[contract]
+[specification]
 id                 = "AC-TEST-CLASS-COV"
-hash               = "{{{{CONTRACT_HASH}}}}"
+hash               = "{{{{SPECIFICATION_HASH}}}}"
 requirements_total = 1
 
 [subject]
@@ -616,9 +616,9 @@ commit = "{_SUBJECT_COMMIT}"
 dirty  = false
 
 [spec]
-path    = "acceptance-contract.toml"
+path    = "acceptance-specification.toml"
 version = "AC-TEST-CLASS-COV@v1"
-axis    = "the requirements of contract AC-TEST-CLASS-COV"
+axis    = "the requirements of specification AC-TEST-CLASS-COV"
 
 [coverage]
 clauses_total = 1
@@ -628,15 +628,15 @@ claims_total  = 1
     def _run_pair(evidence_floor: str, claim_evidence_extra: str, *, author: str | None = None):
         with tempfile.TemporaryDirectory() as tdstr:
             td = Path(tdstr)
-            c_path = write(td, "cov.toml", _coverage_contract(evidence_floor))
-            c_hash = m11.digest_file("contract", c_path)
+            c_path = write(td, "cov.toml", _coverage_specification(evidence_floor))
+            c_hash = m11.digest_file("specification", c_path)
             p_path = write(
                 td, "acceptance.toml",
-                _package_toml(_claim_toml(claim_evidence_extra, author=author)).replace("{{CONTRACT_HASH}}", c_hash),
+                _package_toml(_claim_toml(claim_evidence_extra, author=author)).replace("{{SPECIFICATION_HASH}}", c_hash),
             )
-            contract, _e = load_toml(c_path)
+            specification, _e = load_toml(c_path)
             package, _e = load_toml(p_path)
-            _rep, cov = check_package(package, contract, p_path, c_path, strict=False)
+            _rep, cov = check_package(package, specification, p_path, c_path, strict=False)
             return cov["requirements"]["R1"]
 
     def _claim_toml_multi(evidence_blocks: list[str]) -> str:
@@ -659,15 +659,15 @@ status    = "evidenced"
     def _run_multi(evidence_floor: str, evidence_blocks: list[str]):
         with tempfile.TemporaryDirectory() as tdstr:
             td = Path(tdstr)
-            c_path = write(td, "cov.toml", _coverage_contract(evidence_floor))
-            c_hash = m11.digest_file("contract", c_path)
+            c_path = write(td, "cov.toml", _coverage_specification(evidence_floor))
+            c_hash = m11.digest_file("specification", c_path)
             p_path = write(
                 td, "acceptance.toml",
-                _package_toml(_claim_toml_multi(evidence_blocks)).replace("{{CONTRACT_HASH}}", c_hash),
+                _package_toml(_claim_toml_multi(evidence_blocks)).replace("{{SPECIFICATION_HASH}}", c_hash),
             )
-            contract, _e = load_toml(c_path)
+            specification, _e = load_toml(c_path)
             package, _e = load_toml(p_path)
-            _rep, cov = check_package(package, contract, p_path, c_path, strict=False)
+            _rep, cov = check_package(package, specification, p_path, c_path, strict=False)
             return cov["requirements"]["R1"]
 
     coverage_min_floor = '''  [requirement.evidence]
@@ -816,14 +816,14 @@ status    = "evidenced"
     r = _run_pair(third_party_floor, '', author="Independent Lab X")
     cases.check("third-party-independent-author-satisfied-PASS", r["status"] == "satisfied", r)
 
-    r = _run_pair(third_party_floor, '', author="Acme Class Test")  # the contract's own consumer name
+    r = _run_pair(third_party_floor, '', author="Acme Class Test")  # the specification's own consumer name
     cases.check("third-party-author-equals-consumer-not-satisfied-FAIL", r["status"] != "satisfied", r)
     cases.check(
         "third-party-author-equals-consumer-reason-names-cond-8",
         "cond 8" in r["reasons"].get("C1", ""), r["reasons"],
     )
 
-    r = _run_pair(third_party_floor, '', author="supplier-class-test")  # the contract's own producer name
+    r = _run_pair(third_party_floor, '', author="producer-class-test")  # the specification's own producer name
     cases.check("third-party-author-equals-producer-not-satisfied-FAIL", r["status"] != "satisfied", r)
 
     r = _run_pair(third_party_floor, '')  # no author at all
@@ -833,7 +833,7 @@ status    = "evidenced"
     # fixture — `status != evidenced` (cond 1), the `methods` floor (cond 4), and a negative
     # `recipe_required` case on the claim's own `self_verify` (cond 6; the positive case already
     # lives in verification_chain.py's coverage-R1 fixture, but no fixture forced the negative
-    # branch). Reuses `_package_toml`/`_coverage_contract` directly since `_claim_toml` hardcodes
+    # branch). Reuses `_package_toml`/`_coverage_specification` directly since `_claim_toml` hardcodes
     # `status = "evidenced"` and has no claim-level (non-evidence) extension point.
     def _claim_toml_custom(*, status: str = "evidenced", claim_extra: str = "", evidence_extra: str = "") -> str:
         return f'''
@@ -860,15 +860,15 @@ status    = "{status}"
     def _run_custom(evidence_floor: str, **kwargs):
         with tempfile.TemporaryDirectory() as tdstr:
             td = Path(tdstr)
-            c_path = write(td, "cov.toml", _coverage_contract(evidence_floor))
-            c_hash = m11.digest_file("contract", c_path)
+            c_path = write(td, "cov.toml", _coverage_specification(evidence_floor))
+            c_hash = m11.digest_file("specification", c_path)
             p_path = write(
                 td, "acceptance.toml",
-                _package_toml(_claim_toml_custom(**kwargs)).replace("{{CONTRACT_HASH}}", c_hash),
+                _package_toml(_claim_toml_custom(**kwargs)).replace("{{SPECIFICATION_HASH}}", c_hash),
             )
-            contract, _e = load_toml(c_path)
+            specification, _e = load_toml(c_path)
             package, _e = load_toml(p_path)
-            _rep, cov = check_package(package, contract, p_path, c_path, strict=False)
+            _rep, cov = check_package(package, specification, p_path, c_path, strict=False)
             return cov["requirements"]["R1"]
 
     lenient_floor = '''  [requirement.evidence]

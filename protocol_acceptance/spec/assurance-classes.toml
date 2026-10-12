@@ -1,4 +1,4 @@
-# CLASS TEXT LOCKED at 0.3.2 (2026-09-27): frozen; a change needs a new [[lock]] entry in CLASS-LOCK.toml
+# CLASS TEXT LOCKED at 0.4.0 (2026-10-11): frozen; a change needs a new [[lock]] entry in CLASS-LOCK.toml
 # (gates/check_class_lock.py). Locked is not ratified.
 # assurance-classes.toml — the "baseline" assurance-class table (protocol.md §3.7).
 #
@@ -10,12 +10,13 @@
 # `required_meaning`, never a hard-coded profile check in the tool itself).
 #
 # One scheme, "baseline", five ordinal levels 0..4. Each level is the MINIMUM floor set a
-# `firm` requirement of a `final`-phase contract declaring this class (or a stricter
+# `firm` requirement of a `final`-phase specification declaring this class (or a stricter
 # per-requirement override) must reach (protocol.md §3.7, the maturity rule).
-# Anchor: `baseline/1` is the reference BOTTOM case (the
-# radio app / a game — not sold, a bug is cheap); `baseline/4` is the reference TOP case (an
-# investing application — money moves or is advised on). `baseline/0` sits below the bottom
-# anchor (a smoke-tested prototype, not yet at "shippable game" strength).
+# Anchor: `baseline/1` is the reference BOTTOM case (a low-consequence application:
+# a defect costs a redo and harms no one else); `baseline/4` is the reference TOP case (a
+# high-consequence application: a defect can cause irreversible harm, including to third parties).
+# `baseline/0` sits below the bottom
+# anchor (a smoke-tested prototype, not yet at low-consequence-release strength).
 #
 # Field meaning, per level:
 #   min_tier                    - the WEAKEST `epistemic_tier` a firm requirement's floor may set
@@ -53,13 +54,13 @@
 #                                   maturity rule -- documented here, enforced later if a generic
 #                                   mechanism lands.
 #   required_meaning             - list of `{ profile, when_kind? }`. `profile` MUST appear in the
-#                                   contract's `[acceptance].profiles_required` whenever the
+#                                   specification's `[acceptance].profiles_required` whenever the
 #                                   level applies; `when_kind`, if present, is a list of
 #                                   `[subject].kind` tokens -- the requirement applies only when
-#                                   the contract's subject kind is in that list (e.g.
+#                                   the specification's subject kind is in that list (e.g.
 #                                   troubleshooting for application-delivery kinds);
 #                                   absent `when_kind` = unconditional. Checked at the
-#                                   CONTRACT level (profiles_required is not a per-requirement
+#                                   SPECIFICATION level (profiles_required is not a per-requirement
 #                                   field), not per firm requirement.
 #
 # The table is designed MONOTONIC: every axis is at least as strict at level N+1 as at level N,
@@ -136,7 +137,7 @@ required_meaning             = [
 
 [[level]]
 level                        = 4
-summary                      = "proof-grade, third-party independence, mandatory typed build inputs and a declared tool qualification -- the investing-app / money floor."
+summary                      = "proof-grade, third-party independence, mandatory typed build inputs and a declared tool qualification -- the high-consequence floor."
 min_tier                     = "T1"
 weighted_required            = true
 control_required             = true

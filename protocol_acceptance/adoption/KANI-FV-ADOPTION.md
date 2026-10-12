@@ -1,13 +1,13 @@
 ---
 type: reference
-digest: Adoption guide for a Rust/Kani repo producing a 0.3.2 acceptance file — what to pin (public release commit + CLOSURE.json), the manifest header, subject identity (two-commit re-stamp), claims/bands/tiers for Kani vs tests vs Lean, typed record: hashes, B20 toolchain/build_inputs identity for a tool with no commit, spec inventory, rerun_location, the protocol contract/package/check-package flow, exact validator commands and exit codes, a pre-0.3 migration checklist, and known limits in 0.3.x. Includes commands for a clean public checkout and consumer templates.
+digest: Adoption guide for a Rust/Kani repo producing a 0.4.0 acceptance file — what to pin (public release commit + CLOSURE.json), the manifest header, subject identity (two-commit re-stamp), claims/bands/tiers for Kani vs tests vs Lean, typed record: hashes, B20 toolchain/build_inputs identity for a tool with no commit, spec inventory, rerun_location, the protocol specification/package/check-package flow, exact validator commands and exit codes, a pre-0.3 migration checklist, and known limits in 0.4.0. Includes commands for a clean public checkout and consumer templates.
 ---
 
-# Adopting acceptance 0.3.2 in a Rust/Kani repo
+# Adopting acceptance 0.4.0 in a Rust/Kani repo
 
 **Audience.** A session (human or agent) in a Rust crate's own repository — outside this one — that
 needs to produce a stable acceptance package against a formal-verification (Kani, and optionally
-Lean+Aeneas) delivery, targeting acceptance **0.3.2 — locked, not ratified**.
+Lean+Aeneas) delivery, targeting acceptance **0.4.0 — locked, not ratified**.
 Use the public repository's release commit. Nothing below assumes your crate shares a
 filesystem, remote, or CI system with the public checkout. Commands containing consumer paths
 or placeholders must be filled in for your repository; the recorded example results below
@@ -26,7 +26,7 @@ the current family version; [`../../CHANGELOG.md`](../../CHANGELOG.md) records r
 
 Pin the public release commit and its exported closure together:
 
-1. **The full 40-hex public release commit for 0.3.2.** Obtain it from the public release,
+1. **The full 40-hex public release commit for 0.4.0.** Obtain it from the public release,
    check it out, and record it in your CI configuration. From that clean public checkout:
 
    ```sh
@@ -65,7 +65,7 @@ Pin the public release commit and its exported closure together:
    and `source_dirty` must be `False`):
 
    ```
-   EXPORT OK: 20 files -> /path/outside/this/checkout
+   EXPORT OK: 22 files -> /path/outside/this/checkout
      export_closure.py
      format_acceptance/profiles/bindings/code.md
      format_acceptance/profiles/bindings/code/rust.md
@@ -84,15 +84,17 @@ Pin the public release commit and its exported closure together:
      protocol_acceptance/spec/assurance-classes.toml
      protocol_acceptance/spec/states.toml
      protocol_acceptance/tools/acceptance_protocol.py
+     protocol_acceptance/tools/chain.py
      protocol_acceptance/tools/m11.py
      protocol_acceptance/tools/profiles.py
-     family_version=0.3.2 source_commit=<public-40-hex> source_dirty=False
+     protocol_acceptance/tools/version_route.py
+     family_version=0.4.0 source_commit=<public-40-hex> source_dirty=False
    ```
 
-   `export_closure.py` itself is now ONE of the 20 manifested files (not a bare, unverified
+   `export_closure.py` itself is now ONE of the 22 manifested files (not a bare, unverified
    convenience copy) — a hand-edited or corrupted copy of the exporter/verifier is caught by
    `verify` the same as any other file. Files are copied byte-for-byte and scanned for home-relative
-   paths and other apparatus tokens; export never rewrites them. Python files use their declared
+   paths and other process-vocabulary tokens; export never rewrites them. Python files use their declared
    PEP 263 encoding (`tokenize.detect_encoding`); other text files use UTF-8. Undecodable files
    and NUL bytes are hygiene failures. Commit the whole exported directory as-is.
 
@@ -109,14 +111,15 @@ Pin the public release commit and its exported closure together:
 
    ```sh
    python3 vendor/acceptance-format/export_closure.py verify --dest vendor/acceptance-format \
-     --expect-commit "$PUBLIC_COMMIT" --require-clean --expect-family-version 0.3.2
+     --expect-commit "$PUBLIC_COMMIT" --require-clean --expect-family-version 0.4.0
    ```
 
    This recomputes every listed file's sha256 against `CLOSURE.json` (including the exporter's own
    copy), checks that its `source_commit` is your pin and `source_dirty` is `false`, and fails on
-   any mismatch, drift, a missing file, an extra untracked `.py`/`.toml`/`.md` file, or ANY
-   `.pyc`/`__pycache__` present anywhere under the export (an interpreter can silently load cached
-   bytecode instead of the verified source it shadows — a vendored closure ships source only) —
+   any mismatch, drift, a missing file, any unlisted file (including native extensions), or ANY
+   `.pyc`/`__pycache__` present anywhere under the export (cached bytecode can bypass source
+   opens in the discovery audit trace; CPython normally validates caches against source, but a
+   vendored closure ships source only) —
    catching bit rot, a bad merge, a half-applied vendor update, or a stale bytecode cache before any
    of them silently changes what your validator run means. Then run your validator commands (§10)
    from your consumer repo's own root, with the vendored tool paths as prefixes.
@@ -160,15 +163,15 @@ Every manifest ([format].profile) names the EXACT leaf, not the meaning alone (0
 ```toml
 [format]
 id       = "acceptance/0"
-protocol = "acceptance-protocol/0"       # RECOMMENDED: says this is a protocol package (§9 below)
+protocol = "acceptance-protocol/1"       # RECOMMENDED: says this is a protocol package (§9 below)
 profile  = "acceptance/verification/code/rust"
 ```
 
 `[format].profile` is REQUIRED at 0.3.0+ (core.md B12) — a manifest that omits it is an ERROR
-naming the field, not a silently-assumed default. If your contract's `profiles_required` names the
+naming the field, not a silently-assumed default. If your specification's `profiles_required` names the
 meaning-only id (`acceptance/verification`) rather than this exact leaf, your package will be
-refused (protocol.md §4.1 rule 6): a contract written for a Kani delivery should name
-`acceptance/verification/code/rust` explicitly (see the contract template, §9 and §13).
+refused (protocol.md §4.1 rule 6): a specification written for a Kani delivery should name
+`acceptance/verification/code/rust` explicitly (see the specification template, §9 and §13).
 
 ## 3. Subject identity — the two-commit re-stamp
 
@@ -220,9 +223,9 @@ binding's tokens (core.md B3/B4 kinds, rust.md §2):
 **Bounded vs unbounded.** A Kani harness proves a property up to a declared bound
 (`KANI_BOUND`/`unwind`); it is a `bmc`-family, T2 record, never T1 — the class-shared tier ordinal
 does not let a bounded proof borrow an unbounded one's strength. Declare the bound honestly on the
-CLAIM (`bounds = "bounded: KANI_BOUND=32 bytes"`, rust.md §1) and, if your contract carries the
+CLAIM (`bounds = "bounded: KANI_BOUND=32 bytes"`, rust.md §1) and, if your specification carries the
 cross-cutting "every claim holds over the whole input domain" requirement (rust.md §1's
-`demands.fields.bounds = "unbounded"`, modelled in the contract template, §13), a bounded harness
+`demands.fields.bounds = "unbounded"`, modelled in the specification template, §13), a bounded harness
 computes that cross-cutting requirement as `partial` with a `[[deviation]]` — the HONEST row, not a
 failure (rust.md §5a trap 1). A Lean theorem (`kernel` family, T1) is the only Rust-binding token
 that can satisfy an `unbounded` demand outright.
@@ -298,12 +301,14 @@ the worked example both do) and skip the disclosure dance entirely.
 
 **0.3.1 ruling B1-wording**: writers MUST emit typed `record:sha-512:<128-hex>` record hashes; the
 untyped legacy bare `sha-512:<hex>` wire is READ-ONLY (WARNING, not an error) on every profile in
-0.3.x, retirement to ERROR is a 0.4 change. The worked example's own generator
+0.4.0; retirement to ERROR is deferred beyond 0.4.0. The worked example's own generator
 (`../examples/rust-delivery/gen_package.py`) was itself carrying the untyped legacy wire until the
 0.3.1 tool-fix round regenerated it to call `hashdomains.digest("record:", ...)`
-directly — copy ITS current `record_hash(...)` helper (`gen_package.py`'s own function of that
-name), not an older recollection of it; a validated real package now shows ZERO B16 warnings for
-this field (§10).
+directly. `gen_package.py` now delegates record
+hashing to `acceptance_protocol.py`'s `assemble_package.build_evidence`, which uses the same
+`hashdomains.digest("record:", bytes)` construction. Use the API below; the former example-local
+`record_hash(...)` helper no longer exists. The preserved historical package still shows ZERO
+B16 warnings for this field (§10); a fresh live Kani regeneration remains pending.
 
 Compute a typed hash with `hashdomains.py`'s own API (never re-implement the construction):
 
@@ -348,22 +353,22 @@ prints a bare semantic version (e.g. `cargo-kani 0.67.0`), never a build commit 
 
 **Launcher vs bundle — hash the bundle, not the proxy.** A
 standard Kani install has TWO distinct artifacts, and hashing only the first identifies nothing
-about the second: `~/.cargo/bin/cargo-kani` (and `~/.cargo/bin/kani`) are a small LAUNCHER
+about the second: `$CARGO_HOME/bin/cargo-kani` (and `$CARGO_HOME/bin/kani`) are a small LAUNCHER
 proxy binary that locates and invokes a separately-installed RELEASE BUNDLE — the actual verifier,
-compiler and SAT/SMT solver payload — at `~/.kani/kani-<version>/`. Hashing only the launcher
+compiler and SAT/SMT solver payload — at `$HOME/.kani/kani-<version>/`. Hashing only the launcher
 leaves `kani-compiler`, `kani-driver`, `cbmc`, `kissat`, and every `.rlib` completely unbound: two
 installs could share an identical launcher while running entirely different solvers underneath.
 Verified real layout (this machine, Kani 0.67.0 — your own install will differ in exact file names
 by platform/version, not in shape):
 
 ```
-$ ls ~/.kani/kani-0.67.0
+$ ls $HOME/.kani/kani-0.67.0
 bin  lib  library  license-notes.txt  no_core  playback  rust-toolchain-version  rustc-version  scripts  toolchain
-$ ls ~/.kani/kani-0.67.0/bin
+$ ls $HOME/.kani/kani-0.67.0/bin
 cbmc  goto-analyzer  goto-cc  goto-instrument  kani-compiler  kani-cov  kani-driver  kissat
 ```
 
-(`toolchain` is a symlink into `~/.rustup/toolchains/...` — that is a SEPARATE artifact, the Rust
+(`toolchain` is a symlink into `$RUSTUP_HOME/toolchains/...` — that is a SEPARATE artifact, the Rust
 toolchain itself, identified by its own `toolchain` entry per B20's existing `rustc`/`cargo`
 guidance; exclude symlinks from the bundle's own manifest below, don't double-count it.)
 
@@ -390,7 +395,10 @@ def bundle_manifest_digest(bundle_dir: pathlib.Path) -> str:
             rel = p.relative_to(bundle_dir).as_posix()
             lines.append(f"{rel}:{hashlib.sha256(p.read_bytes()).hexdigest()}")
     manifest_bytes = ("\n".join(lines) + "\n").encode("utf-8")
-    return hashdomains.digest("artifact:", manifest_bytes)
+    manifest_path = pathlib.Path("evidence/kani-bundle.manifest.txt")
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_bytes(manifest_bytes)
+    return hashdomains.digest("artifact:", manifest_path.read_bytes())
 
 bundle_dir, version = kani_bundle_dir()
 bundle_digest = bundle_manifest_digest(bundle_dir)      # binds kani-compiler, kani-driver, cbmc, kissat, every .rlib
@@ -404,16 +412,22 @@ bundle:   artifact:sha-512:93e69f006c3136fddf621f5048ca6722ee985fdbc37b849f42da1
 launcher: artifact:sha-512:9a10a7f0599181c6e6a103de5910e67c59843ce825420aa54a99549246e3097cc615cc4aefb2ddfde1520bf7e013f13e2461e362dfba867f75bf5e16679907d4
 ```
 
+Run this recipe from the package root and retain `evidence/kani-bundle.manifest.txt` with the
+package. A consumer can recompute its typed `artifact:` digest from those exact bytes, then compare
+its relative paths and file hashes against the installed bundle. The digest identifies the manifest;
+it does not itself prove that a verifier run used those files.
+
 Write BOTH as distinct `toolchain` entries — they are different artifacts with different identity,
 and collapsing them into one entry loses exactly the distinction this finding is about:
 
 ```toml
 [[claim.evidence.toolchain]]
+# Manifest retained at evidence/kani-bundle.manifest.txt (relative to the package root).
 name    = "kani-bundle"
-digest  = "artifact:sha-512:<128-hex, the deterministic manifest digest over ~/.kani/kani-<version>/'s own files>"
+digest  = "artifact:sha-512:<128-hex, the deterministic manifest digest over $HOME/.kani/kani-<version>/'s own files>"
 [[claim.evidence.toolchain]]
 name    = "cargo-kani-launcher"
-digest  = "artifact:sha-512:<128-hex, the ~/.cargo/bin/cargo-kani launcher binary's own bytes>"
+digest  = "artifact:sha-512:<128-hex, the $CARGO_HOME/bin/cargo-kani launcher binary's own bytes>"
 # no `commit` on either entry -- cargo-kani reports none; do not invent one (rust.md §5a trap 4)
 ```
 
@@ -536,7 +550,7 @@ pinned."
 
 ## 8. Where evidence commands run (`rerun_location`)
 
-The party boundary's `rerun_location` term (protocol.md §3.4a) states, once per contract, where the
+The party boundary's `rerun_location` term (protocol.md §3.4a) states, once per specification, where the
 consumer re-executes your recipes. **Recommendation for a Kani/Rust delivery: repo-checkout
 relative, run from the package root** — the same convention `[claim.self_verify].command` already
 uses in the worked example (`cargo test --test malformed`, `cargo kani --harness …`, both run from
@@ -550,12 +564,12 @@ an undeclared `rerun_location` is the single most common way a re-execution disa
 producer's transcript for a reason that has nothing to do with the code (a different working
 directory changes every relative path the recipe reads).
 
-## 9. The protocol side — contract, package, decision, all from YOUR repo's own root
+## 9. The protocol side — specification, package, decision, all from YOUR repo's own root
 
 **Every command below runs from your consumer/producer repo's own root** — never from inside the
 vendored `vendor/acceptance-format/` directory, and never with
 directory-hopping between steps. Set one shell variable once and use it as a prefix throughout; the
-FILE arguments (your contract, your package, your decision) stay plain relative paths from that one
+FILE arguments (your specification, your package, your decision) stay plain relative paths from that one
 root the whole time:
 
 ```sh
@@ -563,17 +577,17 @@ cd your-crate/                              # your repo's own root — stay here
 VENDOR=vendor/acceptance-format             # wherever §1's export landed
 ```
 
-**The contract is authored by the requester, not the producer** (protocol.md P1: "the contract IS
+**The specification is authored by the consumer, not the producer** (protocol.md P1: "the specification IS
 the spec"). In a larger organisation this may be a central platform/governance team holding
-contracts for many crates, not the crate's own repository — but the mechanism is identical either
+specifications for many crates, not the crate's own repository — but the mechanism is identical either
 way; nothing below assumes a particular org shape. Copy
-[`templates/kani-crate.contract.toml`](templates/kani-crate.contract.toml) (§13 — this template
+[`templates/kani-crate.specification.toml`](templates/kani-crate.specification.toml) (§13 — this template
 ships in the public repository alongside this guide, not inside the exported tool closure; copy it
 separately from your pinned checkout), fill it in as
-`your-crate.contract.toml`, then:
+`your-crate.specification.toml`, then:
 
 ```sh
-python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py check-contract your-crate.contract.toml
+python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py check-spec your-crate.specification.toml
 ```
 
 Once you have a package (`acceptance.toml`, generated from §13's `kani-crate.acceptance.toml`
@@ -581,13 +595,13 @@ skeleton filled in with real evidence — never hand-edited):
 
 ```sh
 python3 $VENDOR/format_acceptance/tools/check_acceptance.py --strict --strict-weight acceptance.toml
-python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py check-package acceptance.toml --contract your-crate.contract.toml
-python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py coverage acceptance.toml --contract your-crate.contract.toml
+python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py check-package acceptance.toml --spec your-crate.specification.toml
+python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py coverage acceptance.toml --spec your-crate.specification.toml
 ```
 
-`check-package` validates through the profile's own package validator (§4.1 rules 1-7: contract
+`check-package` validates through the profile's own package validator (§4.1 rules 1-7: specification
 hash recomputes, every claim's `clause` resolves, every unmet mandatory requirement carries a
-`[[deviation]]`, the bound contract is itself valid and binding, subject identity, profile
+`[[deviation]]`, the bound specification is itself valid and binding, subject identity, profile
 membership, producer identity) — AFTER the format-level check already passed. That format-level
 check IS `check_acceptance.py`'s own `validate` for `acceptance/verification*` profiles (§12: this
 now runs the Rust binding's own checks too, not only the class-level ones).
@@ -595,14 +609,14 @@ now runs the Rust binding's own checks too, not only the class-level ones).
 ### The decision: `decide` drafts, it does not itself re-run anything, then `check-decision`
 
 **`decide` is a DRAFTING step, not a verification step** — it computes dispositions STRUCTURALLY
-from `coverage(contract, package)` and writes a skeleton; it never executes a single command. Every
+from `coverage(specification, package)` and writes a skeleton; it never executes a single command. Every
 `[[verification.run]]` row in its output starts `result = "not-run"` — a placeholder naming what
 MUST be re-run, not a claim that anything already was. Verified real output (this repo's own worked
 example, `../examples/rust-delivery/`, run from that directory with plain relative paths — the
 consumer-root convention above holds identically for your own repo):
 
 ```sh
-python3 ../../tools/acceptance_protocol.py decide acceptance.toml --contract acceptance-contract.toml --issuer "your-team / lead" --out acceptance-decision.toml --mode re-execute-all
+python3 ../../tools/acceptance_protocol.py decide acceptance.toml --spec acceptance-specification.toml --issuer "your-team / lead" --out acceptance-decision.toml --mode re-execute-all
 ```
 ```
 wrote decision skeleton to acceptance-decision.toml
@@ -635,7 +649,7 @@ happened — a `rejected` skeleton is not a failure of this tooling, it is the h
 before anything has been re-verified. Then validate the completed document:
 
 ```sh
-python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py check-decision acceptance-decision.toml --contract your-crate.contract.toml --package acceptance.toml
+python3 $VENDOR/protocol_acceptance/tools/acceptance_protocol.py check-decision acceptance-decision.toml --spec your-crate.specification.toml --package acceptance.toml
 ```
 
 An `accepted-with-conditions` decision is not the end of the lifecycle either: each condition mints
@@ -655,15 +669,15 @@ repo should actually follow; the verb names, flags, and exit codes below are ide
 | command | exit 0 | exit 1 | exit 2 | exit 99 |
 |---|---|---|---|---|
 | `check_acceptance.py [--strict] [--strict-weight] FILE` | PASS / PASS-PROSPECTIVE | FAIL (class or 8b error) | INDETERMINATE (unresolvable root, unknown profile, indeterminate reference) | — |
-| `acceptance_protocol.py check-contract C.toml [--previous OLD]` | valid | validation error(s) | usage error, OR indeterminate validation (`Reporter.exit_code()`: an `unknowns` entry, e.g. an unresolved format evaluation, exits 2 the same as a usage error) | — |
-| `acceptance_protocol.py check-package P.toml --contract C.toml` | valid | validation error(s) | usage error, OR indeterminate validation (same overload as `check-contract`) | — |
-| `acceptance_protocol.py check-decision D.toml --contract C --package P` | valid | validation error(s) | usage error, OR indeterminate validation (same overload as `check-contract`) | — |
-| `acceptance_protocol.py decide P.toml --contract C.toml --issuer NAME --out D.toml` | skeleton written (verdict inside may still be `rejected` — a DRAFT, §9) | — | usage/load error | — |
+| `acceptance_protocol.py check-spec C.toml [--previous OLD]` | valid | validation error(s) | usage error, OR indeterminate validation (`Reporter.exit_code()`: an `unknowns` entry, e.g. an unresolved format evaluation, exits 2 the same as a usage error) | — |
+| `acceptance_protocol.py check-package P.toml --spec C.toml` | valid | validation error(s) | usage error, OR indeterminate validation (same overload as `check-spec`) | — |
+| `acceptance_protocol.py check-decision D.toml --spec C --package P` | valid | validation error(s) | usage error, OR indeterminate validation (same overload as `check-spec`) | — |
+| `acceptance_protocol.py decide P.toml --spec C.toml --issuer NAME --out D.toml` | skeleton written (verdict inside may still be `rejected` — a DRAFT, §9) | — | usage/load error | — |
 | `acceptance_protocol.py --selftest` | selftest green | — | — | mismatch |
 | `spec_inventory.py check SPEC.md INV.toml` | clean | drift found | usage/unreadable | — |
 | `export_closure.py verify --dest DIR` | closure matches | drift/missing/extra | — | — |
 
-**Exit 2 is overloaded for `check-contract`/`check-package`/`check-decision`: it means either a CLI
+**Exit 2 is overloaded for `check-spec`/`check-package`/`check-decision`: it means either a CLI
 usage error, or that validation itself is INDETERMINATE** (`acceptance_protocol.py`'s `Reporter`
 class returns 2 whenever it recorded an `unknowns` entry, not only on a usage error). An
 indeterminate result establishes neither package nor decision validity — it is not a lesser form
@@ -678,14 +692,14 @@ PASS acceptance.toml [weighted: 5, unweighted: 1]
 $ echo $?
 0
 
-$ python3 ../../tools/acceptance_protocol.py check-contract acceptance-contract.toml
-WARN acceptance-contract.toml: NOTE (spec-clarity): 6 firm / 0 draft requirement(s)
-PASS acceptance-contract.toml (1 warning)
+$ python3 ../../tools/acceptance_protocol.py check-spec acceptance-specification.toml
+WARN acceptance-specification.toml: NOTE (spec-clarity): 6 firm / 0 draft requirement(s)
+PASS acceptance-specification.toml (1 warning)
 $ echo $?
 0
 
-$ python3 ../../tools/acceptance_protocol.py check-package acceptance.toml --contract acceptance-contract.toml
-WARN acceptance.toml: [check-contract] NOTE (spec-clarity): 6 firm / 0 draft requirement(s)
+$ python3 ../../tools/acceptance_protocol.py check-package acceptance.toml --spec acceptance-specification.toml
+WARN acceptance.toml: [check-spec] NOTE (spec-clarity): 6 firm / 0 draft requirement(s)
 PASS acceptance.toml (1 warning)
 coverage (profile: 'acceptance/verification/code/rust')
   R1: satisfied [mandatory] basis=['IB-001']
@@ -693,15 +707,15 @@ coverage (profile: 'acceptance/verification/code/rust')
 $ echo $?
 0
 
-$ python3 ../../tools/acceptance_protocol.py check-decision acceptance-decision.toml --contract acceptance-contract.toml --package acceptance.toml
-WARN acceptance-decision.toml: [check-contract/check-package/package-validator transitively] [check-contract] NOTE (spec-clarity): 6 firm / 0 draft requirement(s)
+$ python3 ../../tools/acceptance_protocol.py check-decision acceptance-decision.toml --spec acceptance-specification.toml --package acceptance.toml
+WARN acceptance-decision.toml: [check-spec/check-package/package-validator transitively] [check-spec] NOTE (spec-clarity): 6 firm / 0 draft requirement(s)
 PASS acceptance-decision.toml (1 warning)
 $ echo $?
 0
 
 $ python3 ../../tools/acceptance_protocol.py check-states
 PASS machine.amendment
-PASS machine.contract
+PASS machine.specification
 PASS machine.decision
 PASS machine.package
 PASS verdict_rule
@@ -732,7 +746,7 @@ If you have an existing manifest from before this repo's 0.3 lock (2026-09-24):
    characters; a shorter form is an ERROR with no compatibility shim. Check every evidence record.
 3. **Typed record hashes.** Re-emit every `record_hash` as `record:sha-512:<128-hex>` (§5); the old
    bare `sha-512:<hex>` form still parses (WARNING, 0.3.1 ruling B1-wording) but is tracked for
-   retirement to ERROR at 0.4 — do not leave new writers emitting it.
+   retirement to ERROR beyond 0.4.0 — do not leave new writers emitting it.
 4. **Re-vendor the FULL closure, not three files.** If you previously pinned
    `check_acceptance.py`/`acceptance_grammar.py`/`check_core.py` by hand, replace that with
    `export_closure.py`'s output (§1) — the three-file list was already stale before B20/B21 and the
@@ -740,24 +754,33 @@ If you have an existing manifest from before this repo's 0.3 lock (2026-09-24):
 5. **Re-emit, never hand-edit.** Regenerate the whole package from your generator script after any
    of the above changes; do not patch individual fields in a committed `acceptance.toml` by hand
    (the worked example's own header: "GENERATED FILE — DO NOT HAND-EDIT").
-6. **Contract profile id.** If an existing contract's `profiles_required` names the bare meaning
+6. **Specification profile id.** If an existing specification's `profiles_required` names the bare meaning
    (`acceptance/verification`), change it to the exact leaf (`acceptance/verification/code/rust`,
    0.3.1 ruling A1) or your package will be refused.
-7. **`assurance_class`/`phase`, if you use them (0.3, §3.7).** A `final`-phase contract now requires
-   EVERY requirement to be `firm` (0.3.1 ruling A4); a contract mixing `draft` requirements with
+7. **`assurance_class`/`phase`, if you use them (0.3, §3.7).** A `final`-phase specification now requires
+   EVERY requirement to be `firm` (0.3.1 ruling A4); a specification mixing `draft` requirements with
    `phase = "final"` is a hard error, not a note — move it to `crystallizing` or `exploratory` until
    every requirement is firm, or drop the draft ones.
 
-## 12. Known limits in 0.3.x
+## 12. Known limits in 0.4.0
 
-**Known limits retained in 0.3.2** (deferred mechanisms, not features of this release):
-claim-discharge mode (`discharged_by`, using a source verdict without named records); digest/
+**Known limits retained in 0.4.0** (deferred mechanisms, not features of this release):
+B8 claim-discharge mode (using a source verdict without named records, distinct from the shipped
+decision-level `[[condition]].discharged_by` field); digest/
 components freshness (freshness stays commit-only — a content-digest or components subject has no
 `delivered-revision` freshness binding yet); multiple governing `[spec]` documents; `gap_reason`/
 `spec_drift` claim fields; unregistered `when_kind` kinds (usable today only via `kind_registry`);
 the fault-resolution protocol; the package-integrity leaf; signing/DSSE; retirement of the
 conformance 0.1 legacy-field shim; retirement of the untyped legacy record wire (§5); the
 `external_pilot` readiness level.
+
+Stacking checks workspace path dependencies only; crates.io or git dependencies make the
+whole stack check indeterminate. Directory stores are unsigned: write access is authority,
+and hash/issuer checks establish consistency, not authorship. In a checkout without the
+recorded commit, only recorded digests are checked; the presented bytes are not proven to be
+that commit's bytes. Each element keeps its own evidence floor, with no combined assurance
+for the stack. Acceptance of a source and a declared build-time-copy binding do not prove
+that compilation preserves meaning. Rechecking evidence records does not rerun Cargo or Kani.
 
 **Fixed since this guide was first written — a defect this guide originally reported, closed in a
 0.3.1 tool fix, stated here for anyone reading an older copy of this guide:**
@@ -796,14 +819,14 @@ the wrong meaning's rules.
 
 ## 13. Templates
 
-[`templates/kani-crate.contract.toml`](templates/kani-crate.contract.toml) — a requester contract
+[`templates/kani-crate.specification.toml`](templates/kani-crate.specification.toml) — a consumer specification
 skeleton: exact leaf (`acceptance/verification/code/rust`) in `profiles_required`, an
 `assurance_class` example (`baseline/3`), `phase = "exploratory"` (so the low starter floors get
-NOTEs, never ERRORs, per §3.7's maturity rule). Passes `check-contract` as shipped — verified
+NOTEs, never ERRORs, per §3.7's maturity rule). Passes `check-spec` as shipped — verified
 against 0.3.1. **Re-checked against A2 and A4 specifically:** A2 (0.3.1) dropped `acceptance/
 conformance` from the class floor at levels 2 and 4 only — this template's `baseline/3` is
 untouched by it, and the template names no conformance requirement anyway. A4 (0.3.1) requires
-every requirement `firm` in a `final`-phase contract — this template's `phase = "exploratory"` with
+every requirement `firm` in a `final`-phase specification — this template's `phase = "exploratory"` with
 both requirements `firmness = "draft"` sits outside A4's scope entirely (the maturity rule downgrades
 a shortfall to a NOTE whenever the phase is not `final`, §3.7); tightening this template to
 `phase = "final"` later means flipping both requirements to `firm` (or dropping `firmness`, whose
@@ -825,7 +848,7 @@ python3 protocol_acceptance/adoption/templates/selftest_templates.py
 ```
 
 ```
-SELFTEST PASS: selftest_templates (4 controls: contract-as-shipped, package-skeleton-refuses-clearly, package-filled-passes, weighted-claim-needs-its-own-witness)
+SELFTEST PASS: selftest_templates (4 controls: specification-as-shipped, package-skeleton-refuses-clearly, package-filled-passes, weighted-claim-needs-its-own-witness)
 ```
 
 The fourth control (§4) proves the band-lift-control/weight-witness distinction mechanically: it

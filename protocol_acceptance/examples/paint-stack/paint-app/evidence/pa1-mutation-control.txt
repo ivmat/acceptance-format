@@ -1,0 +1,22 @@
+   Compiling paint-app v0.1.0 (<WORKSPACE>/paint-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/paint_app-81130841c95f1287)
+
+running 1 test
+test tests::rejects_every_malformed_invocation_without_panicking ... FAILED
+
+failures:
+
+---- tests::rejects_every_malformed_invocation_without_panicking stdout ----
+
+thread 'tests::rejects_every_malformed_invocation_without_panicking' (11436400) panicked at paint-app/src/lib.rs:109:47:
+called `Result::unwrap()` on an `Err` value: ParseIntError { kind: InvalidDigit }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::rejects_every_malformed_invocation_without_panicking
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

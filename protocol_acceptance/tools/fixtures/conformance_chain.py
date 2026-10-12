@@ -1,9 +1,9 @@
 """fixtures/conformance_chain.py — the acceptance/conformance protocol selftest chain (revision).
 
-Minimal contract -> package -> decision chain for the `acceptance/conformance` profile, newly
+Minimal specification -> package -> decision chain for the `acceptance/conformance` profile, newly
 bound in `profiles.py` by this change (protocol.md §6.6 item 8 was, until now, "the honest
 state of every non-verification profile" — no package validator of its own). One PASS case (the
-whole chain, end to end) and one FAIL case (the SAME package, judged against a contract whose
+whole chain, end to end) and one FAIL case (the SAME package, judged against a specification whose
 `acceptance/conformance` profile floor the package's own claim cannot reach — §6.2 cond 9).
 
 The package fixture is the real, checked-in format example
@@ -18,7 +18,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from acceptance_protocol import PROTOCOL_ID, check_contract, check_decision, check_package, load_toml
+from acceptance_protocol import PROTOCOL_ID, check_specification, check_decision, check_package, load_toml
 from fixtures._support import Cases, write
 
 import m11
@@ -59,7 +59,7 @@ clause_source = "consumer-statement"
 {floor}'''
 
 
-def _contract_toml(contract_id: str, ewf1_floor: str | None) -> str:
+def _specification_toml(specification_id: str, ewf1_floor: str | None) -> str:
     reqs = "".join(
         _requirement_block(cid, tier, mandatory=(cid == "EWF-1"), profile_floor=(ewf1_floor if cid == "EWF-1" else None))
         for cid, tier in _CLAUSES
@@ -68,8 +68,8 @@ def _contract_toml(contract_id: str, ewf1_floor: str | None) -> str:
 [document]
 protocol   = "{PROTOCOL_ID}"
 minor      = 0
-kind       = "contract"
-id         = "{contract_id}"
+kind       = "specification"
+id         = "{specification_id}"
 version    = 1
 issued_at  = "2026-09-24T10:00:00Z"
 issued_by  = "consumer"
@@ -77,7 +77,7 @@ status     = "issued"
 
 [parties]
 consumer = {{ name = "Acme Conformance", contact = "conf@acme.example" }}
-producer = {{ name = "supplier-conf" }}
+producer = {{ name = "producer-conf" }}
 
 [subject]
 kind         = "other"
@@ -96,7 +96,7 @@ stale_after           = "P90D"
 '''
 
 
-def _write_package(td: Path, contract_id: str, contract_hash: str) -> Path:
+def _write_package(td: Path, specification_id: str, specification_hash: str) -> Path:
     for name in ("acceptance.toml", "standard.clauses.toml", "applicability.toml"):
         shutil.copy(_EXAMPLE_DIR / name, td / name)
     package_path = td / "acceptance.toml"
@@ -105,8 +105,8 @@ def _write_package(td: Path, contract_id: str, contract_hash: str) -> Path:
     assert marker in text, "conformance example's [format] block changed shape"
     text = text.replace(
         marker,
-        marker + "\n[contract]\n"
-        f'id = "{contract_id}"\nhash = "{contract_hash}"\nrequirements_total = {len(_CLAUSES)}\n',
+        marker + "\n[specification]\n"
+        f'id = "{specification_id}"\nhash = "{specification_hash}"\nrequirements_total = {len(_CLAUSES)}\n',
     )
     package_path.write_text(text)
     return package_path
@@ -119,19 +119,19 @@ def run() -> list[tuple[str, bool, object]]:
     with tempfile.TemporaryDirectory() as tdstr:
         td = Path(tdstr)
         (td / ".git").mkdir()  # isolated B6 repository-root marker; no real git metadata
-        contract_id = "AC-TEST-CONF-1"
-        contract_path = write(td, "acceptance-contract.toml", _contract_toml(contract_id, "ungraded"))
-        contract_hash = m11.digest_file("contract", contract_path)
-        package_path = _write_package(td, contract_id, contract_hash)
+        specification_id = "AC-TEST-CONF-1"
+        specification_path = write(td, "acceptance-specification.toml", _specification_toml(specification_id, "ungraded"))
+        specification_hash = m11.digest_file("specification", specification_path)
+        package_path = _write_package(td, specification_id, specification_hash)
         package_hash = m11.digest_file("manifest", package_path)
 
-        contract, _e = load_toml(contract_path)
+        specification, _e = load_toml(specification_path)
         package, _e2 = load_toml(package_path)
 
-        rep_c = check_contract(contract)
-        cases.check("contract-baseline-valid", rep_c.ok(), rep_c.errors)
+        rep_c = check_specification(specification)
+        cases.check("specification-baseline-valid", rep_c.ok(), rep_c.errors)
 
-        rep_p, cov = check_package(package, contract, package_path, contract_path, strict=False)
+        rep_p, cov = check_package(package, specification, package_path, specification_path, strict=False)
         cases.check("package-baseline-valid", rep_p.ok(), rep_p.errors)
         cases.check(
             "coverage-EWF-1-satisfied-min_grade-ungraded-met",
@@ -151,7 +151,7 @@ issuer    = "Acme Conformance / lead"
 verdict   = "accepted"
 
 [binds]
-contract = {{ id = "{contract_id}", hash = "{contract_hash}" }}
+specification = {{ id = "{specification_id}", hash = "{specification_hash}" }}
 package  = {{ hash = "{package_hash}" }}
 subject  = {{ commit = "{_SUBJECT_COMMIT}" }}
 
@@ -185,7 +185,7 @@ basis       = ["CONF/EWF-5"]
 '''
         decision_path = write(td, "acceptance-decision.toml", decision_toml)
         decision, _e3 = load_toml(decision_path)
-        rep_d = check_decision(decision, contract, package, contract_path, package_path)
+        rep_d = check_decision(decision, specification, package, specification_path, package_path)
         cases.check(
             "decision-baseline-accepted",
             rep_d.ok() and decision["document"]["verdict"] == "accepted",
@@ -196,17 +196,17 @@ basis       = ["CONF/EWF-5"]
     with tempfile.TemporaryDirectory() as tdstr:
         td = Path(tdstr)
         (td / ".git").mkdir()  # isolated B6 repository-root marker; no real git metadata
-        contract_id = "AC-TEST-CONF-FLOOR-1"
+        specification_id = "AC-TEST-CONF-FLOOR-1"
         # CONF/EWF-1's grade is "ungraded" (rank 0); "mechanical" (rank 2) is a real, higher grade
         # token from the SAME shared vocabulary (acceptance_grammar.GRADES) — not an invented one.
-        contract_path = write(td, "acceptance-contract.toml", _contract_toml(contract_id, "mechanical"))
-        contract_hash = m11.digest_file("contract", contract_path)
-        package_path = _write_package(td, contract_id, contract_hash)
+        specification_path = write(td, "acceptance-specification.toml", _specification_toml(specification_id, "mechanical"))
+        specification_hash = m11.digest_file("specification", specification_path)
+        package_path = _write_package(td, specification_id, specification_hash)
 
-        contract, _e = load_toml(contract_path)
+        specification, _e = load_toml(specification_path)
         package, _e2 = load_toml(package_path)
 
-        rep_p, cov = check_package(package, contract, package_path, contract_path, strict=False)
+        rep_p, cov = check_package(package, specification, package_path, specification_path, strict=False)
         cases.check(
             "coverage-EWF-1-partial-min_grade-mechanical-not-met",
             cov["requirements"]["EWF-1"]["status"] == "partial",

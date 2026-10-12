@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Regression gate for the rust-delivery shipped decision's UTC expiry. `run_all.sh` already runs
-`check-decision --effect --allow-conditions --now 2026-09-28` on the shipped decision, proving it
+`check-decision --effect --allow-conditions --now 2026-10-12` on the shipped decision, proving it
 is effect-eligible on a date inside its validity window; this gate is an ADDITIONAL, independent
 assertion, checked independently of that CLI's own reasoning: `[validity].stale_after` MUST equal
-`[document].issued_at` + the bound contract's `[acceptance].stale_after` DURATION, computed in
+`[document].issued_at` + the bound specification's `[acceptance].stale_after` DURATION, computed in
 UTC -- the exact arithmetic an earlier defect (`make_decision.py` calling
 `datetime.datetime.now(...)` twice, once for issuance and again for the expiry base) got wrong by
 one day. That defect was silent: the shipped decision still validated and was still (barely)
@@ -53,10 +53,10 @@ def expiry_matches(issued_at: str, duration: str, actual_expiry: str) -> tuple[b
 
 
 def main() -> int:
-    contract = tomllib.loads((RD / "acceptance-contract.toml").read_text())
+    specification = tomllib.loads((RD / "acceptance-specification.toml").read_text())
     decision = tomllib.loads((RD / "acceptance-decision.toml").read_text())
     issued_at = decision["document"]["issued_at"]
-    duration = contract["acceptance"]["stale_after"]
+    duration = specification["acceptance"]["stale_after"]
     actual = decision["validity"]["stale_after"]
 
     ok, expected = expiry_matches(issued_at, duration, actual)

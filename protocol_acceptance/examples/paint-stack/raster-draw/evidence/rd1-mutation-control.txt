@@ -1,0 +1,22 @@
+   Compiling raster-draw v0.1.0 (<WORKSPACE>/raster-draw)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.16s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/raster_draw-c5a996419a589973)
+
+running 1 test
+test tests::property_accuracy_over_many_radii ... FAILED
+
+failures:
+
+---- tests::property_accuracy_over_many_radii stdout ----
+
+thread 'tests::property_accuracy_over_many_radii' (11422273) panicked at raster-draw/src/lib.rs:340:17:
+r=1245 dx=1243 dy=79
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::property_accuracy_over_many_radii
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

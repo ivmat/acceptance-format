@@ -3,20 +3,20 @@
 # actual observed tail below, rather than trusting the package's own say-so about itself.
 
 [document]
-protocol   = "acceptance-protocol/0"
+protocol   = "acceptance-protocol/1"
 minor      = 0
 kind       = "decision"
 id         = "AD-2026-0001"
-issued_at  = "2026-09-28T09:35:35Z"
+issued_at  = "2026-10-12T05:22:35Z"
 issuer     = "Acme Payments Ltd / platform-lead"
 verdict    = "accepted-with-conditions"
-# provisional omitted: the bound contract's [acceptance].phase = "final",
+# provisional omitted: the bound specification's [acceptance].phase = "final",
 # so provisional must be absent or false (protocol.md §3.5) — omitted here.
 
 [binds]
-contract = { id = "AC-2026-0001", hash = "contract:sha-512:b3e147ff6b3ab30c5e2181f74f26e0bf8025261689d986ffd790b6e1116102e377e31e02d3f39eb52c393147ac9ac17515a0154de96be4002c15990f3c110bd3" }
-package  = { hash = "manifest:sha-512:fd3cb60a5574a64a334fa120cba8a67fe6fe8b3c2e2f0f48e575e1c088197ace8d5a1728863cc154fdeefaa5773869c641c6e33896f9842835e44c2eb758fdf7" }
-subject  = { commit = "d0692787f245f770d00b0f987b8df77d81b0bc27" }
+specification = { id = "AC-2026-0001", hash = "specification:sha-512:8e46965f19556c78b48de4d199eb696f286fc954c9362a4032f40dbc5e25aebe9712955cdb86d660c13a2e175d55ffe8248d7814aa1337ce215e03ea4ea3d20b" }
+package  = { hash = "manifest:sha-512:9792a81752827e253188f7385373d6d8fbaeb896383a81bf7dc0eee4f3fc7f78008ee793474dc07584d46c5b43c782724dcebbfc55b9967ba1a6330ee479da10" }
+subject  = { commit = "34b48b36d25f2832a2f90e0effedecbb78caffd2" }
 
 [verification]
 mode = "re-execute-all"
@@ -24,37 +24,37 @@ mode = "re-execute-all"
 [[verification.run]]
 claim    = "IB-001"
 command  = "cargo test --test malformed"
-observed = "test bad_length_too_short_for_country ... ok | test unknown_country_not_in_table ... ok | test each_error_kind_is_independently_reachable ... ok | test unknown_country_numeric_prefix ... ok | test unknown_country_on_short_input ... ok | test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+observed = "test unknown_country_not_in_table ... ok | test bad_checksum_on_otherwise_well_formed_input ... ok | test unknown_country_numeric_prefix ... ok | test each_error_kind_is_independently_reachable ... ok | test unknown_country_on_short_input ... ok | test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
 result   = "pass"
-at       = "2026-09-28T09:29:18Z"
+at       = "2026-10-12T05:14:09Z"
 
 [[verification.run]]
 claim    = "IB-002"
 command  = "cargo test --test checksum"
-observed = "     Running tests/checksum.rs (target/debug/deps/checksum-4977eb0ec9bddc47) | running 3 tests | test a_wrong_checksum_is_rejected ... ok | test all_known_valid_ibans_pass ... ok | test flipping_one_digit_of_a_valid_iban_always_changes_the_verdict ... ok | test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+observed = "     Running tests/checksum.rs (target/debug/deps/checksum-c420e6432573a5b8) | running 3 tests | test a_wrong_checksum_is_rejected ... ok | test all_known_valid_ibans_pass ... ok | test flipping_one_digit_of_a_valid_iban_always_changes_the_verdict ... ok | test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
 result   = "pass"
-at       = "2026-09-28T09:29:18Z"
+at       = "2026-10-12T05:14:09Z"
 
 [[verification.run]]
 claim    = "IB-003"
 command  = "cargo kani --harness validate_never_panics"
-observed = "SUMMARY: |  ** 0 of 385 failed (19 unreachable) | VERIFICATION:- SUCCESSFUL | Verification Time: 374.8129s | Manual Harness Summary: | Complete - 1 successfully verified harnesses, 0 failures, 1 total."
+observed = "SUMMARY: |  ** 0 of 385 failed (19 unreachable) | VERIFICATION:- SUCCESSFUL | Verification Time: 504.0889s | Manual Harness Summary: | Complete - 1 successfully verified harnesses, 0 failures, 1 total."
 result   = "pass"
-at       = "2026-09-28T09:35:34Z"
+at       = "2026-10-12T05:22:34Z"
 
 [[verification.run]]
 claim    = "IB-004"
 command  = "cargo clippy -- -D warnings"
-observed = "Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s"
+observed = "Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s"
 result   = "pass"
-at       = "2026-09-28T09:35:35Z"
+at       = "2026-10-12T05:22:34Z"
 
 [[verification.run]]
 claim    = "IB-006"
 command  = "RUSTDOCFLAGS=\"-D warnings\" cargo doc --no-deps"
-observed = "Documenting iban-check v0.1.0 (<crate>) |     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.38s |    Generated <crate>/target/doc/iban_check/index.html"
+observed = "Documenting iban-check v0.1.0 (<crate>) |     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.43s |    Generated <crate>/target/doc/iban_check/index.html"
 result   = "pass"
-at       = "2026-09-28T09:35:35Z"
+at       = "2026-10-12T05:22:35Z"
 
 [[disposition]]
 requirement = "R1"
@@ -101,4 +101,4 @@ owner         = "producer"
 discharged_by = "a superseding package in which coverage(R5) = satisfied"
 
 [validity]
-stale_after = "2027-03-27"
+stale_after = "2027-04-10"

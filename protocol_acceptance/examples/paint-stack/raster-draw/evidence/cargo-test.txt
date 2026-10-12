@@ -1,0 +1,22 @@
+   Compiling raster-draw v0.1.0 (<WORKSPACE>/raster-draw)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.26s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/raster_draw-c5a996419a589973)
+
+running 8 tests
+test tests::circle_points_r0_is_the_center ... ok
+test tests::octant_known_small_radii ... ok
+test tests::set_pixel_and_pixel_never_panic_far_out_of_bounds ... ok
+test tests::draw_circle_sets_pixels_matching_circle_points ... ok
+test tests::draw_circle_on_tiny_canvas_with_large_radius_does_not_panic ... ok
+test tests::property_closed_8_connected_cycle_over_many_radii ... ok
+test tests::property_accuracy_over_many_radii ... ok
+test tests::property_8way_symmetry_as_a_set ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+
+   Doc-tests raster_draw
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

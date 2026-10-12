@@ -1,0 +1,19 @@
+[package]
+name = "geom-math"
+version = "0.1.0"
+edition = "2021"
+description = "Integer square root and squared-distance primitives for the paint-stack example, no dependencies."
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+name = "geom_math"
+path = "src/lib.rs"
+
+[dependencies]
+
+[lints.rust]
+# Kani sets `--cfg kani` when it compiles this crate; a normal `cargo build`/`clippy` run does not
+# know that cfg exists, which would otherwise warn "unexpected_cfgs" on `#[cfg(kani)] mod
+# verification` and fail `cargo clippy -- -D warnings` (same shape as iban-check's Cargo.toml).
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(kani)"] }

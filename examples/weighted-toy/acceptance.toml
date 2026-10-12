@@ -43,9 +43,9 @@ path    = "SPEC.md"
 version = "v1"
 axis    = "the properties SPEC.md documents for examples/weighted-toy/slug.py's slug() function"
 
-[contract]
+[specification]
 id = "AC-WEIGHTED-TOY-0001"
-hash = "contract:sha-512:35c0e3955b359f9ebef152f17d00f4b5583756fab90628fd1840f2e1509887e9d11e5f038faa116742c87eebf6219bee1908ca63161292219a5eb541f31e64c3"
+hash = "specification:sha-512:3ac971adf252dafd02505de8c84af13ab447041793f7597e9b139fafdf9232b67374f3a379e3c0233e100d5b561d341b19031770688d6be0843fdaf9a5c0ceab"
 requirements_total = 1
 
 [coverage]

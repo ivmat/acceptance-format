@@ -1,6 +1,6 @@
 ---
 type: proposal
-digest: Profile: acceptance/troubleshooting 0.1.0 on the locked 0.3.2 core. Checked by tools/profiles/troubleshooting.py.
+digest: Profile: acceptance/troubleshooting 0.1.0 on the locked 0.4.0 core. Checked by tools/profiles/troubleshooting.py.
 ---
 
 # Profile: `acceptance/troubleshooting` — vocabulary (checked by a validator)
@@ -45,10 +45,11 @@ never counts as evidence that no event occurred.
 
 ## Closed vocabularies this profile fixes
 
-- **Fault classes.** OPEN per subject. The producer declares the fault classes a subject exercises,
-  in the record; a consumer's contract names which of them are required deliverables. This profile
-  does not fix a base set — a fault taxonomy is subject-specific (the `fault_classes` list is an
-  example, not a closed enumeration).
+- **Fault classes.** OPEN per subject. The consumer specifies required fault classes and
+  diagnostic-outcome floors in the specification; these are not limited to classes the producer
+  has declared. The producer records the classes and scenarios exercised and supplies evidence
+  against those requirements. This profile does not fix a base set — a fault taxonomy is
+  subject-specific (the `fault_classes` list is an example, not a closed enumeration).
 - **Diagnostic outcomes.** CLOSED, ordered ladder: `detect` < `isolate_fault_domain`
   < `reconstruct_causal_sequence` < `identify_root_cause`. A higher outcome implies every lower one.
   `identify_failed_dependency` is NOT a fifth outcome: a failed dependency is a fault class whose
@@ -64,7 +65,7 @@ never counts as evidence that no event occurred.
   measured), `diagnostic-structure` (static correlation/schema checks — required
   correlation fields exist on every path). "Logging exists" alone is not a
   kind and cannot discharge a claim.
-- **Evidence families + family⇒tier ceiling table (D1 amendment A2).** Mapped onto the core's
+- **Evidence families + family⇒tier ceiling table (the evidence-family ceiling rule).** Mapped onto the core's
   `T1 > T2 > T3 > T4 > T5` ordinal (`spec/core.md` rule, B3) using the SAME tokens `acceptance/verification`
   already closes (`../verification/PROFILE.md` §2, verbatim from the public
   `spec/evidence-types.md` — that table moved here from `protocol_acceptance/spec/profiles/rust-code.md`
@@ -116,7 +117,7 @@ never counts as evidence that no event occurred.
     evidence the diagnoser was permitted to see), and (row 7) `committed_at` — the 40-hex commit
     that carried the sealed truth-hash files before the diagnosis ran.
 - A `[diagnostics]` table declaring the constraints under which the evidence was collected: privacy handling, retention minimum, sampling policy. The
-  contract states the required values; the record declares the values actually in force.
+  specification states the required values; the record declares the values actually in force.
 - On a claim asserting a band above this profile's control-free ceiling (A0, Closed vocabularies
   above): a core control block with `kind = "ablation"`, `of_claim` naming the claim, `observed =
   "red"`, `expectation = "red"` (`spec/assurance-bands.md` rule 6: ablation removes a precondition
@@ -256,7 +257,7 @@ check at the leaf — no `tool` binding exists yet (`bindings/tool.py` is unwrit
 full validation, and `PASS-MEANING-ONLY` only when `--meaning-only` scopes the run to the meaning
 half; the plain, unsuffixed `acceptance/troubleshooting` needs no binding and gives a real
 (`PASS`/`FAIL`/`INDETERMINATE`) verdict from the meaning check alone — a leaf whose meaning-check or
-binding-check is unavailable is never `PASS` outright (D1 amendment A1, the same fail-closed rule
+binding-check is unavailable is never `PASS` outright (the admissibility rule, the same fail-closed rule
 `acceptance/conformance`'s admissibility check states). C-T2 (unknown completeness) and C-T3
 (invalidation) are NOT IN FORCE — a claim citing `telemetry-completeness-check` evidence is
 INDETERMINATE rather than silently trusted at the family ceiling (row 11); flagged as owed, not

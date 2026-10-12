@@ -94,7 +94,7 @@ _KNOWN_KINDS = set(_CA.KIND_REGISTRY.keys())
 def _rust_verification_validate_floor(table: dict) -> list[str]:
     """Finding 10 / protocol.md §6.6 item 2, §3.3: the profile's floor-schema validator. Unknown
     keys and out-of-vocabulary tokens are ERRORS — a typo like `min_band = "A999"` or
-    `min_grade = "typo"` must invalidate the contract, never silently weaken the floor to "always
+    `min_grade = "typo"` must invalidate the specification, never silently weaken the floor to "always
     met" or "always skipped"."""
     errors: list[str] = []
     if not isinstance(table, dict):
@@ -268,6 +268,9 @@ def rust_command_class(command: str) -> str | None:
     `assemble-package` cannot mechanically classify the command — the evidence row must then come
     from a worker-declared override (fill.toml) or the assembly is refused."""
     cmd = (command or "").strip()
+    # The example's warning-denying rustdoc recipe is the same command class.
+    # This is command projection only; it does not execute shell input.
+    cmd = re.sub(r"^RUSTDOCFLAGS=(?:\"-D warnings\"|'-D warnings')\s+", "", cmd)
     for pat, cls in _RUST_COMMAND_PATTERNS:
         if pat.match(cmd):
             return cls
@@ -397,9 +400,9 @@ def rust_recipe_carrier(requirement: dict) -> dict | None:
     table is implemented yet for this profile (verification/code/rust.md §1's recipe-carrier list is prose, not
     machine-readable, and pattern-matching a requirement's intent from free text would be a guess
     this profile declines to make) — always returns `None`, so `project-brief` falls through to
-    tier 3 ("recipe: proposed by worker") for every requirement lacking a contract-declared
+    tier 3 ("recipe: proposed by worker") for every requirement lacking a specification-declared
     `[requirement.evidence.recipe]`. Documented gap, not a silent no-op: see worker-brief.md §1's
-    own three-tier order and NEXT-SESSION-DRIVER.md."""
+    own three-tier order."""
     return None
 
 
@@ -679,3 +682,8 @@ PROFILES: dict[str, dict] = {
 # verification"` above already encodes; the binding path adds an admission narrowing at the
 # format layer, not a second vocabulary at the protocol layer.
 PROFILES["acceptance/verification/code/rust"] = PROFILES["acceptance/verification"]
+
+
+# The code/rust binding owns these readers; shape and tokens remain format-core owned.
+from chain import cargo_reader
+CHAIN_READERS = {"code/rust": {"cargo-lock/3": cargo_reader, "cargo-lock/4": cargo_reader}}

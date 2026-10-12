@@ -33,5 +33,8 @@ title = "Restricted string types and character repertoires"
 force = "definition"
 side = "both"
 
-# UNVERIFIED: precise §41 subclauses for PrintableString, IA5String, NumericString and
-# VisibleString repertoires are not established; only the cited clause family is admitted.
+# UNVERIFIED: P26-X680-1 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: ITU-T X.680 (02/2021), the cited §41 family and exact subclauses for
+# PrintableString, IA5String, NumericString and VisibleString repertoires.
+# Only the existing coarse clause-family row is admitted; no subclause inferred.

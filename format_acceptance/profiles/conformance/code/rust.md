@@ -14,7 +14,7 @@ applicability, evidence families, bands, constraints) is `../PROFILE.md`'s; the 
 — today still expressed through `../../verification/code/rust.md` §1 (renamed from
 `../../rust-code.md` 2026-09-24, open question 2), since the Step-5 lift into `bindings/code/rust.md` has not
 run (deferred). This
-leaf adds only what is specific to BOTH axes at once: the full token⇒tier table (D1 amendment A2,
+leaf adds only what is specific to BOTH axes at once: the full token⇒tier table (the evidence-family ceiling rule),
 the C8/E-6 cover-only rule in this binding's own terms, and how the two 8b checks
 compose here.
 

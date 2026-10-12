@@ -89,13 +89,13 @@ Expected leaves:
   for the last two; absent-or-empty is allowed for `applicable`. This field, not the evidence, is
   what makes this profile a profile (open question C1).
 - **Evidence kinds and families.** Declared here, definitions cited from `spec/evidence-types.md`
-  (meanings do not inherit, D1 ruling §0) — every kind this meaning admits IS a verification-profile
+  (meanings do not inherit) — every kind this meaning admits IS a verification-profile
   row, reused by reference: `kani-harness`/bmc, `lean-theorem`/kernel, `unit-test` ·
   `property-test` · `fuzz` · `miri`/dynamic, `lint` · `semver-check` · `dep-audit`/mechanical,
   `human-review` · `llm-review`/judgment. **Delta: none.** No new kind, no new family — a clause a
   tool cannot decide is discharged by a `human-review`/`llm-review` (judgment-family) row already in
   the registry, not by a new "inspection" kind.
-- **Evidence families + family⇒TIER table (D1 amendment A2).** Declared here, verified
+- **Evidence families + family⇒TIER table (the evidence-family ceiling rule).** Declared here, verified
   against `spec/evidence-types.md` and `../verification/PROFILE.md` §2 / `../verification/code/rust.md`
   §2 (the tier ladder split R5 lifted 2026-09-24: the language-neutral default table is now at
   `../verification/PROFILE.md` §2; the Rust-only tokens stayed at `../verification/code/rust.md`
@@ -271,7 +271,7 @@ constraints (FIXED vocabulary):
   band ceilings, cycle/depth guards). This meaning adds no B8-specific mechanism of its own;
   `check_core.check_reference_evidence` is the entire admissibility check.
 - **Fail closed**: unknown profile suffix, missing inventory, or missing record ⇒
-  `INDETERMINATE` (exit 2), never `PASS` — the D1 amendment A1 rule (item 8) restated for this
+  `INDETERMINATE` (exit 2), never `PASS` — the admissibility rule (item 8) restated for this
   meaning: a leaf is evaluable only when both its meaning-check (`conformance.py`) and its
   binding-check (`conformance/code/rust.md` / `bindings/code/rust.md`) are available.
 
@@ -375,11 +375,11 @@ full composed verdict is reported.
 
 - open question C1 — CLOSED (2026-09-20): conformance is a sibling of verification, distinguished by required per-clause applicability.
 - open question C2 — CLOSED (2026-09-20): an audit checklist may be the standard, including an in-tree checklist; provenance follows F2 relative to the certified tree.
-- open question C3 — may a conformance claim discharge by reference to a verification claim about the same
-  item (a `discharged_by`-shaped cross-manifest reference; design history, not published), and what
-  profile compatibility rule governs that reference? STILL OPEN — tied to "Evidence borrowed
-  from a verification manifest," above as the second of the two ways this profile's weighted count
-  climbs off zero; this document does not resolve it.
+- open question C3 — RESOLVED for named-record references: a conformance claim may cite
+  verification evidence through class B8 `acceptance-claim` rows with named source records,
+  subject to B8's checks and band ceilings. Claim-discharge mode (using a source verdict
+  without named records) is not admitted; it remains deferred. The legacy compatibility
+  metadata above supplies no borrowing evidence.
 - open question C4 (new, 2026-09-21) — the evidence-record projection carries no
   cover-tally field (`mutants_total`/`mutants_caught`, `spec/evidence-types.md`, are the only
   optional tally fields today, and neither is a `kani::cover` tally). A manifest-side `cover_tally`

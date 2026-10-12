@@ -1,0 +1,344 @@
+# GENERATED FILE — DO NOT HAND-EDIT.
+#
+# Produced by protocol_acceptance/examples/paint-stack/gen_packages.py, which actually ran
+# `cargo test`, `cargo clippy`, `cargo kani` and real, restored
+# mutation controls against raster-draw/ (this directory's sibling). Transcripts are in evidence/.
+#
+# SELF-REFERENCE DISCLOSURE (same convention as ../rust-delivery/gen_package.py, spec/format.md
+# "[format] self-location"): [subject].dirty is `false`: this manifest certifies the committed state of raster-draw/ at the commit below, generated after that commit.
+# Transcript paths normalized to <WORKSPACE>, <REPO>, <HOME> before hashing.
+# Generated: 2026-10-12T08:59:59Z
+#
+# Re-run: python3 gen_packages.py
+
+
+[format]
+id       = "acceptance/0"
+protocol = "acceptance-protocol/1"
+profile  = "acceptance/verification/code/rust"
+
+[subject]
+name   = "raster-draw"
+kind   = "rust-crate"
+commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+dirty  = false
+
+[spec]
+path    = "SPEC.md"
+version = "v1"
+axis    = "the SPEC.md clauses (S-1..S-4)"
+
+[coverage]
+clauses_total = 4
+claims_total  = 4
+
+# === RD-001 -- S-1: accuracy ===
+[[claim]]
+id            = "RD-001"
+clause        = "S-1"
+item          = "src/lib.rs::fill_octant, accuracy_ok (verification::octant_accurate_bounded)"
+statement     = "fill_octant accuracy is Kani-proved for r <= 6. Full circle_points accuracy is property-tested for radii sampled up to 2000. Rendered-canvas geometry claims apply only to fully-inside circles; draw_circle retains clipping."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "probe"
+clause_source = "spec-document"
+bounds        = "bounded: Kani exhaustive for r <= 6 (KANI_MAX_R); property-tested (300 random samples, xorshift64 seed 0xDEADBEEFCAFEF00D) for r in 0..=2000 -- not an unbounded argument over every radius"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo kani --harness octant_accurate_bounded"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind       = "kani-harness"
+  family     = "bmc"
+  method     = "kani-harness"
+  epistemic_tier= "T2"
+  ref         = "verification::octant_accurate_bounded"
+  result      = "pass"
+  tool        = "kani@0.67.0 (commit unknown — `cargo kani --version` on this install reports only a semantic version, not a build sha; source identity unavailable)"
+  bounds      = "unwind=10, r <= 6 (KANI_MAX_R), exhaustive over that range"
+  semantics   = ""
+  record      = "evidence/kani-octant_accurate_bounded.txt"
+  record_hash = "record:sha-512:8631788192460d0052e910e5c227eb1cf0a139d09926a9433443983b0fa3704fbc24e3aad758c4da24755a1aa85245d1fb3a676a4e75effce4951c5f313bf623"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:df39d750708f0ac052b3ad01f9c10159e1d965360e70fb88cb155aec5208a0e4c5312f4a839d758dcab77d1b2818d43ef83ed7e1003cb63485c399a327309e29"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:56915f9057b0177d78a83af10265a61d8829768ecf813e6e97af6011ced7f38582b4ca7bbb0408f9da83ff38e315653ef84c60560f4597afacbd29a56d432b25"
+
+  [[claim.evidence]]
+  kind       = "property-test"
+  family     = "dynamic"
+  method     = "property-test"
+  epistemic_tier= "T3"
+  ref         = "tests::property_accuracy_over_many_radii"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 300
+  generator   = "hand-rolled xorshift64, seed 0xDEADBEEFCAFEF00D, r in 0..=2000"
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:31d357a012637c11813c48707a522c5973c1cd6179e1262c32e6ccae8cae83213fdc28bb6aa51a54732fa76994c2a9182bcb64f7284291569ad44e86f2238141"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:df39d750708f0ac052b3ad01f9c10159e1d965360e70fb88cb155aec5208a0e4c5312f4a839d758dcab77d1b2818d43ef83ed7e1003cb63485c399a327309e29"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:56915f9057b0177d78a83af10265a61d8829768ecf813e6e97af6011ced7f38582b4ca7bbb0408f9da83ff38e315653ef84c60560f4597afacbd29a56d432b25"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --lib property_accuracy_over_many_radii (mutant: dropped `+ 1` in the midpoint decision update)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (1-line mutation, reverted)"
+  cases       = 300
+  record      = "evidence/rd1-mutation-control.txt"
+  record_hash = "record:sha-512:9ff1affdcd484646ce8d24ec3072a047eacdc18974f5091ddcc268b7fd6b2b248ee73fa328973c7c57083256c11225c51d0ae606d9d8c3d1c48adf1347ca3c62"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "RD-001"
+
+
+# === RD-002 -- S-2: closed, 8-connected, no gaps ===
+[[claim]]
+id            = "RD-002"
+clause        = "S-2"
+item          = "src/lib.rs::fill_octant, circle_points"
+statement     = "Kani proves only fill_octant intra-octant and mirrored-seam adjacency for r <= 6. Full circle_points closedness (consecutive points, including wraparound, Chebyshev-adjacent) is property-tested for radii sampled in 1..=2000. Rendered-canvas geometry is claimed only for fully-inside circles."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "probe"
+clause_source = "spec-document"
+bounds        = "bounded: Kani exhaustive for r <= 6 (fill_octant's own adjacency, including the seam into circle_points' mirrored octant); property-tested (300 samples) for r in 1..=2000 -- the full assembled circle_points' closedness is NOT proved by Kani (only property-tested), see the crate's own doc comment and the example README"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo kani --harness octant_adjacent_bounded"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind       = "kani-harness"
+  family     = "bmc"
+  method     = "kani-harness"
+  epistemic_tier= "T2"
+  ref         = "verification::octant_adjacent_bounded"
+  result      = "pass"
+  tool        = "kani@0.67.0 (commit unknown — `cargo kani --version` on this install reports only a semantic version, not a build sha; source identity unavailable)"
+  bounds      = "unwind=10, r <= 6 (KANI_MAX_R), exhaustive over that range, includes the seam adjacency |x_last - y_last| <= 1"
+  semantics   = ""
+  record      = "evidence/kani-octant_adjacent_bounded.txt"
+  record_hash = "record:sha-512:eec1c2236db6d007f6e2db85054f946c2ca07a3a73dcb4b4614a64912c788171a99c3a29ad913d8092ad19dda7903559da5c740552bb25adc5a397eecaaa6f23"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:df39d750708f0ac052b3ad01f9c10159e1d965360e70fb88cb155aec5208a0e4c5312f4a839d758dcab77d1b2818d43ef83ed7e1003cb63485c399a327309e29"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:56915f9057b0177d78a83af10265a61d8829768ecf813e6e97af6011ced7f38582b4ca7bbb0408f9da83ff38e315653ef84c60560f4597afacbd29a56d432b25"
+
+  [[claim.evidence]]
+  kind       = "property-test"
+  family     = "dynamic"
+  method     = "property-test"
+  epistemic_tier= "T3"
+  ref         = "tests::property_closed_8_connected_cycle_over_many_radii"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 300
+  generator   = "hand-rolled xorshift64, seed 0x123456789ABCDEF0, r in 1..=2000"
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:31d357a012637c11813c48707a522c5973c1cd6179e1262c32e6ccae8cae83213fdc28bb6aa51a54732fa76994c2a9182bcb64f7284291569ad44e86f2238141"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:df39d750708f0ac052b3ad01f9c10159e1d965360e70fb88cb155aec5208a0e4c5312f4a839d758dcab77d1b2818d43ef83ed7e1003cb63485c399a327309e29"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:56915f9057b0177d78a83af10265a61d8829768ecf813e6e97af6011ced7f38582b4ca7bbb0408f9da83ff38e315653ef84c60560f4597afacbd29a56d432b25"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --lib property_closed_8_connected_cycle_over_many_radii (mutant: dropped the x-negation assembling circle_points' Q1 quadrant)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (1-line mutation, reverted)"
+  cases       = 300
+  record      = "evidence/rd2-mutation-control.txt"
+  record_hash = "record:sha-512:bc2a25652bc69ab5c971fc3a18c58ffb77e3cead9b104ee0901b8230c785ee22cc6eeeeb8b56c3f0cc64f6192bab7f78ef41d3a3cff59d174d55203e48efe72d"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "RD-002"
+
+
+# === RD-003 -- S-3: 8-way symmetry ===
+[[claim]]
+id            = "RD-003"
+clause        = "S-3"
+item          = "src/lib.rs::circle_points"
+statement     = "The set circle_points(r) returns is closed under all 8 symmetries of the square about the center, property-tested for r sampled up to 1000. Rendered-canvas symmetry is claimed only for fully-inside circles."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+bounds        = "bounded: property-tested (200 samples, xorshift64 seed 0x0BADC0DE12345678) for r in 1..=1000 -- not Kani-proved (see the crate doc comment: reflecting a Vec inside a bounded-model-checking harness was judged not worth its Kani cost beyond what fill_octant's own proof already establishes)"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo test --lib property_8way_symmetry_as_a_set"
+  expect  = "test result: ok"
+
+  [[claim.evidence]]
+  kind       = "property-test"
+  family     = "dynamic"
+  method     = "property-test"
+  epistemic_tier= "T3"
+  ref         = "tests::property_8way_symmetry_as_a_set"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 200
+  generator   = "hand-rolled xorshift64, seed 0x0BADC0DE12345678, r in 1..=1000"
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:31d357a012637c11813c48707a522c5973c1cd6179e1262c32e6ccae8cae83213fdc28bb6aa51a54732fa76994c2a9182bcb64f7284291569ad44e86f2238141"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:df39d750708f0ac052b3ad01f9c10159e1d965360e70fb88cb155aec5208a0e4c5312f4a839d758dcab77d1b2818d43ef83ed7e1003cb63485c399a327309e29"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:56915f9057b0177d78a83af10265a61d8829768ecf813e6e97af6011ced7f38582b4ca7bbb0408f9da83ff38e315653ef84c60560f4597afacbd29a56d432b25"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --lib property_8way_symmetry_as_a_set (mutant: dropped the x-negation assembling circle_points' Q2 quadrant)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (1-line mutation, reverted)"
+  cases       = 200
+  record      = "evidence/rd3-mutation-control.txt"
+  record_hash = "record:sha-512:81ac11e49dd3dc01c100ac42a9c343158118686f58973c3da11a0ff991687f8cfcfa18523d5cd5f38c921445f380001a01b9ede79d9c395b77390e3373f41588"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "RD-003"
+
+
+# === RD-004 -- S-4: clipping never panics ===
+[[claim]]
+id            = "RD-004"
+clause        = "S-4"
+item          = "src/lib.rs::Canvas::set_pixel, Canvas::pixel, draw_circle"
+statement     = "set_pixel/pixel never panic for any i32 coordinate (in or out of bounds, including i32::MIN/MAX), and draw_circle never panics for any (cx, cy, r)."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo test --lib"
+  expect  = "test result: ok"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "tests::set_pixel_and_pixel_never_panic_far_out_of_bounds, tests::draw_circle_on_tiny_canvas_with_large_radius_does_not_panic"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 9
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:31d357a012637c11813c48707a522c5973c1cd6179e1262c32e6ccae8cae83213fdc28bb6aa51a54732fa76994c2a9182bcb64f7284291569ad44e86f2238141"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:df39d750708f0ac052b3ad01f9c10159e1d965360e70fb88cb155aec5208a0e4c5312f4a839d758dcab77d1b2818d43ef83ed7e1003cb63485c399a327309e29"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:56915f9057b0177d78a83af10265a61d8829768ecf813e6e97af6011ced7f38582b4ca7bbb0408f9da83ff38e315653ef84c60560f4597afacbd29a56d432b25"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --lib (mutant: bounds check removed from Canvas::set_pixel)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (mutation, reverted)"
+  cases       = 9
+  record      = "evidence/rd4-mutation-control.txt"
+  record_hash = "record:sha-512:0452894818caaa923c99b8f841e1041d61a8c79b2c5150b0d63a7f3e5776a8aa7d815ff84d001b5c6a1580b465145f4840c3601284109e5ebd2e2c55d98ebc5f"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "RD-004"

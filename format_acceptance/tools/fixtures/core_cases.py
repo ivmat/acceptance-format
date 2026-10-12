@@ -89,6 +89,43 @@ def certified_components(d):
     lines = 'a=content-digest:'+H.digest('subject:',b'a')+'\nb=git-revision:'+'a'*40+'\n'
     d['subject']['digest'] = H.digest('subject:',lines.encode())
 add('b1-components-positive',certified_components,verdict='PASS')
+
+
+# B1 (acceptance 0.4.0): `path` on a git-revision identity -- grammar (R44), and the ERROR
+# inside a components locator (R45). base()'s default subject is content-digest, so these
+# fixtures replace the digest with a git-revision identity first.
+def git_identity(d, **extra):
+    d['subject'].pop('digest', None)
+    d['subject'].update(commit='a'*40, dirty=False)
+    d['subject'].update(extra)
+
+
+add('b1-path-present',lambda d:git_identity(d,path='crates/geom-math'),verdict='PASS')
+add('b1-path-dot-segment-red',lambda d:git_identity(d,path='a/./b'),substring="B1: path must be one or more '/'-joined segments matching [A-Za-z0-9._-]+, neither '.' nor '..', got 'a/./b'")
+add('b1-path-double-slash-red',lambda d:git_identity(d,path='a//b'),substring="B1: path must be one or more '/'-joined segments matching [A-Za-z0-9._-]+, neither '.' nor '..', got 'a//b'")
+add('b1-path-dotdot-red',lambda d:git_identity(d,path='..'),substring="B1: path must be one or more '/'-joined segments matching [A-Za-z0-9._-]+, neither '.' nor '..', got '..'")
+add('b1-path-leading-slash-red',lambda d:git_identity(d,path='/a'),substring="B1: path must be one or more '/'-joined segments matching [A-Za-z0-9._-]+, neither '.' nor '..', got '/a'")
+add('b1-path-backslash-red',lambda d:git_identity(d,path='a\\b'),substring="B1: path must be one or more '/'-joined segments matching [A-Za-z0-9._-]+, neither '.' nor '..', got 'a\\\\b'")
+add('b1-path-non-ascii-red',lambda d:git_identity(d,path='café'),substring="B1: path must be one or more '/'-joined segments matching [A-Za-z0-9._-]+, neither '.' nor '..', got 'café'")
+add('b1-path-empty-red',lambda d:git_identity(d,path=''),substring="B1: path must be one or more '/'-joined segments matching [A-Za-z0-9._-]+, neither '.' nor '..', got ''")
+
+
+def components_with_path(d):
+    certified_components(d)
+    d['subject']['components'][1]['path'] = 'crates/foo'
+add('b1-path-in-components-red',components_with_path,substring='B1: path is an ERROR inside a [[subject.components]] locator (R45)')
+
+
+def b1_equality_case():
+    # B1: equal iff commit AND path both byte-equal; an absent path never equals a present one.
+    assert C.b1_git_revision_equal({'commit': 'a'*40, 'path': 'x'}, {'commit': 'a'*40, 'path': 'x'})
+    assert not C.b1_git_revision_equal({'commit': 'a'*40, 'path': 'x'}, {'commit': 'a'*40})
+    assert not C.b1_git_revision_equal({'commit': 'a'*40}, {'commit': 'b'*40})
+    assert C.b1_git_revision_equal({'commit': 'a'*40}, {'commit': 'a'*40})
+    assert not C.b1_git_revision_equal({'commit': 'a'*40, 'path': 'x'}, {'commit': 'a'*40, 'path': 'X'})
+CASES.append(('b1-path-equality','PASS','B1 equality: path must match exactly; absent never equals present',b1_equality_case))
+
+
 add('b2-unknown-token',lambda d:d['claim'][0].update(band='unknown'),substring='B2:')
 add('b2-control-wrong-claim',lambda d:d['claim'][0]['evidence'][0].update(control={'kind':'mutation','expectation':'red','observed':'red','of_claim':'other'}),substring='does not name this claim')
 add('b2-judgment-control-no-lift',lambda d:(d['claim'][0].update(band='A1'),d['claim'][0]['evidence'][0].update(control={'kind':'mutation','expectation':'red','observed':'red','of_claim':'C-1'})),substring='B2:')
@@ -248,6 +285,144 @@ add('b20-build-inputs-digest-mismatch',setup=build_input_setup(wrong_digest=True
 add('b20-build-inputs-unresolvable-warn',lambda d:d['claim'][0]['evidence'][0].update(build_inputs=[{'path':'missing.txt','digest':H.digest('artifact:',b'x')}]),verdict='PASS',substring='build-input pointer does not exist')
 
 
+# B22: dependency declaration (shape). Meaning-neutral disclosure -- `covers`/`relation` default
+# to the `generic` token 'build-tool' so most fixtures need no binding switch at all; the
+# relation-registry fixtures below (runtime) switch the subject/profile to the code/rust chain.
+def dep_inputs(root, *, lock_bytes=b'lock-fixture-bytes', ws_bytes=b'workspace-fixture-bytes'):
+    (root/'fixture.lock').write_bytes(lock_bytes)
+    (root/'fixture-workspace.toml').write_bytes(ws_bytes)
+    return [
+        {'role': 'lockfile', 'path': 'fixture.lock', 'digest': H.digest('artifact:', lock_bytes)},
+        {'role': 'workspace-manifest', 'path': 'fixture-workspace.toml', 'digest': H.digest('artifact:', ws_bytes)},
+    ]
+
+
+def dep_inventory(id='inv-1', source='lockfile', covers=('build-tool',), entries=1, reader='cargo-lock/4', input_rows=None, **extra):
+    inv = {'id': id, 'source': source, 'covers': list(covers), 'entries': entries}
+    if source == 'lockfile':
+        inv['reader'] = reader
+        if input_rows is not None: inv['input'] = input_rows
+    inv.update(extra)
+    return inv
+
+
+def dep_row(id='dep-1', relation='build-tool', role='direct', inventory='inv-1', commit=None, lock_entry='pkg 1.0.0', **extra):
+    row = {
+        'id': id, 'relation': relation, 'role': role, 'inventory': inventory,
+        'consumed': 'source', 'name': 'example-dep',
+        'source': {'commit': commit or 'a'*40},
+        'lock': {'entry': lock_entry},
+    }
+    row.update(extra)
+    return row
+
+
+def rust_subject(d):
+    d['subject'].pop('digest', None)
+    d['subject'].update(kind='rust-crate', commit='a'*40, dirty=False)
+    d['format']['profile'] = 'acceptance/verification/code/rust'
+
+
+def b22_setup(inv_fn=None, dep_fn=None, *, rust=False):
+    def setup(d, r):
+        if rust: rust_subject(d)
+        rows = dep_inputs(r)
+        inv = dep_inventory(input_rows=rows)
+        if inv_fn: inv = inv_fn(inv, rows, r) or inv
+        d['dependency_inventory'] = [inv]
+        row = dep_row()
+        if dep_fn: row = dep_fn(row) or row
+        d['dependency'] = [row]
+    return setup
+
+
+add('b22-lockfile-inventory-pass',verdict='PASS',setup=b22_setup())
+add('b22-manual-inventory-pass',verdict='PASS',setup=lambda d,r:(
+    d.update(dependency_inventory=[dep_inventory(id='inv-manual',source='manual',entries=1)]),
+    d.update(dependency=[{k:v for k,v in dep_row(inventory='inv-manual').items() if k!='lock'}]),
+))
+add('b22-empty-inventory-pass',verdict='PASS',setup=lambda d,r:(
+    d.update(dependency_inventory=[dep_inventory(id='inv-empty',entries=0,input_rows=dep_inputs(r))]),
+))
+
+add('b22-entries-mismatch-red',setup=b22_setup(lambda inv,rows,r:inv.update(entries=2) or inv),substring='does not match the number of')
+add('b22-digest-mismatch-red',setup=b22_setup(lambda inv,rows,r:rows.__setitem__(0,{**rows[0],'digest':H.digest('artifact:',b'wrong')}) or inv),substring='input digest differs')
+add('b22-two-lockfile-inputs-red',setup=b22_setup(lambda inv,rows,r:rows.__setitem__(1,{**rows[1],'role':'lockfile'}) or inv),substring='found 2')
+add('b22-lock-missing-on-lockfile-row-red',setup=b22_setup(dep_fn=lambda row:{k:v for k,v in row.items() if k!='lock'}),substring='lock.entry is REQUIRED')
+add('b22-unknown-relation-red',setup=b22_setup(dep_fn=lambda row:dict(row,relation='mystery-token')),substring='is not registered by any binding')
+add('b22-relation-not-in-covers-red',setup=b22_setup(lambda inv,rows,r:inv.update(covers=['platform']) or inv,dep_fn=lambda row:dict(row,relation='build-tool')),substring="is not in inventory")
+add('b22-consumed-delivered-red',setup=b22_setup(dep_fn=lambda row:dict(row,consumed='delivered')),substring="'delivered' is reserved")
+add('b22-bad-binding-value-red',setup=b22_setup(dep_fn=lambda row:dict(row,binding='teleport')),substring='binding must be one of')
+add('b22-unknown-key-red',setup=b22_setup(dep_fn=lambda row:dict(row,mystery='x')),substring='carries unknown field(s)')
+add('b22-input-path-escapes-b6-red',setup=b22_setup(lambda inv,rows,r:rows.__setitem__(0,{**rows[0],'path':'../escape.lock'}) or inv),substring='path escapes repository root')
+
+for reserved_field in ('delivered', 'bridge', 'toolchain'):
+    add(f'b22-reserved-{reserved_field}-red',setup=b22_setup(dep_fn=lambda row,f=reserved_field:dict(row,**{f:{}})),substring=f'.{reserved_field} is reserved')
+add('b22-reserved-lock-checksum-red',setup=b22_setup(dep_fn=lambda row:dict(row,lock={**row['lock'],'checksum':'deadbeef'})),substring='lock.checksum is reserved')
+
+
+def b22_reader_on_manual_setup(d, r):
+    inv = dep_inventory(id='inv-manual', source='manual', entries=1)
+    inv['reader'] = 'cargo-lock/4'
+    d['dependency_inventory'] = [inv]
+    row = {k: v for k, v in dep_row(inventory='inv-manual').items() if k != 'lock'}
+    d['dependency'] = [row]
+add('b22-reader-on-manual-red',setup=b22_reader_on_manual_setup,substring='forbidden for source')
+
+
+def b22_lock_on_manual_row_setup(d, r):
+    d['dependency_inventory'] = [dep_inventory(id='inv-manual', source='manual', entries=1)]
+    d['dependency'] = [dep_row(inventory='inv-manual')]  # 'lock' left in place -- forbidden here
+add('b22-lock-on-manual-row-red',setup=b22_lock_on_manual_row_setup,substring='FORBIDDEN when the cited inventory')
+
+
+def b22_duplicate_inv_id_setup(d, r):
+    rows = dep_inputs(r)
+    inv1 = dep_inventory(id='inv-dup', input_rows=rows)
+    inv2 = dep_inventory(id='inv-dup', source='manual', entries=0)
+    d['dependency_inventory'] = [inv1, inv2]
+    d['dependency'] = [dep_row(inventory='inv-dup')]
+add('b22-duplicate-id-red',setup=b22_duplicate_inv_id_setup,substring='duplicate dependency_inventory id')
+
+
+# Relation-token registration (B22 section 3): `generic` registers four tokens every chain
+# inherits; `code/rust` additively registers `runtime`. GREEN under the code/rust chain, RED
+# under the declared document binding (its module is still a skeleton; meaning-only scope
+# suppresses that unrelated unknown while retaining the declared binding path).
+add('b22-runtime-under-code-rust-pass',verdict='PASS',setup=b22_setup(
+    lambda inv,rows,r:inv.update(covers=['runtime']) or inv,
+    dep_fn=lambda row:dict(row,relation='runtime'),
+    rust=True,
+))
+add('b22-runtime-outside-code-rust-red',
+    lambda d:d['format'].update(profile='acceptance/verification/document'),
+    meaning_only=True,setup=b22_setup(
+    lambda inv,rows,r:inv.update(covers=['runtime']) or inv,
+    dep_fn=lambda row:dict(row,relation='runtime'),
+),substring='is not registered by any binding')
+
+
+add('b22-reserved-inventory-toolchain-red', setup=lambda d,r:d.update(
+    dependency_inventory=[dep_inventory(source='toolchain', entries=0)]),
+    substring=".source 'toolchain' is reserved")
+add('b22-duplicate-dependency-id-red', setup=lambda d,r:(
+    b22_setup(lambda inv,rows,r:inv.update(entries=2))(d,r),
+    d['dependency'].append(copy.deepcopy(d['dependency'][0]))),
+    substring="duplicate dependency id")
+add('b22-manual-input-table-red', setup=lambda d,r:d.update(
+    dependency_inventory=[dep_inventory(source='manual', entries=0, input={})]),
+    substring="must not declare [[dependency_inventory.input]] rows for source='manual'")
+
+# Wrong TOML types must report shape errors rather than raising unhashable-type exceptions.
+for field in ('relation', 'role', 'binding'):
+    add(f'b22-{field}-type-red', setup=b22_setup(dep_fn=lambda row,f=field:dict(row,**{f:[]})),
+        substring='is not registered by any binding' if field == 'relation' else f'.{field} must be one of')
+add('b22-inventory-source-type-red', setup=lambda d,r:d.update(
+    dependency_inventory=[dep_inventory(source=[], entries=0)]), substring='.source must be one of')
+add('b22-input-role-type-red', setup=b22_setup(
+    lambda inv,rows,r:rows[1].update(role=[]) or inv), substring='.role must be one of')
+
+
 def synthetic(name, expected, substring, operation):
     def execute():
         actual, messages = operation()
@@ -366,16 +541,16 @@ for domain in sorted(H.DOMAINS):
 def module_case(mode):
     with workspace() as root:
         original_root, original_docs = C.MODULE_ROOT, C.BINDING_DOC_ROOT
-        modules=root/'modules'; profiles=modules/'profiles';bindings=modules/'bindings';docs=root/'binding-docs'
-        profiles.mkdir(parents=True);bindings.mkdir();docs.mkdir()
+        modules=root/'modules'; profiles=modules/'profiles';bindings=modules/'bindings';binding_documents=root/'binding-binding_documents'
+        profiles.mkdir(parents=True);bindings.mkdir();binding_documents.mkdir()
         (profiles/'verification.py').write_text((original_root/'profiles/verification.py').read_text())
         (profiles/'plain.py').write_text('FAMILIES={"judgment":"T5"}\nKINDS={}\nASSERTION_SURFACES=("assertions.inventory",)\nAGGREGATES={"rating"}\ndef check(doc,ctx):\n    from check_core import Finding\n    doc.clear()\n    return [Finding("error","B13: meaning delta failed")]\n')
         (bindings/'document.py').write_text('def check(doc,ctx): return []\n')
-        (docs/'document.md').write_text('```toml\nadmits=["doc"]\nidentity=["content-digest"]\n```\n')
+        (binding_documents/'document.md').write_text('```toml\nadmits=["doc"]\nidentity=["content-digest"]\n```\n')
         d=base();d['format']['profile']='acceptance/verification/document'
-        if mode=='missing-doc':(docs/'document.md').unlink()
-        if mode=='admission':(docs/'document.md').write_text('```toml\nadmits=["tool"]\nidentity=["content-digest"]\n```\n')
-        if mode=='identity':(docs/'document.md').write_text('```toml\nadmits=["doc"]\nidentity=["git-revision"]\n```\n')
+        if mode=='missing-doc':(binding_documents/'document.md').unlink()
+        if mode=='admission':(binding_documents/'document.md').write_text('```toml\nadmits=["tool"]\nidentity=["content-digest"]\n```\n')
+        if mode=='identity':(binding_documents/'document.md').write_text('```toml\nadmits=["doc"]\nidentity=["git-revision"]\n```\n')
         if mode in ('profile-adds','cannot-suppress','surface','extension'):
             d['format']['profile']='acceptance/plain';d['claim'][0].pop('band')
             if mode=='cannot-suppress':d['subject'].pop('digest')
@@ -390,9 +565,9 @@ def module_case(mode):
             d['format']['profile']='acceptance/plain'
         if mode=='narrow-chain':
             (bindings/'document_restricted.py').write_text('def check(doc,ctx): return []\n')
-            (docs/'document').mkdir();(docs/'document/restricted.md').write_text('```toml\nadmits=["doc"]\nidentity=["content-digest"]\n```\n')
+            (binding_documents/'document').mkdir();(binding_documents/'document/restricted.md').write_text('```toml\nadmits=["doc"]\nidentity=["content-digest"]\n```\n')
             d['format']['profile']='acceptance/verification/document/restricted'
-        C.MODULE_ROOT,C.BINDING_DOC_ROOT=modules,docs
+        C.MODULE_ROOT,C.BINDING_DOC_ROOT=modules,binding_documents
         try:rep=evaluate(d,root,meaning_only=mode=='broken-binding-scoped',binding_only=mode=='unknown-meaning-binding-only')
         finally:C.MODULE_ROOT,C.BINDING_DOC_ROOT=original_root,original_docs
         return C.verdict(rep)[0],diagnostic(rep)

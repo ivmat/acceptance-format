@@ -37,7 +37,7 @@ meaning or a binding of a core slot to Rust tooling.
 | `captured_at_revision` alias | `captured_at_commit` on evidence records (already used by the format's examples) |
 | package profile | `[format].profile = "acceptance/verification/code/rust"` (the full leaf id; REQUIRED at 0.3.0, no compatibility default — B12) |
 | `method`/`kind` ⇒ `epistemic_tier` CEILING | `../PROFILE.md`'s generic default table for the seven language-neutral tokens; §2 below for this binding's five additional Rust-only tokens |
-| profile floor table | `[requirement.evidence.profile."acceptance/verification/code/rust"]` — the tool matches this key against the package's own declared `[format].profile` string EXACTLY (`acceptance_protocol.py`'s floor check refuses a floor declared under any other spelling, fail-closed), so a contract's floor table for this binding MUST use the identical leaf-id spelling, never the bare `acceptance/verification` meaning id; the floor MECHANISM itself is `../PROFILE.md`'s (R5 lift) — this binding contributes no floor rows of its own |
+| profile floor table | `[requirement.evidence.profile."acceptance/verification/code/rust"]` — the tool matches this key against the package's own declared `[format].profile` string EXACTLY (`acceptance_protocol.py`'s floor check refuses a floor declared under any other spelling, fail-closed), so a specification's floor table for this binding MUST use the identical leaf-id spelling, never the bare `acceptance/verification` meaning id; the floor MECHANISM itself is `../PROFILE.md`'s (R5 lift) — this binding contributes no floor rows of its own |
 | cross-cutting `demands.fields` | `bounds` (leading token `bounded` \| `unbounded`); `semantics` (exact string) |
 | recipe carriers | `cargo test …`, `cargo clippy -- -D warnings`, `cargo doc --no-deps`, `cargo kani --harness …`, `cargo miri test`, `grep -rn … src/` with a `positive_control` — any command whose `expect` string is checkable on the named stream |
 | change-impact declared input set (§8) | `src/**`, `tests/**`, `benches/**`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `build.rs`, plus the record's `tool` and `semantics` strings; a `kani-harness` record also declares the harness source file |
@@ -139,7 +139,7 @@ meaning reads off the shared family registry) for Rust requirement patterns.
 | never panics / no UB on any input | safety | T2 or T3, recipe | probe / A1 / bmc or dynamic | `kani-harness` panic-freedom (A1 needs no control for freedom claims), `miri`, fuzz loop |
 | no `unsafe` | security | T4, weighted, control, recipe | mechanical / A1 / mechanical | `lint` record for `#![forbid(unsafe_code)]` + clippy; watched_fail = add an `unsafe {}` block, observe red |
 | API compatibility with the previous release | compatibility | T4 | mechanical / A1 / mechanical | `semver-check` with `baseline` |
-| no known advisories at delivery | security | T4 | mechanical / A0 / mechanical | `dep-audit` with `db_version` (decays; the contract's `stale_after` should be short) |
+| no known advisories at delivery | security | T4 | mechanical / A0 / mechanical | `dep-audit` with `db_version` (decays; the specification's `stale_after` should be short) |
 | docs build clean | documentation | T4, recipe | mechanical / A0 / mechanical | `lint`-kind record for `cargo doc` |
 | "all verification is unbounded" (cross-cutting) | correctness | `demands.fields.bounds = "unbounded"` over the proof requirements | — | every covering claim's `bounds` leading token; a bounded suite makes this `partial` → deviation → waiver + condition |
 
@@ -183,7 +183,7 @@ cross-version test discipline: lineage-B tests against lineage-A code).
 
 ## 7. Worked instance
 
-`protocol_acceptance/examples/rust-delivery/` — a real crate (`iban-check`), a consumer contract with six
+`protocol_acceptance/examples/rust-delivery/` — a real crate (`iban-check`), a consumer specification with six
 requirements (five mandatory, one cross-cutting and waivable), a generated package whose evidence
 transcripts come from actually running `cargo test`, `cargo clippy`, `cargo doc`, `cargo kani` and
 five mutation controls, a consumer decision that re-executes the recipes and lands
@@ -193,7 +193,7 @@ change-impact run that turns an edit to the checksum module into re-verification
 ## 8. Second instance (prose): verify-rust-std bounties
 
 An external Rust verification exchange maps the same projection onto challenge success criteria =
-contract (`[[requirement]]` rows per
+specification (`[[requirement]]` rows per
 function, `kind = "cross-cutting"` rows for "unbounded" and "generic T"), a generated package
 from the submission = package, two committee approvals = decision
 with `authority = "committee, 2 of N"`. (An earlier, retired example package for this mapping is
@@ -203,10 +203,10 @@ not part of this export; the projection above is illustrative, not a shipped fix
 
 | phase | typical floor | what the producer ships | what the consumer does |
 |---|---|---|---|
-| `exploratory` | `min_tier = "T5"`, unweighted, no recipe — "it builds, it runs the demo, I looked at it" | a crate that compiles, a demo binary, `human-review`/`llm-review` records, `inspection-argued` claims | tries it; records `[[requirement_feedback]]` (what was ambiguous, wrong, missing); supersedes the contract |
+| `exploratory` | `min_tier = "T5"`, unweighted, no recipe — "it builds, it runs the demo, I looked at it" | a crate that compiles, a demo binary, `human-review`/`llm-review` records, `inspection-argued` claims | tries it; records `[[requirement_feedback]]` (what was ambiguous, wrong, missing); supersedes the specification |
 | `crystallizing` | `T3` tests with recipes for `firm` requirements; `T5` still allowed on `draft` ones | `unit-test`/`property-test` records, recipes, first controls | re-runs the firm rows; tightens floors; marks rows firm |
 | `final` | `T3`+controls for functional rows, `T2` (kani) for safety rows, `T4` lint/semver/doc, cross-cutting `bounds` demands | the full package, mutation controls, declared inputs | full re-execution; definitive decision; conditions → obligations |
 
-The example in `examples/rust-delivery/` is a `final`-phase contract; an exploratory predecessor
+The example in `examples/rust-delivery/` is a `final`-phase specification; an exploratory predecessor
 would carry the same six ids with judgment-tier floors and `phase = "exploratory"`, and
-`check-contract --previous` would prove the chain only tightened.
+`check-spec --previous` would prove the chain only tightened.

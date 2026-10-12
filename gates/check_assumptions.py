@@ -5,7 +5,8 @@ The two residual sections — format_acceptance/spec/core.md "## §5 What the cl
 do" and protocol_acceptance/spec/protocol.md "## 11. ..." — list what the core trusts and does not check.
 Rule: every top-level bullet ("- ") and every "**Residual" paragraph in those sections carries at least
 one tag [A-nn]; every tag names a row of the "Acceptance family" table in ASSUMPTIONS.md; every row of
-that table is cited by at least one tag. Stdlib only. `--selftest` proves the gate can fail.
+that table is cited by at least one tag. Built guards must retain their executable evidence
+link in the assumption row (A-22 supersedes the frozen pre-lock implementation note). Stdlib only. `--selftest` proves the gate can fail.
 """
 import re
 import sys
@@ -18,6 +19,7 @@ SECTIONS = [
     ("protocol_acceptance/spec/protocol.md", "## 11."),
 ]
 TAG = re.compile(r"\[(A-\d\d)\]")
+GUARDED = {"A-22": "gates/check_amendment_lock.py"}
 ROW = re.compile(r"^\|\s*(A-\d\d)\s*\|", re.M)
 
 
@@ -35,7 +37,13 @@ def items(sec):
 
 def check(root):
     errors, cited = [], set()
-    rows = set(ROW.findall((root / "ASSUMPTIONS.md").read_text()))
+    assumptions = (root / "ASSUMPTIONS.md").read_text()
+    rows = set(ROW.findall(assumptions))
+    for tag, gate in GUARDED.items():
+        row = next((line for line in assumptions.splitlines()
+                    if re.match(rf"^\|\s*{tag}\s*\|", line)), "")
+        if gate not in row or not (root / gate).is_file():
+            errors.append(f"ASSUMPTIONS.md: guarded {tag} requires executable evidence {gate}")
     for rel, start in SECTIONS:
         try:
             sec = section((root / rel).read_text(), start)
@@ -60,7 +68,7 @@ def selftest():
     ok = True
     with tempfile.TemporaryDirectory() as td:
         t = Path(td)
-        for rel in ["ASSUMPTIONS.md"] + [r for r, _ in SECTIONS]:
+        for rel in ["ASSUMPTIONS.md", *GUARDED.values()] + [r for r, _ in SECTIONS]:
             (t / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(ROOT / rel, t / rel)
         if check(t):
@@ -74,7 +82,17 @@ def selftest():
         errs = check(t)
         if not any("[A-99]" in e for e in errs) or not any("row A-02" in e for e in errs):
             print("SELFTEST FAIL: unknown tag / orphan row not caught"); ok = False
-    print("SELFTEST PASS: check_assumptions (3 controls)" if ok else "SELFTEST FAILED")
+        core.write_text(clean)
+        assumptions = t / "ASSUMPTIONS.md"
+        original = assumptions.read_text()
+        assumptions.write_text(original.replace(GUARDED["A-22"], "missing-evidence.py"))
+        if not any("guarded A-22" in e for e in check(t)):
+            print("SELFTEST FAIL: missing guard citation not caught"); ok = False
+        assumptions.write_text(original)
+        (t / GUARDED["A-22"]).unlink()
+        if not any("guarded A-22" in e for e in check(t)):
+            print("SELFTEST FAIL: missing guard control not caught"); ok = False
+    print("SELFTEST PASS: check_assumptions (5 controls)" if ok else "SELFTEST FAILED")
     return 0 if ok else 1
 
 

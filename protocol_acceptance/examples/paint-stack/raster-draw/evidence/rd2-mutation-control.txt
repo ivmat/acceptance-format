@@ -1,0 +1,22 @@
+   Compiling raster-draw v0.1.0 (<WORKSPACE>/raster-draw)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/raster_draw-c5a996419a589973)
+
+running 1 test
+test tests::property_closed_8_connected_cycle_over_many_radii ... FAILED
+
+failures:
+
+---- tests::property_closed_8_connected_cycle_over_many_radii stdout ----
+
+thread 'tests::property_closed_8_connected_cycle_over_many_radii' (11422617) panicked at raster-draw/src/lib.rs:353:17:
+r=670 gap between (670, 0) and (-670, 0)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::property_closed_8_connected_cycle_over_many_radii
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

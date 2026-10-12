@@ -1,0 +1,279 @@
+Kani Rust Verifier 0.67.0 (cargo plugin)
+   Compiling geom-math v0.1.0 (<WORKSPACE>/geom-math)
+   Compiling raster-draw v0.1.0 (<WORKSPACE>/raster-draw)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.13s
+Checking harness verification::octant_accurate_bounded...
+CBMC 6.8.0 (cbmc-6.8.0)
+CBMC version 6.8.0 (cbmc-6.8.0) 64-bit arm64 macos
+Reading GOTO program from file <WORKSPACE>/target/kani/aarch64-apple-darwin/debug/deps/raster_draw-f5fe4650b4c7cf47__RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.out
+Generating GOTO Program
+Adding CPROVER library (arm64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Running with 16 object bits, 48 offset bits (user-specified)
+Starting Bounded Model Checking
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 1 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 2 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 3 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 4 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 5 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 6 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 7 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvCs95fnlpG8lDn_11raster_draw11fill_octant.0 iteration 8 file raster-draw/src/lib.rs line 79 column 5 function fill_octant thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 1 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 2 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 3 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 4 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 5 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 6 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 7 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvMs2_NtCs2fBbJ0VEDWe_4core3numn3powCs95fnlpG8lDn_11raster_draw.1 iteration 1 file <BUILD_HOME>/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs line 3062 column 17 function core::num::<impl i128>::pow thread 0
+Unwinding loop _RNvNtCs95fnlpG8lDn_11raster_draw12verification23octant_accurate_bounded.0 iteration 8 file raster-draw/src/lib.rs line 255 column 9 function verification::octant_accurate_bounded thread 0
+Runtime Symex: 0.131357s
+size of program expression: 7291 steps
+slicing removed 4096 assignments
+Generated 542 VCC(s), 380 remaining after simplification
+Runtime Postprocess Equation: 0.00250296s
+Passing problem to propositional reduction
+converting SSA
+Runtime Convert SSA: 0.709533s
+Running propositional reduction
+Post-processing
+Runtime Post-process: 5.375e-06s
+Solving with CaDiCaL 2.0.0
+883332 variables, 4924283 clauses
+SAT checker: instance is SATISFIABLE
+Runtime Solver: 0.958767s
+Runtime decision procedure: 1.67175s
+Running propositional reduction
+Solving with CaDiCaL 2.0.0
+883333 variables, 4924284 clauses
+SAT checker: instance is UNSATISFIABLE
+Runtime Solver: 0.977891s
+Runtime decision procedure: 0.98152s
+
+RESULTS:
+Check 1: fill_octant.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:77:24 in function fill_octant
+
+Check 2: fill_octant.assertion.2
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 3: fill_octant.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:81:9 in function fill_octant
+
+Check 4: fill_octant.assertion.4
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:82:9 in function fill_octant
+
+Check 5: fill_octant.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: raster-draw/src/lib.rs:84:20 in function fill_octant
+
+Check 6: fill_octant.assertion.6
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:84:20 in function fill_octant
+
+Check 7: fill_octant.assertion.7
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:84:13 in function fill_octant
+
+Check 8: fill_octant.assertion.8
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:86:13 in function fill_octant
+
+Check 9: fill_octant.assertion.9
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:87:24 in function fill_octant
+
+Check 10: fill_octant.assertion.10
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: raster-draw/src/lib.rs:87:20 in function fill_octant
+
+Check 11: fill_octant.assertion.11
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:87:20 in function fill_octant
+
+Check 12: fill_octant.assertion.12
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:87:13 in function fill_octant
+
+Check 13: geom_math::dist2.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../geom-math/src/lib.rs:62:5 in function geom_math::dist2
+
+Check 14: geom_math::dist2.assertion.2
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../geom-math/src/lib.rs:62:13 in function geom_math::dist2
+
+Check 15: geom_math::dist2.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: ../geom-math/src/lib.rs:62:5 in function geom_math::dist2
+
+Check 16: verification::octant_accurate_bounded.assertion.1
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:256:26 in function verification::octant_accurate_bounded
+
+Check 17: verification::octant_accurate_bounded.assertion.2
+	 - Status: SUCCESS
+	 - Description: "assertion failed: x >= 0 && y >= 0 && x >= y"
+	 - Location: raster-draw/src/lib.rs:257:13 in function verification::octant_accurate_bounded
+
+Check 18: verification::octant_accurate_bounded.assertion.3
+	 - Status: SUCCESS
+	 - Description: "assertion failed: accuracy_ok(r, x, y)"
+	 - Location: raster-draw/src/lib.rs:258:13 in function verification::octant_accurate_bounded
+
+Check 19: verification::octant_accurate_bounded.assertion.4
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:259:13 in function verification::octant_accurate_bounded
+
+Check 20: core::num::<impl i128>::pow.assertion.1
+	 - Status: UNREACHABLE
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3046:31 in function core::num::<impl i128>::pow
+
+Check 21: core::num::<impl i128>::pow.assertion.2
+	 - Status: UNREACHABLE
+	 - Description: "attempt to divide by zero"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3048:21 in function core::num::<impl i128>::pow
+
+Check 22: core::num::<impl i128>::pow.arithmetic_overflow.1
+	 - Status: SUCCESS
+	 - Description: "attempt to divide by zero"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3048:21 in function core::num::<impl i128>::pow
+
+Check 23: core::num::<impl i128>::pow.assertion.3
+	 - Status: UNREACHABLE
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3049:28 in function core::num::<impl i128>::pow
+
+Check 24: core::num::<impl i128>::pow.assertion.4
+	 - Status: UNREACHABLE
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3056:17 in function core::num::<impl i128>::pow
+
+Check 25: core::num::<impl i128>::pow.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3064:31 in function core::num::<impl i128>::pow
+
+Check 26: core::num::<impl i128>::pow.assertion.6
+	 - Status: SUCCESS
+	 - Description: "attempt to divide by zero"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3070:21 in function core::num::<impl i128>::pow
+
+Check 27: core::num::<impl i128>::pow.arithmetic_overflow.2
+	 - Status: SUCCESS
+	 - Description: "attempt to divide by zero"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3070:21 in function core::num::<impl i128>::pow
+
+Check 28: core::num::<impl i128>::pow.assertion.7
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: ../../../../../../../runner/.rustup/toolchains/nightly-2025-11-21-aarch64-apple-darwin/lib/rustlib/src/rust/library/core/src/num/int_macros.rs:3071:28 in function core::num::<impl i128>::pow
+
+Check 29: accuracy_ok.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: raster-draw/src/lib.rs:111:15 in function accuracy_ok
+
+Check 30: accuracy_ok.assertion.2
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: raster-draw/src/lib.rs:111:14 in function accuracy_ok
+
+Check 31: accuracy_ok.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: raster-draw/src/lib.rs:112:15 in function accuracy_ok
+
+Check 32: accuracy_ok.assertion.4
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: raster-draw/src/lib.rs:112:14 in function accuracy_ok
+
+Check 33: accuracy_ok.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: raster-draw/src/lib.rs:113:18 in function accuracy_ok
+
+Check 34: verification::octant_accurate_bounded.array_bounds.1
+	 - Status: SUCCESS
+	 - Description: "index out of bounds: the length is less than or equal to the given index"
+	 - Location: raster-draw/src/lib.rs:256:18 in function verification::octant_accurate_bounded
+
+Check 35: fill_octant.pointer_dereference.1
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer NULL"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 36: fill_octant.pointer_dereference.2
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer invalid"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 37: fill_octant.pointer_dereference.3
+	 - Status: SUCCESS
+	 - Description: "dereference failure: deallocated dynamic object"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 38: fill_octant.pointer_dereference.4
+	 - Status: SUCCESS
+	 - Description: "dereference failure: dead object"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 39: fill_octant.pointer_dereference.5
+	 - Status: SUCCESS
+	 - Description: "dereference failure: pointer outside object bounds"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+Check 40: fill_octant.pointer_dereference.6
+	 - Status: SUCCESS
+	 - Description: "dereference failure: invalid integer address"
+	 - Location: raster-draw/src/lib.rs:80:9 in function fill_octant
+
+
+SUMMARY:
+ ** 0 of 40 failed (4 unreachable)
+
+VERIFICATION:- SUCCESSFUL
+Verification Time: 3.0982451s
+
+Manual Harness Summary:
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

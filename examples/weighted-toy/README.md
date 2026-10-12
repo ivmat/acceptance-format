@@ -56,3 +56,7 @@ real certificate's commands are subject-root-relative, the way `cargo kani ...` 
 manifest would be. `test_slug.py` is still directly runnable as
 `python3 examples/weighted-toy/test_slug.py` from the repo root; only the manifest's own recorded
 command differs.
+
+The 0.4.0 specification binding is regenerated with `python3 gen_package.py`.
+The subject pin and original test/control evidence remain historical; this binding
+refresh does not claim a new evidence run.

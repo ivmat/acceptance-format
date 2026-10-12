@@ -75,7 +75,7 @@ A claim meets the profile floor iff `rank(claim.grade) ≥ rank(min_grade)`,
 `rank(claim.band) ≥ rank(min_band)`, and ≥ 1 passing evidence record has `family ∈ families` (and
 `kind ∈ kinds` when given). **The grade ordering exists only here, as floors a consumer may set.**
 The format deliberately does not order grades (a probe is not a weak contract; it is a different
-claim) — this profile orders them for the single purpose of letting a contract say "at least this
+claim) — this profile orders them for the single purpose of letting a specification say "at least this
 deciding", and says so.
 
 ## 4. Test versus proof is weight, not a profile

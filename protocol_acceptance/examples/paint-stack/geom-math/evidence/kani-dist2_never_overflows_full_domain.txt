@@ -1,0 +1,61 @@
+Kani Rust Verifier 0.67.0 (cargo plugin)
+   Compiling geom-math v0.1.0 (<WORKSPACE>/geom-math)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+Checking harness verification::dist2_never_overflows_full_domain...
+CBMC 6.8.0 (cbmc-6.8.0)
+CBMC version 6.8.0 (cbmc-6.8.0) 64-bit arm64 macos
+Reading GOTO program from file <WORKSPACE>/target/kani/aarch64-apple-darwin/debug/deps/geom_math-2df738a67e1d69dd__RNvNtCscpuoVD3UFIE_9geom_math12verification33dist2_never_overflows_full_domain.out
+Generating GOTO Program
+Adding CPROVER library (arm64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Running with 16 object bits, 48 offset bits (user-specified)
+Starting Bounded Model Checking
+Runtime Symex: 0.00280112s
+size of program expression: 220 steps
+slicing removed 73 assignments
+Generated 6 VCC(s), 6 remaining after simplification
+Runtime Postprocess Equation: 4.375e-05s
+Passing problem to propositional reduction
+converting SSA
+Runtime Convert SSA: 0.00495329s
+Running propositional reduction
+Post-processing
+Runtime Post-process: 4.875e-06s
+Solving with CaDiCaL 2.0.0
+6786 variables, 35763 clauses
+SAT checker: instance is SATISFIABLE
+Runtime Solver: 0.000510166s
+Runtime decision procedure: 0.00552379s
+Running propositional reduction
+Solving with CaDiCaL 2.0.0
+6787 variables, 35764 clauses
+SAT checker: instance is UNSATISFIABLE
+Runtime Solver: 0.00636608s
+Runtime decision procedure: 0.00639937s
+
+RESULTS:
+Check 1: dist2.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: geom-math/src/lib.rs:62:5 in function dist2
+
+Check 2: dist2.assertion.2
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: geom-math/src/lib.rs:62:13 in function dist2
+
+Check 3: dist2.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: geom-math/src/lib.rs:62:5 in function dist2
+
+
+SUMMARY:
+ ** 0 of 3 failed
+
+VERIFICATION:- SUCCESSFUL
+Verification Time: 0.027695376s
+
+Manual Harness Summary:
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

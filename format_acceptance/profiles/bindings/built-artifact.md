@@ -57,7 +57,7 @@ provenance that connects it back to the source commit and build environment that
 ## Admissibility check (item 8b, this node's contribution)
 
 <!-- TODO(producer): the binding-side admissibility check the core CALLS (protocol.md §6.6 item 8,
-     D1 amendment A1). Slots this node owns: identity shape (a content digest over the built
+     the admissibility rule). Slots this node owns: identity shape (a content digest over the built
      object as PRIMARY, plus the provenance link to source identity); admitted
      `[subject].kind` set (declared via `[format].kind_registry`, F1 — no base token exists yet);
      the package-level constraints declared above (`format:`, `signed:`, `reproducible:`). This

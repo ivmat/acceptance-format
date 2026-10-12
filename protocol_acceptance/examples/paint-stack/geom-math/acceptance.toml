@@ -1,0 +1,218 @@
+# GENERATED FILE — DO NOT HAND-EDIT.
+#
+# Produced by protocol_acceptance/examples/paint-stack/gen_packages.py, which actually ran
+# `cargo test`, `cargo clippy` and real, restored
+# mutation controls against geom-math/ (this directory's sibling). Transcripts are in evidence/.
+#
+# SELF-REFERENCE DISCLOSURE (same convention as ../rust-delivery/gen_package.py, spec/format.md
+# "[format] self-location"): [subject].dirty is `false`: this manifest certifies the committed state of geom-math/ at the commit below, generated after that commit.
+# Transcript paths normalized to <WORKSPACE>, <REPO>, <HOME> before hashing.
+# Generated: 2026-10-12T08:58:34Z
+#
+# Re-run: python3 gen_packages.py
+
+
+[format]
+id       = "acceptance/0"
+protocol = "acceptance-protocol/1"
+profile  = "acceptance/verification/code/rust"
+
+[subject]
+name   = "geom-math"
+kind   = "rust-crate"
+commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+dirty  = false
+
+[spec]
+path    = "SPEC.md"
+version = "v1"
+axis    = "the SPEC.md clauses (S-1, S-2)"
+
+[coverage]
+clauses_total = 2
+claims_total  = 2
+
+# ===================================================================
+# GM-001 -- S-1: isqrt is correct over the full u32 domain
+# ===================================================================
+[[claim]]
+id            = "GM-001"
+clause        = "S-1"
+item          = "src/lib.rs::isqrt (verification::isqrt_correct_full_domain)"
+statement     = "isqrt(n) returns the floor integer square root of n for every u32 n (full domain): r*r <= n < (r+1)*(r+1). Never panics or overflows."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "probe"
+clause_source = "spec-document"
+bounds        = "unbounded: full u32 domain (no narrowing) -- the loop bound is fixed at 16 iterations regardless of n, so this is not a bounded slice of the domain"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo kani --harness isqrt_correct_full_domain"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind       = "kani-harness"
+  family     = "bmc"
+  method     = "kani-harness"
+  epistemic_tier= "T2"
+  ref         = "verification::isqrt_correct_full_domain"
+  result      = "pass"
+  tool        = "kani@0.67.0 (commit unknown — `cargo kani --version` on this install reports only a semantic version, not a build sha; source identity unavailable)"
+  bounds      = "unwind=18, full u32 domain (no kani::assume narrowing at all)"
+  semantics   = ""
+  record      = "evidence/kani-isqrt_correct_full_domain.txt"
+  record_hash = "record:sha-512:dd1fe03633eebb161a5ec681cb695615712609de2df67d7071952953c2518517884422b6a74f8df845ce416ace5db678f4e0708ad97b26313a51aa6586a62694"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:b11a4a2f3332eb19a7bb5bbad7c8564db875173de50a43a883e8e065c4f331a8a14a4eff0e3af8f44da8d7e1828f27f9c69bf60c0bd3e6f991a32341d6ceb2ab"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:a530bbb96280e3c1ca50123f5f31fb4a5dafcd36fbeaf702b143278e56e5a6c177cb69f604a5ff91c894630af4515a026b73652e1e44c885e383fbae7536e7c4"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "tests::isqrt_known_values, tests::isqrt_exhaustive_small_range (200,000 real, non-symbolic values, independent of the Kani proof)"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 200002
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:7bce48e7a42a3987ad815b2ef1149ce2c34b419b79947e0513e92f0e5f01955b747ab635d4862674f1d5c63b02cff22e770f145aabb2ec41b015f0e170f22a7d"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:b11a4a2f3332eb19a7bb5bbad7c8564db875173de50a43a883e8e065c4f331a8a14a4eff0e3af8f44da8d7e1828f27f9c69bf60c0bd3e6f991a32341d6ceb2ab"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:a530bbb96280e3c1ca50123f5f31fb4a5dafcd36fbeaf702b143278e56e5a6c177cb69f604a5ff91c894630af4515a026b73652e1e44c885e383fbae7536e7c4"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test (mutant: `n >= res + bit` weakened to `n > res + bit`, an off-by-one in the digit-by-digit comparison)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (1-line mutation, reverted)"
+  cases       = 200002
+  record      = "evidence/gm1-mutation-control.txt"
+  record_hash = "record:sha-512:5a6d4cccc626d3fd6878e9b581b658e17e96c8e7f8371349e74abf7857a9037086cef0ae47f3bff5b95b684c7ef89f67c66c2f8e66f42f9f92771eeaa655e6e8"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "GM-001"
+
+
+# ===================================================================
+# GM-002 -- S-2: dist2 never panics/overflows over the full i32xi32 domain
+# ===================================================================
+[[claim]]
+id            = "GM-002"
+clause        = "S-2"
+item          = "src/lib.rs::dist2 (verification::dist2_never_overflows_full_domain)"
+statement     = "dist2(dx, dy) never panics or overflows for any i32 pair, including i32::MIN/i32::MAX, full domain."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "probe"
+clause_source = "spec-document"
+bounds        = "unbounded: full (i32, i32) domain (no narrowing)"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo kani --harness dist2_never_overflows_full_domain"
+  expect  = "VERIFICATION:- SUCCESSFUL"
+
+  [[claim.evidence]]
+  kind       = "kani-harness"
+  family     = "bmc"
+  method     = "kani-harness"
+  epistemic_tier= "T2"
+  ref         = "verification::dist2_never_overflows_full_domain"
+  result      = "pass"
+  tool        = "kani@0.67.0 (commit unknown — `cargo kani --version` on this install reports only a semantic version, not a build sha; source identity unavailable)"
+  bounds      = "full i32 x i32 domain (no kani::assume narrowing)"
+  semantics   = ""
+  record      = "evidence/kani-dist2_never_overflows_full_domain.txt"
+  record_hash = "record:sha-512:a0d49db09deec865c3f86dbc545cf367065a3228c0dc481e3a284694e30f2fb06b2df41d62c2f1df245df3e3fff630db62f3a87de12f45c707433b1954d26e0d"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:b11a4a2f3332eb19a7bb5bbad7c8564db875173de50a43a883e8e065c4f331a8a14a4eff0e3af8f44da8d7e1828f27f9c69bf60c0bd3e6f991a32341d6ceb2ab"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:a530bbb96280e3c1ca50123f5f31fb4a5dafcd36fbeaf702b143278e56e5a6c177cb69f604a5ff91c894630af4515a026b73652e1e44c885e383fbae7536e7c4"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "tests::dist2_known_values, tests::dist2_extremes_do_not_panic"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 5
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:7bce48e7a42a3987ad815b2ef1149ce2c34b419b79947e0513e92f0e5f01955b747ab635d4862674f1d5c63b02cff22e770f145aabb2ec41b015f0e170f22a7d"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:b11a4a2f3332eb19a7bb5bbad7c8564db875173de50a43a883e8e065c4f331a8a14a4eff0e3af8f44da8d7e1828f27f9c69bf60c0bd3e6f991a32341d6ceb2ab"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:a530bbb96280e3c1ca50123f5f31fb4a5dafcd36fbeaf702b143278e56e5a6c177cb69f604a5ff91c894630af4515a026b73652e1e44c885e383fbae7536e7c4"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test (mutant: dist2 rewritten to a naive i32 multiply-then-widen, which overflows/panics on i32::MIN/i32::MAX)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (mutation, reverted)"
+  cases       = 5
+  record      = "evidence/gm2-mutation-control.txt"
+  record_hash = "record:sha-512:bde9b06c2b3f831faa9e41996508730fa09028485b2257f29c3fcd76b357531c4bf3c5803a81fb3cfdd72a7ad1d9d82f94c1224a5608fc23cd0d50c712145af5"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "GM-002"

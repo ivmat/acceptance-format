@@ -1,35 +1,20 @@
 #!/usr/bin/env python3
-"""gen_package.py — produces `acceptance.toml` (the PACKAGE) and its `evidence/` transcripts for
-the iban-check worked example, by ACTUALLY RUNNING `cargo test`, `cargo clippy`, `cargo doc`,
-`cargo kani`, and five real, restored mutation controls (one per requirement that needed one:
-R1/R2/R3/R4/R6) against the crate at `protocol_acceptance/examples/rust-delivery/iban-check/`.
+"""Capture cargo/Kani runs and mutation controls, then call assemble-package.
 
-Pure stdlib, python3.11+ (uses `tomllib` only indirectly via m11; no `tomllib` dependency itself).
-No third-party dependencies. Imports `protocol_acceptance/tools/m11.py` (the repository's shared M11
-content-hashing helper — itself pure stdlib) rather than reimplementing it, so this generator's
-hashes are byte-identical to what `acceptance_protocol.py check-package`/`check-decision`
-recompute.
-
-SELF-REFERENCE DISCLOSURE (one-commit lag): this generator and the crate it certifies live INSIDE
-`protocol_acceptance/examples/rust-delivery/` of THIS repo (the source repository). `[subject].commit`
-below is `git rev-parse HEAD` of this whole repo AT THE MOMENT THIS SCRIPT RUNS; `[subject].dirty` is
-`git status --short -- protocol_acceptance/examples/rust-delivery/iban-check` at that same moment. A
-manifest cannot name a commit that already contains itself — this file and its evidence/ records
-necessarily land in the commit AFTER the one `[subject].commit` names. If `iban-check/` was committed
-on its own FIRST (the two-commit re-stamp this example's README documents), its files are already
-tracked and clean by the time this script runs, so `[subject].dirty` reads false; if the crate and
-the package are generated together in one breath instead, the crate's own files are still untracked
-relative to the HEAD this script just read, so `[subject].dirty` reads true. Either way the actual
-value below is whatever this run's `git status` really found — disclosed, not silently papered over.
-
-DO NOT HAND-EDIT the generated acceptance.toml or evidence/ files — re-run this script.
-
+The fill.toml file contains the semantic slice. The generic assembler supplies claim,
+coverage, evidence and identity bindings. This example adds mechanically measured B20
+build/tool identities with the reference TOML encoder, then runs strict validators.
+A full regeneration requires a clean committed crate, clippy, and permission to run
+the several-minute Kani harness. Never attach a newly measured identity to an old run.
 Usage: python3 gen_package.py [--kani-timeout SECONDS]
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import shutil
+import tomllib
 import datetime
 import os
 import re
@@ -41,8 +26,10 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 CRATE_DIR = SCRIPT_DIR / "iban-check"
 EVIDENCE_DIR = SCRIPT_DIR / "evidence"
-CONTRACT_PATH = SCRIPT_DIR / "acceptance-contract.toml"
+SPECIFICATION_PATH = SCRIPT_DIR / "acceptance-specification.toml"
 PACKAGE_OUT = SCRIPT_DIR / "acceptance.toml"
+PROTOCOL_TOOL = SCRIPT_DIR.parent.parent / "tools/acceptance_protocol.py"
+FORMAT_TOOL = SCRIPT_DIR.parents[2] / "format_acceptance/tools/check_acceptance.py"
 
 # Pinned so every cargo invocation below writes build output under the crate's own directory,
 # regardless of whatever CARGO_TARGET_DIR (if any) the calling shell/worker happens to export.
@@ -54,8 +41,9 @@ CARGO_TARGET_DIR = CRATE_DIR / "target"
 # protocol_acceptance/tools/m11.py — the shared M11 hashing helper (stdlib-only itself).
 sys.path.insert(0, str(SCRIPT_DIR.parent.parent / "tools"))
 import m11  # noqa: E402
+import acceptance_protocol as AP
 
-CONTRACT_ID = "AC-2026-0001"
+SPECIFICATION_ID = "AC-2026-0001"
 # As of 2026-09-24, the leaf id, not the meaning-only prefix -- B12/B14 need the binding path
 # (`/code/rust`) present in [format].profile for the format's own binding dispatch to admit the
 # `rust-crate` subject kind at all (core.md B12/B14; format_acceptance/tools/bindings/code_rust.py).
@@ -90,6 +78,7 @@ def run(cmd: list[str], cwd: Path, timeout: int = 180,
         text=True, timeout=timeout, env=env,
     )
     elapsed = time.monotonic() - t0
+    RUNS.append((cmd, proc.returncode, proc.stdout, extra_env or {}))
     return proc.returncode, proc.stdout, elapsed
 
 
@@ -122,26 +111,16 @@ def write_evidence(name: str, text: str, repo_root: Path) -> str:
     """Persist normalized evidence; record hashes are computed over these exact bytes."""
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     (EVIDENCE_DIR / name).write_text(normalize_transcript(text, repo_root))
+    cmd, rc, output, extra_env = RUNS[-1]
+    if output != text:
+        raise RuntimeError("record differs from captured command output")
+    command = " ".join(cmd)
+    if extra_env:
+        command = DOC_COMMAND_DISPLAY
+    CAPTURED[name] = {"id": Path(name).stem, "command": command, "returncode": rc,
+                      "role": "control" if "mutation-control" in name else "primary",
+                      "transcript": "transcripts/" + name, "record": "evidence/" + name}
     return f"evidence/{name}"
-
-
-def q(s: str) -> str:
-    """Quote a string as a TOML basic string (single-line; escapes backslash/quote/control)."""
-    out = []
-    for c in s:
-        if c == "\\":
-            out.append("\\\\")
-        elif c == '"':
-            out.append('\\"')
-        elif c == "\n":
-            out.append("\\n")
-        elif c == "\t":
-            out.append("\\t")
-        elif c == "\r":
-            out.append("\\r")
-        else:
-            out.append(c)
-    return '"' + "".join(out) + '"'
 
 
 def extract_test_result_line(output: str) -> str:
@@ -175,56 +154,6 @@ def restore_file(path: Path, original: bytes) -> None:
         raise RuntimeError(f"restore_file({path}): restored bytes do not match original — REFUSING to continue")
 
 
-# --------------------------------------------------------------------------
-# M11 "subject:" domain — declared input digests
-# --------------------------------------------------------------------------
-
-def input_entries(paths: list[str]) -> list[tuple[str, str]]:
-    out = []
-    for p in paths:
-        full = CRATE_DIR / p
-        out.append((p, m11.digest_file("subject", full)))
-    return out
-
-
-ALL_SRC_INPUTS = ["src/lib.rs", "src/syntax.rs", "src/checksum.rs", "Cargo.toml"]
-
-
-# --------------------------------------------------------------------------
-# TOML rendering helpers
-# --------------------------------------------------------------------------
-
-def render_inputs(inputs: list[tuple[str, str]]) -> str:
-    lines = []
-    for path, digest in inputs:
-        lines.append("    [[claim.evidence.inputs]]")
-        lines.append(f"    path   = {q(path)}")
-        lines.append(f"    digest = {q(digest)}")
-    return "\n".join(lines)
-
-
-def render_control(of_claim: str) -> str:
-    return (
-        "    [claim.evidence.control]\n"
-        '    kind        = "mutation"\n'
-        '    expectation = "red"\n'
-        '    observed    = "red"\n'
-        f"    of_claim    = {q(of_claim)}\n"
-    )
-
-
-# core.md B20's `required_build_inputs` for the code/rust binding (format_acceptance/profiles/
-# bindings/code/rust.md): Cargo.lock + rust-toolchain.toml. `path` is B6-contained relative to
-# THIS manifest's own directory (rust-delivery/), unlike `[[claim.evidence.inputs]]` above (which
-# is relative to iban-check/, the protocol's own §8 change-impact convention -- a separate field).
-#
-# `required_build_inputs` is checked by EXACT
-# path match (reverted from a basename match review rejected) -- neither `[subject]` nor
-# this binding's own declaration carries a build-context-root locator to anchor a subdirectory-
-# relative match, so the anchor is the manifest's own directory. This crate lives one level below
-# its manifest (`iban-check/`), so the declared path must be the bare, binding-required name,
-# backed by a same-directory symlink or a byte-identical regular copy of the crate input.
-# Publication uses regular copies; regeneration checks them for drift before using them.
 REQUIRED_BUILD_INPUT_NAMES = ["Cargo.lock", "rust-toolchain.toml"]
 
 
@@ -251,17 +180,141 @@ def build_inputs_block() -> tuple[str, list[str]]:
     (rendered TOML block or "", list of names skipped because the file does not exist)."""
     lines: list[str] = []
     missing: list[str] = []
+    recorded = {}
+    if PACKAGE_OUT.is_file() and PACKAGE_OUT.parent == SCRIPT_DIR:
+        package = tomllib.loads(PACKAGE_OUT.read_text())
+        for claim in package.get("claim", []):
+            for evidence in claim.get("evidence", []):
+                for entry in evidence.get("build_inputs", []):
+                    recorded[entry["path"]] = entry["digest"]
     for name in REQUIRED_BUILD_INPUT_NAMES:
         full = CRATE_DIR / name
+        snapshot = SCRIPT_DIR / name
+        if name in recorded and snapshot.is_file():
+            actual = m11.hashdomains.digest("artifact:", snapshot.read_bytes())
+            if actual != recorded[name]:
+                raise RuntimeError(f"{snapshot} differs from the recorded package build input")
+            full = snapshot
         if not full.is_file():
             missing.append(name)
             continue
         digest = m11.hashdomains.digest("artifact:", full.read_bytes())
-        _ensure_build_input_symlink(name)
+        if full != SCRIPT_DIR / name:
+            _ensure_build_input_symlink(name)
         lines.append("  [[claim.evidence.build_inputs]]")
-        lines.append(f"  path   = {q(name)}")
-        lines.append(f"  digest = {q(digest)}")
+        lines.append(f"  path   = {AP._toml_scalar(name)}")
+        lines.append(f"  digest = {AP._toml_scalar(digest)}")
     return "\n".join(lines), missing
+
+
+RUNS = []
+CAPTURED = {}
+
+
+def dump(path, data, comment="# GENERATED; do not hand-edit.\n"):
+    """Generic table layout, with scalar encoding supplied by the reference tool."""
+    lines = [comment.rstrip()]
+    def table(values, prefix):
+        nested = []
+        for key, value in values.items():
+            key = AP._toml_key(key)
+            arrays = isinstance(value, list) and value and isinstance(value[0], dict)
+            if isinstance(value, dict) or arrays:
+                nested.append((key, value, arrays))
+            else:
+                lines.append(f"{key} = {AP._toml_scalar(value)}")
+        for key, value, arrays in nested:
+            path_key = ".".join(prefix + [key])
+            for child in value if arrays else [value]:
+                lines.extend(["", f"[[{path_key}]]" if arrays else f"[{path_key}]"])
+                table(child, prefix + [key])
+    table(data, [])
+    path.write_text("\n".join(lines) + "\n")
+
+
+def capture_identity(probes):
+    """FV adoption §6: identify both the installed bundle and the launcher."""
+    version = re.search(r"(\d+\.\d+\.\d+)", probes["cargo kani --version"]).group(1)
+    bundle = Path.home() / ".kani" / ("kani-" + version)
+    if not bundle.is_dir():
+        raise RuntimeError("Kani bundle unavailable; refusing version-only identity")
+    lines = [f"{p.relative_to(bundle).as_posix()}:{hashlib.sha256(p.read_bytes()).hexdigest()}"
+             for p in sorted(bundle.rglob("*")) if p.is_file() and not p.is_symlink()]
+    manifest = ("\n".join(lines) + "\n").encode()
+    EVIDENCE_DIR.mkdir(exist_ok=True)
+    (EVIDENCE_DIR / "kani-bundle.manifest.txt").write_bytes(manifest)
+    launcher = Path(shutil.which("cargo-kani") or "")
+    entries = [{"name": "kani-bundle", "version": version,
+                "digest": m11.hashdomains.digest("artifact:", manifest)},
+               {"name": "cargo-kani-launcher", "version": version,
+                "digest": m11.hashdomains.digest("artifact:", launcher.read_bytes())}]
+    for name, probe in [("rustc", "rustc -vV"), ("cargo", "cargo --version --verbose")]:
+        commit = re.search(r"^commit-hash: ([0-9a-f]{40})$", probes[probe], re.M)
+        if not commit:
+            raise RuntimeError(f"missing exact {name} commit")
+        entries.append({"name": name, "commit": commit.group(1)})
+    kani_rustc = subprocess.run([str(bundle / "toolchain/bin/rustc"), "-vV"],
+                               capture_output=True, text=True, check=True).stdout
+    kani_commit = re.search(r"^commit-hash: ([0-9a-f]{40})$", kani_rustc, re.M)
+    if not kani_commit:
+        raise RuntimeError("missing exact Kani compiler toolchain identity")
+    entries.append({"name": "kani-rustc", "commit": kani_commit.group(1)})
+    return entries
+
+
+def assemble_captured(commit, date, probes, identity):
+    transcript_dir = SCRIPT_DIR / "transcripts"
+    transcript_dir.mkdir(exist_ok=True)
+    for name, row in CAPTURED.items():
+        prefix = "".join(f"$ {command}\n{output}\n" for command, output in probes.items())
+        (transcript_dir / name).write_text(prefix + "$ " + row["command"] + "\n" +
+                                          (EVIDENCE_DIR / name).read_text())
+    dump(SCRIPT_DIR / "manifest.toml", {"report": {"commit": commit, "date": date},
+                                       "run": list(CAPTURED.values())})
+    fill = tomllib.loads((SCRIPT_DIR / "fill.toml").read_text())
+    by_id = {row["id"]: row for row in CAPTURED.values()}
+    for claim in fill["claim"]:
+        if "watched_fail" in claim:
+            control = next(by_id[e["run"]] for e in claim["evidence"]
+                           if by_id[e["run"]]["role"] == "control")
+            claim["watched_fail"]["observed"] = "\n".join(
+                (SCRIPT_DIR / control["record"]).read_text().strip().splitlines()[-12:])
+        recipe = claim.get("recipe", {})
+        if recipe.get("command", "").startswith("cargo test"):
+            primary = next(row for row in CAPTURED.values() if row["role"] == "primary"
+                           and row["command"] == recipe["command"])
+            recipe["expect"] = extract_test_result_line((SCRIPT_DIR / primary["record"]).read_text())
+    dump(SCRIPT_DIR / "fill.runtime.toml", fill)
+    tool = str(PROTOCOL_TOOL)
+    subprocess.run([sys.executable, tool, "project-brief", str(SPECIFICATION_PATH),
+                    "--allowed-writes", str(SCRIPT_DIR / "writes.toml"),
+                    "--out", str(SCRIPT_DIR / "brief.yaml"), "--stats"], check=True)
+    subprocess.run([sys.executable, tool, "assemble-package", str(SCRIPT_DIR / "brief.yaml"),
+                    str(SCRIPT_DIR), "--spec", str(SPECIFICATION_PATH),
+                    "--fill", str(SCRIPT_DIR / "fill.runtime.toml"), "--out", str(PACKAGE_OUT)], check=True)
+    # B20 is an existing optional wire field not yet emitted by the generic assembler.
+    # Enrich only these mechanical identities; every claim/result/hash came from assembly.
+    package = tomllib.loads(PACKAGE_OUT.read_text())
+    for claim in package["claim"]:
+        for evidence in claim.get("evidence", []):
+            if evidence.get("control"):
+                continue
+            evidence["toolchain"] = identity if evidence["kind"] == "kani-harness" else [entry for entry in identity if entry["name"] in ("rustc", "cargo")]
+            evidence["build_inputs"] = []
+            for name in ("Cargo.lock", "rust-toolchain.toml"):
+                source = CRATE_DIR / name
+                target = SCRIPT_DIR / name
+                if target.is_symlink():
+                    target.unlink()
+                target.write_bytes(source.read_bytes())
+                evidence["build_inputs"].append({"path": name,
+                    "digest": m11.hashdomains.digest("artifact:", source.read_bytes())})
+    dump(PACKAGE_OUT, package, "# GENERATED by gen_package.py via assemble-package; do not hand-edit.\n")
+    subprocess.run([sys.executable, str(FORMAT_TOOL),
+                    "--strict", "--strict-weight", str(PACKAGE_OUT)], check=True)
+    subprocess.run([sys.executable, tool, "check-package", str(PACKAGE_OUT),
+                    "--spec", str(SPECIFICATION_PATH)], check=True)
+    return 0
 
 
 # --------------------------------------------------------------------------
@@ -281,60 +334,25 @@ def main(argv: list[str]) -> int:
     commit = git(["rev-parse", "HEAD"], cwd=repo_root)
     dirty_out = git(["status", "--short", "--", "protocol_acceptance/examples/rust-delivery/iban-check"], cwd=repo_root)
     dirty = bool(dirty_out.strip())
+    if dirty:
+        raise RuntimeError("crate has uncommitted changes; preserve the historical package until a clean subject is available")
     today = datetime.date.today().isoformat()
 
-    rustc_version = subprocess.run(["rustc", "--version"], capture_output=True, text=True, check=True).stdout.strip()
-    cargo_version = subprocess.run(["cargo", "--version"], capture_output=True, text=True, check=True).stdout.strip()
-    clippy_version_raw = subprocess.run(["cargo", "clippy", "--version"], capture_output=True, text=True, check=True).stdout.strip()
-    rustc_tool = f"{rustc_version} + {cargo_version}"
-    clippy_tool = f"{clippy_version_raw} + {rustc_version}"
-
-    # B20 typed toolchain identity: real, verified 40-hex commits, straight from each tool's own
-    # `-vV`/`--verbose` output -- never invented. `rustc -vV` and `cargo --version --verbose` both
-    # print `commit-hash: <40-hex>`; clippy shares rustc's build (its own `--version` prints only a
-    # 10-hex prefix, not the 40-hex B20 requires) and cargo-kani's plain `--version` prints a bare
-    # semantic version with no commit at all -- both are left out of the typed `toolchain` list
-    # rather than manufacturing a value the install cannot supply (leaf trap 5a.4, code/rust.md).
-    def _tool_commit(cmd: list[str]) -> str | None:
-        out = subprocess.run(cmd, capture_output=True, text=True, check=True).stdout
-        m = re.search(r"^commit-hash:\s*([0-9a-f]{40})\s*$", out, re.MULTILINE)
-        return m.group(1) if m else None
-
-    rustc_verbose = subprocess.run(["rustc", "-vV"], capture_output=True, text=True, check=True).stdout
-    rustc_commit = _tool_commit(["rustc", "-vV"])
-    cargo_commit = _tool_commit(["cargo", "--version", "--verbose"])
-    rustc_release_m = re.search(r"^release:\s*(\S+)\s*$", rustc_verbose, re.MULTILINE)
-    rustc_release = rustc_release_m.group(1) if rustc_release_m else rustc_version
-    print(f"[gen_package] rustc commit={rustc_commit!r} cargo commit={cargo_commit!r} (B20 typed toolchain)")
-
-    def toolchain_rustc_cargo() -> str:
-        """Typed `toolchain` block naming rustc + cargo (real 40-hex commits) -- for a record
-        whose free-text `tool` string names both. B20/B21 (core.md)."""
-        lines = ["  [[claim.evidence.toolchain]]", f"  name    = \"rustc\"", f"  version = {q(rustc_release)}"]
-        if rustc_commit:
-            lines.append(f"  commit  = {q(rustc_commit)}")
-        lines.append("  [[claim.evidence.toolchain]]")
-        lines.append(f"  name    = \"cargo\"")
-        cargo_release_m = re.search(r"^cargo (\S+)", cargo_version)
-        lines.append(f"  version = {q(cargo_release_m.group(1) if cargo_release_m else cargo_version)}")
-        if cargo_commit:
-            lines.append(f"  commit  = {q(cargo_commit)}")
-        return "\n".join(lines)
-
-    def toolchain_rustc_only() -> str:
-        """Typed `toolchain` block naming only rustc -- for the clippy (lint) record: clippy's own
-        `--version` output has no 40-hex commit (only a 10-hex prefix), so B20's `commit` shape
-        cannot be met for a `clippy` entry; rustc's own real commit is written instead, since
-        clippy is literally the same rustc build clippy's `tool` string already names."""
-        lines = ["  [[claim.evidence.toolchain]]", f"  name    = \"rustc\"", f"  version = {q(rustc_release)}"]
-        if rustc_commit:
-            lines.append(f"  commit  = {q(rustc_commit)}")
-        return "\n".join(lines)
+    # Capture identity in the crate's pinned build context, never the caller's cwd.
+    probe_commands = ["rustc --version", "cargo --version", "cargo clippy --version",
+                      "rustc -vV", "cargo --version --verbose", "cargo kani --version"]
+    probes = {}
+    for command in probe_commands:
+        proc = subprocess.run(command.split(), cwd=CRATE_DIR, capture_output=True, text=True, check=True)
+        probes[command] = proc.stdout.strip()
+    rustc_tool = probes["rustc --version"] + " + " + probes["cargo --version"]
+    clippy_version_raw = probes["cargo clippy --version"]
+    identity = capture_identity(probes)
 
     kani_available = True
     kani_version_line = ""
     try:
-        kv = subprocess.run(["cargo", "kani", "--version"], capture_output=True, text=True, timeout=30)
+        kv = subprocess.run(["cargo", "kani", "--version"], cwd=CRATE_DIR, capture_output=True, text=True, timeout=30)
         kani_version_line = kv.stdout.strip() or kv.stderr.strip()
         kani_available = kv.returncode == 0
     except (OSError, subprocess.TimeoutExpired):
@@ -405,10 +423,9 @@ def main(argv: list[str]) -> int:
             print(f"[gen_package] kani: rc={rc} elapsed={kani_elapsed:.1f}s pass={kani_pass}")
         except subprocess.TimeoutExpired as e:
             partial = (e.stdout or "") if isinstance(e.stdout, str) else (e.stdout or b"").decode("utf-8", "replace")
-            kani_record = write_evidence(
-                "kani-validate-never-panics.txt",
-                partial + f"\n\n[gen_package] TIMED OUT after {args.kani_timeout}s\n", repo_root,
-            )
+            # An incomplete run has no completed report row and is never assembled.
+            (EVIDENCE_DIR / "kani-validate-never-panics.txt").write_text(normalize_transcript(
+                partial + f"\n\n[gen_package] TIMED OUT after {args.kani_timeout}s\n", repo_root))
             kani_pass = False
     if not kani_available or not kani_pass:
         raise RuntimeError(
@@ -515,464 +532,7 @@ def main(argv: list[str]) -> int:
         raise RuntimeError("post-mutation sanity `cargo clippy` failed — the tree was not restored cleanly")
     print("[gen_package] post-mutation sanity: cargo test + clippy both clean")
 
-    # ----------------------------------------------------------------------
-    # Assemble acceptance.toml
-    # ----------------------------------------------------------------------
-
-    dirty_clause = (
-        "the crate's own files were untracked relative to that HEAD when this ran — hence\n"
-        "# [subject].dirty = true below, disclosed rather than hidden"
-        if dirty else
-        "iban-check/ was already committed, on its own, before this ran (the two-commit\n"
-        "# re-stamp this example's README documents) — hence [subject].dirty = false below"
-    )
-
-    contract_hash = m11.digest_file("contract", CONTRACT_PATH)
-
-    def record_hash(relpath: str) -> str:
-        # 0.3.1: writers MUST emit the typed `record:sha-512:` construction (hash-domains.md's
-        # Read-only legacy record wires section) — `m11.digest_file("evidence-record", ...)` wrote
-        # the untyped legacy bare wire, which the 0.3.1 wording now states is read-only.
-        return m11.hashdomains.digest("record:", (SCRIPT_DIR / relpath).read_bytes())
-
-    kani_tool_note = (
-        f"kani@{re.search(r'([0-9]+\\.[0-9]+\\.[0-9]+)', kani_version_line).group(1) if re.search(r'([0-9]+\\.[0-9]+\\.[0-9]+)', kani_version_line) else kani_version_line} "
-        "(commit unknown — `cargo kani --version` on this install reports only a semantic "
-        "version, not a build sha; see the example README's Friction section)"
-    )
-
-    inputs_malformed = render_inputs(input_entries(ALL_SRC_INPUTS + ["tests/malformed.rs"]))
-    inputs_checksum = render_inputs(input_entries(ALL_SRC_INPUTS + ["tests/checksum.rs"]))
-    inputs_kani = render_inputs(input_entries(ALL_SRC_INPUTS))
-    inputs_no_panic = render_inputs(input_entries(ALL_SRC_INPUTS + ["tests/no_panic.rs"]))
-    inputs_clippy = render_inputs(input_entries(ALL_SRC_INPUTS))
-    inputs_doc = render_inputs(input_entries(ALL_SRC_INPUTS))
-
-    # B20 typed build-input identity: real digests over Cargo.lock + rust-toolchain.toml (both
-    # real files at iban-check/ as of the rust-delivery migration -- rust-toolchain.toml did not exist
-    # before this pass; it was added, real and honest (it records the toolchain CHANNEL this very
-    # run verified against, `rustc -vV` below -- `channel = "stable"` floats to whatever "stable"
-    # resolves to at build time, not a single exact toolchain), rather than declaring build_inputs
-    # against a file that does not exist. Written once on the PRIMARY (non-kani) evidence record
-    # of each weighted
-    # claim -- the union of a claim's own evidence already satisfies the code/rust binding's
-    # `required_build_inputs` guard (B20 opt-in-complete shape) the moment one record carries it.
-    build_inputs, build_inputs_missing = build_inputs_block()
-    if build_inputs_missing:
-        print(f"[gen_package] NOTE: build_inputs SKIPPED for missing file(s) (never invented): {build_inputs_missing}")
-
-    header = f"""\
-# GENERATED FILE — DO NOT HAND-EDIT.
-#
-# Produced by protocol_acceptance/examples/rust-delivery/gen_package.py, which actually ran `cargo test`,
-# `cargo clippy`, `cargo doc`, `cargo kani`, and five real mutation controls (R1/R2/R3/R4/R6)
-# against protocol_acceptance/examples/rust-delivery/iban-check/ — apply patch, run, require the expected
-# verdict, restore the file byte-exactly, verify the restoration. Transcripts are in evidence/.
-#
-# SELF-REFERENCE (one-commit lag): [subject].commit names this repo's HEAD at generation time;
-# this file and evidence/ necessarily land in the commit AFTER that one. This run found that
-# {dirty_clause}. Generated: {datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
-#
-# Kani tool identity: `cargo kani --version` on this install prints a bare semantic version
-# ({kani_version_line!r}), not a build/commit sha — evidence-types.md asks for "tool identity AT
-# BUILD GRANULARITY (commit, not version)" for kani-harness records; this install cannot supply
-# that, so `tool` below says so explicitly rather than inventing a commit. See README Friction.
-#
-# TRANSCRIPT NORMALIZATION (a disclosed transform, before persistence and record hashing): absolute
-# crate-root paths become <crate>; absolute repository-root paths become <repo>; any
-# macOS-user Rustup-toolchain prefixes become <rustup>/<toolchain>/; every other macOS-user prefix
-# becomes <users>/<name>/; and a remaining current-home prefix becomes ~. Thus each record_hash is
-# over the normalized evidence bytes exactly as delivered, never over machine-local transcript bytes.
-#
-# Re-run: python3 gen_package.py
-
-"""
-
-    body = []
-    body.append(header)
-    body.append("[format]")
-    body.append('id       = "acceptance/0"')
-    body.append(f'protocol = "acceptance-protocol/0"')
-    body.append(f'profile  = {q(PROFILE_ID)}')
-    body.append("")
-    body.append("[subject]")
-    body.append(f"name   = {q('iban-check')}")
-    body.append(f'kind   = "rust-crate"')
-    body.append(f"commit = {q(commit)}")
-    body.append(f"dirty  = {'true' if dirty else 'false'}")
-    body.append("")
-    body.append("[contract]")
-    body.append(f"id                 = {q(CONTRACT_ID)}")
-    body.append(f"hash               = {q(contract_hash)}")
-    body.append("requirements_total = 6")
-    body.append("")
-    body.append("[spec]")
-    body.append(f'path    = {q("acceptance-contract.toml")}')
-    body.append(f'version = {q(CONTRACT_ID + "@v1")}')
-    body.append(f'axis    = {q("the requirements of contract " + CONTRACT_ID)}')
-    body.append("")
-    body.append("[coverage]")
-    body.append("clauses_total = 6")
-    body.append("claims_total  = 6")
-    body.append("")
-
-    # -- IB-001 (R1) --------------------------------------------------------
-    body.append("# ===================================================================")
-    body.append("# IB-001 -- R1: malformed input is rejected")
-    body.append("# ===================================================================")
-    body.append("[[claim]]")
-    body.append('id            = "IB-001"')
-    body.append('clause        = "R1"')
-    body.append(f'item          = {q("iban-check/tests/malformed.rs")}')
-    body.append(f'statement     = {q("Malformed IBAN values are rejected cleanly, with the specific IbanError variant matching the specific defect (charset, unknown country, bad length, bad checksum), in the fixed check order validate documents, and without a panic or crash on any of the fixtures below.")}')
-    body.append('band          = "A1"')
-    body.append('status        = "evidenced"')
-    body.append('weight        = "weighted"')
-    body.append('grade         = "test-only"')
-    body.append('clause_source = "spec-document"')
-    body.append(f'bounds        = {q("bounded: 9 named malformed fixtures spanning all 4 IbanError variants")}')
-    body.append(f"captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append("  [claim.self_verify]")
-    body.append(f'  command = {q("cargo test --test malformed")}')
-    body.append(f"  expect  = {q(malformed_result_line)}")
-    body.append("")
-    body.append("    [claim.self_verify.watched_fail]")
-    body.append(f'    of_command = {q("cargo test --test malformed")}')
-    body.append(f'    perturbed  = {q("neutered the charset-rejection branch in validate (changed `if !syntax::is_iban_byte(buf[i])` to `if false && !syntax::is_iban_byte(buf[i])`, so no input is ever rejected for its character set)")}')
-    body.append(f"    observed   = {q(r1_control_tail)}")
-    body.append(f'    date       = {q(today)}')
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind        = "unit-test"')
-    body.append('  family      = "dynamic"')
-    body.append('  method      = "unit-test"')
-    body.append('  epistemic_tier = "T3"')
-    body.append(f'  ref         = {q("tests/malformed.rs (9 named fixtures covering BadCharacter/UnknownCountry/BadLength/BadChecksum)")}')
-    body.append('  result      = "pass"')
-    body.append(f"  tool        = {q(rustc_tool)}")
-    body.append(f"  cases       = {malformed_cases}")
-    body.append(f"  record      = {q(malformed_record)}")
-    body.append(f"  record_hash = {q(record_hash(malformed_record))}")
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append(inputs_malformed)
-    body.append(toolchain_rustc_cargo())
-    if build_inputs:
-        body.append(build_inputs)
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind        = "unit-test"')
-    body.append('  family      = "dynamic"')
-    body.append('  method      = "unit-test"')
-    body.append('  epistemic_tier = "T3"')
-    body.append(f'  ref         = {q("tests/malformed.rs (mutant: charset-rejection branch neutered)")}')
-    body.append('  result      = "fail"')
-    body.append(f"  tool        = {q(rustc_tool + ' (1-line mutation, reverted)')}")
-    body.append(f"  cases       = {malformed_cases}")
-    body.append(f'  record      = {q("evidence/r1-mutation-control.txt")}')
-    body.append(f'  record_hash = {q(record_hash("evidence/r1-mutation-control.txt"))}')
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append(render_control("IB-001"))
-    body.append("")
-
-    # -- IB-002 (R2) --------------------------------------------------------
-    body.append("# ===================================================================")
-    body.append("# IB-002 -- R2: ISO 7064 mod-97-10 checksum is computed correctly")
-    body.append("# ===================================================================")
-    body.append("[[claim]]")
-    body.append('id            = "IB-002"')
-    body.append('clause        = "R2"')
-    body.append(f'item          = {q("iban-check/tests/checksum.rs")}')
-    body.append(f'statement     = {q("The ISO 7064 mod-97-10 checksum is computed correctly, with no panic or crash on any tested input: 10 known-valid IBANs (one per supported country) pass, a corrupted check-digit pair is rejected, and flipping one digit of any known-valid IBAN always changes the verdict (200 LCG-driven trials).")}')
-    body.append('band          = "A1"')
-    body.append('status        = "evidenced"')
-    body.append('weight        = "weighted"')
-    body.append('grade         = "test-only"')
-    body.append('clause_source = "spec-document"')
-    body.append(f'bounds        = {q("bounded: 10 known-valid IBANs + LCG-perturbed sample of 200 (seed 0xC0FFEE)")}')
-    body.append(f"captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append("  [claim.self_verify]")
-    body.append(f'  command = {q("cargo test --test checksum")}')
-    body.append(f"  expect  = {q(checksum_result_line)}")
-    body.append("")
-    body.append("    [claim.self_verify.watched_fail]")
-    body.append(f'    of_command = {q("cargo test --test checksum")}')
-    body.append(f'    perturbed  = {q("changed the ISO 7064 modulus in checksum::mod97_is_valid from 97 to 96 at all three reduction sites")}')
-    body.append(f"    observed   = {q('all_known_valid_ibans_pass and flipping_one_digit_of_a_valid_iban_always_changes_the_verdict FAILED: assertion left==right failed, left: Err(BadChecksum), right: Ok(()) — the mutated modulus rejects every real IBAN')}")
-    body.append(f'    date       = {q(today)}')
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind        = "unit-test"')
-    body.append('  family      = "dynamic"')
-    body.append('  method      = "unit-test"')
-    body.append('  epistemic_tier = "T3"')
-    body.append(f'  ref         = {q("tests/checksum.rs::{all_known_valid_ibans_pass, a_wrong_checksum_is_rejected}")}')
-    body.append('  result      = "pass"')
-    body.append(f"  tool        = {q(rustc_tool)}")
-    body.append("  cases       = 2")
-    body.append(f"  record      = {q(checksum_record)}")
-    body.append(f"  record_hash = {q(record_hash(checksum_record))}")
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append(inputs_checksum)
-    body.append(toolchain_rustc_cargo())
-    if build_inputs:
-        body.append(build_inputs)
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind        = "property-test"')
-    body.append('  family      = "dynamic"')
-    body.append('  method      = "property-test"')
-    body.append('  epistemic_tier = "T3"')
-    body.append(f'  ref         = {q("tests/checksum.rs::flipping_one_digit_of_a_valid_iban_always_changes_the_verdict")}')
-    body.append('  result      = "pass"')
-    body.append(f"  tool        = {q(rustc_tool)}")
-    body.append("  cases       = 200")
-    body.append(f'  generator   = {q("hand-rolled LCG (Numerical Recipes constants 6364136223846793005/1442695040888963407), seed 0xC0FFEE, 20 trials x 10 known-valid IBANs, each flipping one randomly LCG-chosen digit position to a different digit")}')
-    body.append(f"  record      = {q(checksum_record)}")
-    body.append(f"  record_hash = {q(record_hash(checksum_record))}")
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append(inputs_checksum)
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind        = "unit-test"')
-    body.append('  family      = "dynamic"')
-    body.append('  method      = "unit-test"')
-    body.append('  epistemic_tier = "T3"')
-    body.append(f'  ref         = {q("tests/checksum.rs (mutant: ISO 7064 modulus 97 -> 96)")}')
-    body.append('  result      = "fail"')
-    body.append(f"  tool        = {q(rustc_tool + ' (1-line mutation x3 sites, reverted)')}")
-    body.append("  cases       = 3")
-    body.append(f'  record      = {q("evidence/r2-mutation-control.txt")}')
-    body.append(f'  record_hash = {q(record_hash("evidence/r2-mutation-control.txt"))}')
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append(render_control("IB-002"))
-    body.append("")
-
-    # -- IB-003 (R3) --------------------------------------------------------
-    body.append("# ===================================================================")
-    body.append("# IB-003 -- R3: validate never panics on any input")
-    body.append("# ===================================================================")
-    body.append("[[claim]]")
-    body.append('id            = "IB-003"')
-    body.append('clause        = "R3"')
-    body.append(f'item          = {q("iban-check/src/lib.rs::validate (verification::validate_never_panics)")}')
-    body.append(f'statement     = {q("validate never panics: proved by Kani for all ASCII inputs up to 20 bytes (bounded model check), and tested over 20,000+ random byte-string samples up to 128 bytes including non-ASCII/invalid-UTF-8-adjacent content (dynamic fuzz-style loop).")}')
-    body.append('band          = "A1"')
-    body.append('status        = "evidenced"')
-    body.append('weight        = "weighted"')
-    body.append('grade         = "probe"')
-    body.append('clause_source = "spec-document"')
-    body.append(f'bounds        = {q("bounded: Kani KANI_BOUND=20 ASCII bytes, unwind=24 (crate real MAX_LEN stays 34 — only the harness input is bounded); dynamic sample up to 128 bytes, full byte range")}')
-    body.append(f"captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append("  [claim.self_verify]")
-    body.append(f'  command = {q("cargo kani --harness validate_never_panics")}')
-    body.append(f"  expect  = {q(kani_expect)}")
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind      = "kani-harness"')
-    body.append('  family    = "bmc"')
-    body.append('  method    = "kani-harness"')
-    body.append('  epistemic_tier = "T2"')
-    body.append(f'  ref       = {q("verification::validate_never_panics")}')
-    body.append('  result    = "pass"')
-    body.append(f"  tool      = {q(kani_tool_note)}")
-    body.append(f'  bounds    = {q("unwind=24, KANI_BOUND=20 ASCII bytes (< 0x80)")}')
-    body.append('  semantics = ""')
-    body.append(f"  record    = {q(kani_record)}")
-    body.append(f"  record_hash = {q(record_hash(kani_record))}")
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append(inputs_kani)
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind        = "unit-test"')
-    body.append('  family      = "dynamic"')
-    body.append('  method      = "unit-test"')
-    body.append('  epistemic_tier = "T3"')
-    body.append(f'  ref         = {q("tests/no_panic.rs (3 #[test] fns: 20,000-trial hand-rolled xorshift64 fuzz loop up to 128 bytes; 123 adversarial near-miss-length trials; 5 edge cases)")}')
-    body.append('  result      = "pass"')
-    body.append(f"  tool        = {q(rustc_tool)}")
-    body.append(f"  cases       = {no_panic_cases}")
-    body.append(f"  record      = {q(no_panic_record)}")
-    body.append(f"  record_hash = {q(record_hash(no_panic_record))}")
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append(inputs_no_panic)
-    body.append(toolchain_rustc_cargo())
-    if build_inputs:
-        body.append(build_inputs)
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind        = "unit-test"')
-    body.append('  family      = "dynamic"')
-    body.append('  method      = "unit-test"')
-    body.append('  epistemic_tier = "T3"')
-    body.append(f'  ref         = {q("tests/checksum.rs (mutant: `rearranged` buffer in validate shrunk from MAX_LEN=34 to 2 bytes) -- fast dynamic witness in place of a second ~7-minute Kani run; see README Friction")}')
-    body.append('  result      = "fail"')
-    body.append(f"  tool        = {q(rustc_tool + ' (1-line mutation, reverted)')}")
-    body.append("  cases       = 3")
-    body.append(f'  record      = {q("evidence/r3-mutation-control.txt")}')
-    body.append(f'  record_hash = {q(record_hash("evidence/r3-mutation-control.txt"))}')
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append(render_control("IB-003"))
-    body.append("")
-
-    # -- IB-004 (R4) --------------------------------------------------------
-    body.append("# ===================================================================")
-    body.append("# IB-004 -- R4: no unsafe code")
-    body.append("# ===================================================================")
-    body.append("[[claim]]")
-    body.append('id            = "IB-004"')
-    body.append('clause        = "R4"')
-    body.append(f'item          = {q("iban-check/src/lib.rs (#![forbid(unsafe_code)]) + cargo clippy")}')
-    body.append(f'statement     = {q("The crate contains no unsafe code: #![forbid(unsafe_code)] makes any `unsafe` block a hard compile error, and cargo clippy runs clean under -D warnings.")}')
-    body.append('band          = "A1"')
-    body.append('status        = "evidenced"')
-    body.append('weight        = "weighted"')
-    body.append('grade         = "mechanical"')
-    body.append('clause_source = "spec-document"')
-    body.append(f"captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append("  [claim.self_verify]")
-    body.append(f'  command = {q("cargo clippy -- -D warnings")}')
-    body.append(f'  expect  = {q("Finished")}')
-    body.append("")
-    body.append("    [claim.self_verify.watched_fail]")
-    body.append(f'    of_command = {q("cargo clippy -- -D warnings")}')
-    body.append(f'    perturbed  = {q("inserted an empty `unsafe {}` block at the top of validate\'s body")}')
-    body.append(f"    observed   = {q('error: usage of an `unsafe` block --> src/lib.rs:104:5 (forbid(unsafe_code) makes this a hard compile error, not merely a lint warning); could not compile `iban-check` (lib) due to 2 previous errors')}")
-    body.append(f'    date       = {q(today)}')
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind      = "lint"')
-    body.append('  family    = "mechanical"')
-    body.append('  method    = "lint"')
-    body.append('  epistemic_tier = "T4"')
-    body.append(f'  ref       = {q("#![forbid(unsafe_code)] (src/lib.rs:1) + cargo clippy -- -D warnings over the whole crate")}')
-    body.append('  result    = "pass"')
-    body.append(f"  tool      = {q(clippy_tool)}")
-    body.append(f"  record    = {q(clippy_record)}")
-    body.append(f"  record_hash = {q(record_hash(clippy_record))}")
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append(inputs_clippy)
-    body.append(toolchain_rustc_only())
-    if build_inputs:
-        body.append(build_inputs)
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind      = "lint"')
-    body.append('  family    = "mechanical"')
-    body.append('  method    = "lint"')
-    body.append('  epistemic_tier = "T4"')
-    body.append(f'  ref       = {q("cargo clippy -- -D warnings (mutant: empty `unsafe {}` block inserted in validate)")}')
-    body.append('  result    = "fail"')
-    body.append(f"  tool      = {q(clippy_tool + ' (1-line mutation, reverted)')}")
-    body.append(f'  record    = {q("evidence/r4-mutation-control.txt")}')
-    body.append(f'  record_hash = {q(record_hash("evidence/r4-mutation-control.txt"))}')
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append(render_control("IB-004"))
-    body.append("")
-
-    # -- IB-005 (R5, cross-cutting placeholder) ------------------------------
-    body.append("# ===================================================================")
-    body.append("# IB-005 -- R5: cross-cutting (\"verification of R1-R3 is unbounded\") -- NOT MET")
-    body.append("# ===================================================================")
-    body.append("[[claim]]")
-    body.append('id        = "IB-005"')
-    body.append('clause    = "R5"')
-    body.append(f'item      = {q("cross-cutting: R1, R2, R3")}')
-    body.append(f'statement = {q("No unbounded verification argument exists yet for R1/R2/R3: IB-001/IB-002 are bounded dynamic samples (points, not sets) and IB-003\'s Kani proof is bounded to 20 ASCII bytes. See [[deviation]] below.")}')
-    body.append('band      = "A0"')
-    body.append('status    = "gap"')
-    body.append('grade     = "unspecified"')
-    body.append('clause_source = "spec-document"')
-    body.append(f"captured_at_commit = {q(commit)}")
-    body.append("# weight omitted -> unweighted (W1): this row documents the gap the deviation below names;")
-    body.append("# it does not itself carry the format's vouching -- the deviation carries the disclosure.")
-    body.append("")
-
-    # -- IB-006 (R6, optional) ------------------------------------------------
-    body.append("# ===================================================================")
-    body.append("# IB-006 -- R6 (optional): cargo doc builds clean")
-    body.append("# ===================================================================")
-    body.append("[[claim]]")
-    body.append('id            = "IB-006"')
-    body.append('clause        = "R6"')
-    body.append(f'item          = {q("iban-check (cargo doc --no-deps, warnings fatal)")}')
-    body.append(f'statement     = {q("cargo doc --no-deps builds the crate\'s documentation with zero warnings — enforced by making rustdoc warnings fatal (RUSTDOCFLAGS=-D warnings), not merely by checking for the word \'Generated\'.")}')
-    body.append('band          = "A0"')
-    body.append('status        = "evidenced"')
-    body.append('weight        = "weighted"')
-    body.append('grade         = "mechanical"')
-    body.append('clause_source = "spec-document"')
-    body.append(f"captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append("  [claim.self_verify]")
-    body.append(f'  command = {q(DOC_COMMAND_DISPLAY)}')
-    body.append(f'  expect  = {q("Generated")}')
-    body.append("")
-    body.append("    [claim.self_verify.watched_fail]")
-    body.append(f'    of_command = {q(DOC_COMMAND_DISPLAY)}')
-    body.append(f'    perturbed  = {q("added a broken intra-doc link ([`totally::bogus::path`]) to the crate root doc comment")}')
-    body.append(f"    observed   = {q(r6_control_tail)}")
-    body.append(f'    date       = {q(today)}')
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind      = "lint"')
-    body.append('  family    = "mechanical"')
-    body.append('  method    = "lint"')
-    body.append('  epistemic_tier = "T4"')
-    body.append(f'  ref       = {q(DOC_COMMAND_DISPLAY + " over the whole crate (0 warnings, enforced by -D warnings)")}')
-    body.append('  result    = "pass"')
-    body.append(f"  tool      = {q('rustdoc (bundled with ' + rustc_version + ') via ' + cargo_version)}")
-    body.append(f"  record    = {q(doc_record)}")
-    body.append(f"  record_hash = {q(record_hash(doc_record))}")
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append(inputs_doc)
-    body.append(toolchain_rustc_cargo())
-    if build_inputs:
-        body.append(build_inputs)
-    body.append("")
-    body.append("  [[claim.evidence]]")
-    body.append('  kind      = "lint"')
-    body.append('  family    = "mechanical"')
-    body.append('  method    = "lint"')
-    body.append('  epistemic_tier = "T4"')
-    body.append(f'  ref       = {q(DOC_COMMAND_DISPLAY + " (mutant: broken intra-doc link added to crate root doc comment)")}')
-    body.append('  result    = "fail"')
-    body.append(f"  tool      = {q('rustdoc (bundled with ' + rustc_version + ') via ' + cargo_version + ' (1-line mutation, reverted)')}")
-    body.append(f'  record    = {q("evidence/r6-mutation-control.txt")}')
-    body.append(f'  record_hash = {q(record_hash("evidence/r6-mutation-control.txt"))}')
-    body.append(f"  captured_at_commit = {q(commit)}")
-    body.append("")
-    body.append(render_control("IB-006"))
-    body.append("")
-
-    # -- deviation + filler ---------------------------------------------------
-    body.append("# ===================================================================")
-    body.append("[[deviation]]")
-    body.append('requirement      = "R5"')
-    body.append('kind             = "unmet"')
-    body.append(f'statement        = {q("R1/R2/R3 evidence is entirely bounded: R1/R2 rest on named test fixtures plus a 200-trial LCG-perturbed sample (dynamic, points not sets); R3 (probe grade) is a Kani proof bounded to inputs of at most 20 ASCII bytes, unwind=24 -- not the crate\'s real 34-byte capacity, and not an unbounded/kernel-checked argument. No unbounded argument exists for any of the three.")}')
-    body.append(f'cause            = {q("No Lean/Aeneas extraction lane exists for this crate, and CBMC\'s own cost on this machine (measured: 29s/206s/415s at a 8/16/20-byte harness bound; did not finish within a 10-minute time-box unconstrained at the real 34-byte maximum) makes a full-length or genuinely unbounded Kani proof impractical within this delivery.")}')
-    body.append(f'impact           = {q("Inputs longer than the tested/proved envelope are covered only by informal structural reasoning (uniform, length-bounded per-byte loops), not by a machine-checked argument. A crafted input outside the proved/tested range could in principle still misbehave, though nothing in the code\'s shape suggests one exists.")}')
-    body.append(f'remedy           = {q("Extend the Kani harness\'s bound as CBMC/toolchain performance allows, or add a Lean/Aeneas extraction of validate\'s core loop for a genuinely unbounded proof. Target: before v2 (see the consumer decision\'s condition C1).")}')
-    body.append("waiver_requested = true")
-    body.append("")
-    body.append("[[filler]]")
-    body.append(f'profile = {q(PROFILE_ID)}')
-    body.append(f'party   = {q("ivmat")}')
-    body.append('role    = "producer"')
-    body.append("")
-
-    text = "\n".join(body).rstrip() + "\n"
-    PACKAGE_OUT.write_text(text)
-    print(f"[gen_package] wrote {PACKAGE_OUT} ({len(text.splitlines())} lines)")
-    return 0
+    return assemble_captured(commit, today, probes, identity)
 
 
 if __name__ == "__main__":

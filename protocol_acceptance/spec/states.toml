@@ -1,4 +1,4 @@
-# CLASS TEXT LOCKED at 0.3.2 (2026-09-27): frozen; a change needs a new [[lock]] entry in CLASS-LOCK.toml
+# CLASS TEXT LOCKED at 0.4.0 (2026-10-11): frozen; a change needs a new [[lock]] entry in CLASS-LOCK.toml
 # (gates/check_class_lock.py). Locked is not ratified.
 # states.toml — the acceptance protocol's lifecycles as machine-checkable state tables.
 #
@@ -12,24 +12,24 @@
 # [[transition]] with name/from/to/by/guard/requires. `by = "clock"` is a timeout actor; `by = "any"`
 # means any declared role. Extensions live under [ext] with critical = true|false.
 
-protocol = "acceptance-protocol/0"
+protocol = "acceptance-protocol/1"
 minor    = 0
 
 # ---------------------------------------------------------------------------------------------
-[machine.contract]
+[machine.specification]
 roles    = ["consumer", "producer"]
 states   = ["draft", "issued", "ratified", "superseded", "withdrawn"]
 initial  = "draft"
 terminal = ["superseded", "withdrawn"]
 
-[[machine.contract.transition]]
+[[machine.specification.transition]]
 name = "issue"
 from = "draft"
 to = "issued"
 by = "consumer"
 requires = ["requirement[]", "acceptance.authority", "parties.consumer"]
 
-[[machine.contract.transition]]
+[[machine.specification.transition]]
 name = "propose"
 from = "draft"
 to = "issued"
@@ -37,7 +37,7 @@ by = "producer"
 guard = "document.issued_by == producer"
 requires = ["requirement[]", "acceptance.authority", "parties.consumer"]
 
-[[machine.contract.transition]]
+[[machine.specification.transition]]
 name = "ratify"
 from = "issued"
 to = "ratified"
@@ -45,14 +45,14 @@ by = "consumer"
 guard = "document.issued_by == producer"
 requires = ["ratification.by", "ratification.at"]
 
-[[machine.contract.transition]]
+[[machine.specification.transition]]
 name = "supersede"
 from = ["issued", "ratified"]
 to = "superseded"
 by = "consumer"
 requires = ["successor.id"]
 
-[[machine.contract.transition]]
+[[machine.specification.transition]]
 name = "tighten"
 from = ["issued", "ratified"]
 to = "superseded"
@@ -60,7 +60,7 @@ by = "consumer"
 guard = "successor floors >= predecessor floors for every carried requirement unless successor.requirement.relaxed; dropped listed; phase not backwards unless reopened  (protocol.md §3.5, P12)"
 requires = ["successor.id", "successor.phase"]
 
-[[machine.contract.transition]]
+[[machine.specification.transition]]
 name = "withdraw"
 from = ["draft", "issued", "ratified"]
 to = "withdrawn"
@@ -78,7 +78,7 @@ name = "accept"
 from = "proposed"
 to = "accepted"
 by = "consumer"
-guard = "binds.contract.hash == current contract version hash"
+guard = "binds.specification.hash == current specification version hash"
 requires = ["successor.id"]
 
 [[machine.amendment.transition]]
@@ -93,7 +93,7 @@ name = "base-moved"
 from = "proposed"
 to = "stale"
 by = "any"
-guard = "binds.contract.hash != current contract version hash"
+guard = "binds.specification.hash != current specification version hash"
 
 [[machine.amendment.transition]]
 name = "reissue"
@@ -107,7 +107,7 @@ name = "applied"
 from = "accepted"
 to = "superseded"
 by = "consumer"
-guard = "the successor contract lists this amendment in document.amendments"
+guard = "the successor specification lists this amendment in document.amendments"
 
 # ---------------------------------------------------------------------------------------------
 [machine.package]
@@ -121,8 +121,8 @@ name = "submit"
 from = "prepared"
 to = "submitted"
 by = "producer"
-guard = "contract.status in {issued, ratified} and check_acceptance == PASS and check_package == PASS"
-requires = ["contract.hash", "subject"]  # subject carries one B1 identity: commit, digest
+guard = "specification.status in {issued, ratified} and check_acceptance == PASS and check_package == PASS"
+requires = ["specification.hash", "subject"]  # subject carries one B1 identity: commit, digest
 
 [[machine.package.transition]]
 name = "assess"
@@ -146,7 +146,7 @@ states   = ["assessing", "accepted", "accepted-with-conditions", "rejected", "ev
 initial  = "assessing"
 terminal = ["superseded"]
 
-# Every accept* transition under a contract whose phase != final yields a PROVISIONAL decision
+# Every accept* transition under a specification whose phase != final yields a PROVISIONAL decision
 # (document.provisional = true): same state names, but the effect gate treats it as not accepted.
 [[machine.decision.transition]]
 name = "accept"
@@ -154,7 +154,7 @@ from = "assessing"
 to = "accepted"
 by = "consumer"
 guard = "all mandatory dispositions == satisfied and no conditions"
-requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]"]  # binds.subject: commit or digest
+requires = ["binds.specification.hash", "binds.package.hash", "binds.subject", "disposition[]"]  # binds.subject: commit or digest
 
 [[machine.decision.transition]]
 name = "accept-conditionally"
@@ -162,7 +162,7 @@ from = "assessing"
 to = "accepted-with-conditions"
 by = "consumer"
 guard = "all mandatory dispositions in {satisfied, satisfied-with-conditions, waived} and conditions >= 1"
-requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]", "condition[]"]  # binds.subject: commit or digest
+requires = ["binds.specification.hash", "binds.package.hash", "binds.subject", "disposition[]", "condition[]"]  # binds.subject: commit or digest
 
 [[machine.decision.transition]]
 name = "reject"
@@ -170,7 +170,7 @@ from = "assessing"
 to = "rejected"
 by = "consumer"
 guard = "some mandatory disposition == unsatisfied"
-requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]"]  # binds.subject: commit or digest
+requires = ["binds.specification.hash", "binds.package.hash", "binds.subject", "disposition[]"]  # binds.subject: commit or digest
 
 [[machine.decision.transition]]
 name = "request-evidence"
@@ -178,7 +178,7 @@ from = "assessing"
 to = "evidence-requested"
 by = "consumer"
 guard = "some disposition == insufficient-evidence"
-requires = ["binds.contract.hash", "binds.package.hash", "binds.subject", "disposition[]", "condition[]"]  # binds.subject: commit or digest
+requires = ["binds.specification.hash", "binds.package.hash", "binds.subject", "disposition[]", "condition[]"]  # binds.subject: commit or digest
 
 [[machine.decision.transition]]
 name = "discharge-conditions"
@@ -208,18 +208,18 @@ guard = "document.merits == false"
 requires = ["reason"]
 
 [[machine.decision.transition]]
-name = "contract-superseded"
+name = "specification-superseded"
 from = ["accepted", "accepted-with-conditions", "rejected", "evidence-requested"]
 to = "stale"
 by = "consumer"
-guard = "document.provisional == true and the bound contract was superseded (next iteration)"
+guard = "document.provisional == true and the bound specification was superseded (next iteration)"
 
 [[machine.decision.transition]]
 name = "subject-changed"
 from = ["accepted", "accepted-with-conditions"]
 to = "stale"
 by = "any"
-guard = "presented subject identity != binds.subject (same form: commit or digest) or contract.hash != binds.contract.hash or package.hash != binds.package.hash"
+guard = "presented subject identity != binds.subject (same form: commit or digest) or specification.hash != binds.specification.hash or package.hash != binds.package.hash"
 
 [[machine.decision.transition]]
 name = "expire"

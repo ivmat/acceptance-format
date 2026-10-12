@@ -25,7 +25,8 @@ Verbs
 
 `export` requires a nonexistent `--dest` (including no dangling symlink). It copies into a fresh,
 unique sibling staging directory, scans there, and renames it into place only after success.
-Failure cleans up only that staging directory; existing destinations are refused untouched.
+Failure cleans up that staging directory and empty parent directories created by this call;
+existing destinations are refused untouched.
 `--dest` MUST resolve outside this repository: exporting into the source checkout makes an
 untracked export show up in `git status`, so `source_dirty` would read `true` even from a clean
 tagged commit. `export` refuses (exit 1, creating nothing) a `--dest` inside the checkout.
@@ -57,9 +58,9 @@ excluded on purpose (`EXCLUDE_PREFIXES`): confirmed, none of it is `open()`-ed b
 validation run. Ten probe commands are run (§ PROBES below) so the trace covers every code path a
 real Rust/Kani producer's session exercises: `check_acceptance.py`, `check_core.py` (directly — kept
 as a cross-check even though the 0.3.1 dispatch fix means `check_acceptance.py` alone now already
-reaches the binding chain), `acceptance_protocol.py`'s own `check-contract` / `check-package` /
+reaches the binding chain), `acceptance_protocol.py`'s own `check-spec` / `check-package` /
 `coverage` / `check-decision` / `check-states` / `impact` verbs, `spec_inventory.py`, and one
-synthetic minimal contract that sets `[acceptance].assurance_class` (the worked example does not,
+synthetic minimal specification that sets `[acceptance].assurance_class` (the worked example does not,
 so `assurance-classes.toml` would otherwise never be opened).
 
 Apparatus hygiene: `hygiene_violations()` scans copied bytes for home-relative paths, known
@@ -71,14 +72,11 @@ or more non-matching string fragments at import time specifically so this scanne
 definitions never self-match when this very file is one of the files being scanned (verified by
 this module's own `--selftest`).
 
-**Standalone by construction.** No module-level code in this file touches this repository's layout
-(no `REPO_ROOT`-anchored file read at import time). `verify`/`_verify` read only files under the
-`--dest` directory the caller names. `REPO_ROOT` (used only by `export`/`discover_closure`, i.e.
-the export side, which only ever runs from this repository) is computed as a bare path expression,
-never dereferenced until an export-side function actually needs it. This is verified end to end by
-`--selftest`: it relocates a completed export to a SECOND directory and runs
-`python3 <relocated>/export_closure.py verify --dest <relocated>` as a real subprocess — the exact
-command a downstream consumer's CI runs — with no access to this repository at all.
+**Standalone by construction.** No module-level code touches the repository layout.
+`verify`/`_verify` read only files under `--dest`. The export-only `_repo_root()` resolves the
+source layout lazily and refuses to export from a vendored closure (a sibling `CLOSURE.json`).
+`--selftest` relocates a completed export and runs its verifier as a real subprocess with no
+access to this repository.
 
 Stdlib only (Python 3.11+): `tomllib`, `ast`, `runpy`, `hashlib`, `subprocess`, `tempfile`.
 """
@@ -99,9 +97,17 @@ import tokenize
 import tomllib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
 CLOSURE_FILE = "CLOSURE.json"
 EXPORTER_COPY_NAME = "export_closure.py"
+
+
+def _repo_root() -> Path:
+    source = Path(__file__).resolve()
+    if (source.parent / CLOSURE_FILE).exists():
+        raise RuntimeError("cannot export from a vendored closure; use the source checkout")
+    if len(source.parents) < 3:
+        raise RuntimeError("export requires the source checkout layout")
+    return source.parents[2]
 
 # The three consumer entry points a downstream repo actually runs (deliverable §1's own list),
 # always included even if a probe below fails to execute for some reason on the running platform.
@@ -136,11 +142,11 @@ EXCLUDE_PREFIXES = (
 
 _RUST_DELIVERY = "protocol_acceptance/examples/rust-delivery"
 
-_SYNTHETIC_CONTRACT = """\
+_SYNTHETIC_SPECIFICATION = """\
 [document]
-protocol   = "acceptance-protocol/0"
+protocol   = "acceptance-protocol/1"
 minor      = 0
-kind       = "contract"
+kind       = "specification"
 id         = "PROBE-0001"
 version    = 1
 issued_at  = "2026-01-01T00:00:00Z"
@@ -186,7 +192,7 @@ assurance_class        = "baseline/1"
 # Git — always with GIT_* environment scrubbed and hooks disabled: an inherited GIT_DIR/
 # GIT_WORK_TREE/GIT_INDEX_FILE would make even a `-C <path>` invocation operate on a DIFFERENT
 # repository than the one named, and an inherited hook could fire against a throwaway fixture.
-# Every git call in this file goes through this one helper, whether it targets the real REPO_ROOT
+# Every git call in this file goes through this one helper, whether it targets the real _repo_root()
 # or a throwaway temp-dir fixture.
 # ---------------------------------------------------------------------------
 
@@ -256,7 +262,7 @@ def _source_dirty(root: Path) -> bool:
 
 def _dest_is_inside_repo(dest: Path) -> bool:
     try:
-        dest.resolve().relative_to(REPO_ROOT)
+        dest.resolve().relative_to(_repo_root())
         return True
     except ValueError:
         return False
@@ -269,7 +275,7 @@ def _dest_is_inside_repo(dest: Path) -> bool:
 #
 # Every pattern below is assembled from ≥2 fragments so this scanner's OWN pattern-definition
 # lines never match themselves when this file is one of the files being scanned — a plain literal
-# a plain literal home-path-pattern definition line textually CONTAINS the very substring it
+# home-path-pattern definition line textually CONTAINS the very substring it
 # matches, so a single unbroken literal here would make `export` refuse to export this file forever. This is not
 # obfuscation of a secret; the resulting patterns are logged in this module's own docstring and
 # `--selftest` output. `_tok` is the one place fragment-joining happens, so the technique is
@@ -283,6 +289,7 @@ def _tok(*parts: str) -> str:
 _HOME_PATH_RE = re.compile(
     re.escape(_tok("~", "/repo/")) + r"\S+"
     r"|" + re.escape(_tok("/", "Users", "/")) + r"[A-Za-z0-9_.\-]+(?:/[^\s`)]*)?"
+    r"|" + re.escape(_tok("/", "home", "/")) + r"[A-Za-z0-9_.\-]+(?:/[^\s`)]*)?"
 )
 _COLD_REVIEW_RE = re.compile(_tok("cold", "[- ]", "op", "us"), re.IGNORECASE)
 _NAME_TOKEN_RE = re.compile(
@@ -302,27 +309,71 @@ _APPARATUS_TOKEN_RE = re.compile(
     r"|\b" + _tok("build", " plan") + r"\b"
     r"|\b" + _tok("owner", " ruling") + r"\b"
     r"|\b" + _tok("owner", " word") + r"\b"
-    r"|\b" + _tok("h", "ub") + r"\b"
-    r"|\b" + _tok("est", "ate") + r"\b(?!-element)"
-    r"|\b" + _tok("gov", "ernor") + r"\b"
     r"|\b" + _tok("companion", " repo") + r"\b"
-    r"|\b" + _tok("investigation", " closure") + r"\b"
-    r"|\b" + _tok("lin", "ux") + r"\b"
-    r"|\b" + _tok("found", "ry") + r"\b",
+    r"|\b" + _tok("investigation", " closure") + r"\b",
     re.IGNORECASE,
 )
 
 
-def hygiene_violations(text: str) -> list[tuple[int, str, str]]:
+# Ordinary words are checked in prose, Python comments, and strings containing whitespace.
+_GENERIC_APPARATUS_RE = re.compile(
+    r"\b(?:" + "|".join((_tok("h", "ub"), _tok("est", "ate") + r"(?!-element)",
+                           _tok("gov", "ernor"), _tok("lin", "ux"),
+                           _tok("found", "ry"))) + r")\b", re.IGNORECASE,
+)
+
+
+def hygiene_violations(text: str, *, python_source: bool = False) -> list[tuple[int, str, str]]:
     """`(line_no, pattern_name, line_text)` for every hit — the export-time fail-closed check
     AND `--selftest`'s able-to-fail control (a planted token must be caught)."""
+    prose = {}
+
+    def literal_parts(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, (str, bytes)):
+            yield node.value.decode("utf-8", errors="replace") if isinstance(node.value, bytes) else node.value
+        elif isinstance(node, ast.JoinedStr):
+            for value in node.values:
+                yield from literal_parts(value)
+        elif isinstance(node, ast.FormattedValue) and node.format_spec is not None:
+            yield from literal_parts(node.format_spec)
+
+    if python_source:
+        fstrings = []
+        try:
+            for token in tokenize.generate_tokens(io.StringIO(text).readline):
+                if token.type == tokenize.COMMENT:
+                    parts = [token.string]
+                elif token.type == tokenize.STRING:
+                    # Before Python 3.12, an entire f-string is one STRING token.
+                    parts = [part for part in literal_parts(ast.parse(token.string, mode="eval").body)
+                             if any(char.isspace() for char in part)]
+                elif token.type == getattr(tokenize, "FSTRING_START", None):
+                    marker = token.string.lstrip("fFrR")
+                    prefix = "r" if "r" in token.string[: -len(marker)].lower() else ""
+                    fstrings.append((prefix, marker))
+                    continue
+                elif token.type == getattr(tokenize, "FSTRING_END", None):
+                    fstrings.pop()
+                    continue
+                elif token.type == getattr(tokenize, "FSTRING_MIDDLE", None):
+                    prefix, marker = fstrings[-1]
+                    part = ast.literal_eval(prefix + marker + token.string + marker)
+                    parts = [part] if any(char.isspace() for char in part) else []
+                else:
+                    continue
+                for line_no in range(token.start[0], token.end[0] + 1):
+                    prose.setdefault(line_no, []).extend(parts)
+        except (tokenize.TokenError, IndentationError, SyntaxError, ValueError) as exc:
+            return [(0, "undecodable", f"cannot tokenize Python source: {exc}")]
     hits = []
     for i, line in enumerate(text.splitlines(), 1):
         if _HOME_PATH_RE.search(line):
             hits.append((i, "home-path", line))
         elif _COLD_REVIEW_RE.search(line) or _NAME_TOKEN_RE.search(line) or _SOL_NAME_RE.search(line):
             hits.append((i, "reviewer-name", line))
-        elif _APPARATUS_TOKEN_RE.search(line):
+        elif (_APPARATUS_TOKEN_RE.search(line)
+              or any(_GENERIC_APPARATUS_RE.search(part)
+                     for part in (prose.get(i, []) if python_source else [line]))):
             hits.append((i, "apparatus", line))
     return hits
 
@@ -331,11 +382,11 @@ def hygiene_violations(text: str) -> list[tuple[int, str, str]]:
 # Mechanical closure discovery (probes + audit hook)
 # ---------------------------------------------------------------------------
 
-# Each probe: (script relative to REPO_ROOT, argv, cwd relative to REPO_ROOT or a synthetic temp
+# Each probe: (script relative to _repo_root(), argv, cwd relative to _repo_root() or a synthetic temp
 # dir). Each probe must complete cleanly: an error can leave a trace that looks sufficient while
 # omitting the policy branch it failed before reaching.
 def _probes(synthetic_dir: Path) -> list[tuple[str, list[str], Path]]:
-    rd = REPO_ROOT / _RUST_DELIVERY
+    rd = _repo_root() / _RUST_DELIVERY
     return [
         ("format_acceptance/tools/check_acceptance.py",
          ["--strict", "--strict-weight", "acceptance.toml"], rd),
@@ -344,26 +395,26 @@ def _probes(synthetic_dir: Path) -> list[tuple[str, list[str], Path]]:
         ("format_acceptance/tools/check_core.py",
          ["--strict", "--strict-weight", "acceptance.toml"], rd),
         ("protocol_acceptance/tools/acceptance_protocol.py",
-         ["check-contract", "acceptance-contract.toml"], rd),
+         ["check-spec", "acceptance-specification.toml"], rd),
         ("protocol_acceptance/tools/acceptance_protocol.py",
-         ["check-package", "acceptance.toml", "--contract", "acceptance-contract.toml"], rd),
+         ["check-package", "acceptance.toml", "--spec", "acceptance-specification.toml"], rd),
         ("protocol_acceptance/tools/acceptance_protocol.py",
-         ["coverage", "acceptance.toml", "--contract", "acceptance-contract.toml"], rd),
+         ["coverage", "acceptance.toml", "--spec", "acceptance-specification.toml"], rd),
         ("protocol_acceptance/tools/acceptance_protocol.py",
-         ["check-decision", "acceptance-decision.toml", "--contract", "acceptance-contract.toml",
+         ["check-decision", "acceptance-decision.toml", "--spec", "acceptance-specification.toml",
           "--package", "acceptance.toml"], rd),
         ("protocol_acceptance/tools/acceptance_protocol.py", ["check-states"], rd),
         ("protocol_acceptance/tools/acceptance_protocol.py",
-         ["impact", "acceptance-decision.toml", "--contract", "acceptance-contract.toml",
+         ["impact", "acceptance-decision.toml", "--spec", "acceptance-specification.toml",
           "--package", "acceptance.toml",
           "--new-commit", "1111111111111111111111111111111111111111",
           "--changed", "src/checksum.rs"], rd),
-        # Synthetic minimal contract declaring [acceptance].assurance_class — the worked example
+        # Synthetic minimal specification declaring [acceptance].assurance_class — the worked example
         # does not, so spec/assurance-classes.toml would otherwise never be opened by a probe.
         ("protocol_acceptance/tools/acceptance_protocol.py",
-         ["check-contract", "contract.toml"], synthetic_dir),
+         ["check-spec", "specification.toml"], synthetic_dir),
         ("format_acceptance/tools/spec_inventory.py",
-         ["make", str(REPO_ROOT / "format_acceptance/spec/hash-domains.md")], REPO_ROOT),
+         ["make", str(_repo_root() / "format_acceptance/spec/hash-domains.md")], _repo_root()),
     ]
 
 
@@ -418,8 +469,8 @@ def _run_probe(script: str, argv: list[str], cwd: Path, harness: Path,
     env["PYTHONPYCACHEPREFIX"] = str(pycache_dir)
     try:
         result = subprocess.run(
-            [sys.executable, str(harness), str(REPO_ROOT), str(out_path),
-             str(REPO_ROOT / script), *argv],
+            [sys.executable, str(harness), str(_repo_root()), str(out_path),
+             str(_repo_root() / script), *argv],
             cwd=str(cwd), env=env, capture_output=True, text=True, timeout=120,
         )
         output = result.stdout + result.stderr
@@ -502,7 +553,7 @@ def discover_closure(root: Path) -> set[str]:
     try:
         harness = harness_dir / "_harness.py"
         harness.write_text(_HARNESS_SOURCE, encoding="utf-8")
-        (synthetic_dir / "contract.toml").write_text(_SYNTHETIC_CONTRACT, encoding="utf-8")
+        (synthetic_dir / "specification.toml").write_text(_SYNTHETIC_SPECIFICATION, encoding="utf-8")
         collected: set[str] = set(ENTRYPOINTS)
         for script, argv, cwd in _probes(synthetic_dir):
             collected |= _run_probe(script, argv, cwd, harness, pycache_dir)
@@ -558,10 +609,15 @@ def _scan_path_for_hygiene(dst: Path) -> list[tuple[int, str, str]]:
     text, reason = _decode_for_scan(dst, raw)
     if text is None:
         return [(0, "undecodable", reason)]
-    return hygiene_violations(text)
+    return hygiene_violations(text, python_source=dst.suffix == ".py")
 
 
 def cmd_export(dest: Path) -> int:
+    try:
+        root = _repo_root()
+    except RuntimeError as exc:
+        print(f"EXPORT REFUSED: {exc}", file=sys.stderr)
+        return 1
     # Check the caller's path before resolving: a dangling symlink also already exists.
     if os.path.lexists(dest):
         print(f"EXPORT REFUSED: --dest {dest} already exists; use a nonexistent destination.",
@@ -570,7 +626,7 @@ def cmd_export(dest: Path) -> int:
     dest = dest.resolve()
     if _dest_is_inside_repo(dest):
         print(
-            f"EXPORT REFUSED: --dest {dest} is inside this repository ({REPO_ROOT}). Exporting "
+            f"EXPORT REFUSED: --dest {dest} is inside this repository ({root}). Exporting "
             f"into the source checkout makes the export itself show up in `git status`, so "
             f"source_dirty would read true even from a clean tagged commit. Export outside the "
             f"checkout (a sibling directory, or your downstream crate's own vendor/ directory).",
@@ -593,19 +649,19 @@ def cmd_export(dest: Path) -> int:
     # scrubbed of inherited GIT_* overrides — a clean tagged checkout must report
     # source_dirty = false regardless of what this process does next.
     try:
-        family_version = _family_version(REPO_ROOT)
-        source_commit = _source_commit(REPO_ROOT)
-        source_dirty = _source_dirty(REPO_ROOT)
-    except RuntimeError as exc:
+        family_version = _family_version(root)
+        source_commit = _source_commit(root)
+        source_dirty = _source_dirty(root)
+    except (RuntimeError, OSError) as exc:
         print(f"EXPORT REFUSED: could not determine source provenance: {exc}", file=sys.stderr)
         return 1
 
     try:
-        collected = discover_closure(REPO_ROOT)
-    except RuntimeError as exc:
+        collected = discover_closure(root)
+    except (RuntimeError, OSError) as exc:
         print(f"EXPORT REFUSED — closure discovery failed: {exc}", file=sys.stderr)
         return 1
-    gaps = static_import_safety_net(REPO_ROOT, collected)
+    gaps = static_import_safety_net(root, collected)
     if gaps:
         print("EXPORT REFUSED — closure incomplete (static safety net):", file=sys.stderr)
         for gap in gaps:
@@ -613,17 +669,31 @@ def cmd_export(dest: Path) -> int:
         return 1
 
     # Copy byte-for-byte (no text decode, no transform of any kind) into a FRESH, UNIQUELY-NAMED
-    # staging directory created NEXT TO `dest` (same parent — so the final move is a same-
+    # staging directory created next to `dest` (same parent — so the final move is a same-
     # filesystem rename, not a cross-filesystem copy), THEN scan the staged bytes and refuse on
-    # any hit. On a hygiene failure, delete ONLY the staging directory — `dest` itself is never
+    # any hit. On failure, remove staging and empty parents created by this call; `dest` is never
     # created, let alone touched, until every check has already passed. `dest` is populated by
     # ONE atomic rename of the staging directory, after the scan is clean.
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{dest.name}.export-staging-", dir=str(dest.parent)))
+    created_parents: list[Path] = []
+    staging = None
     try:
+        missing_parents = []
+        parent = dest.parent
+        while not parent.exists():
+            missing_parents.append(parent)
+            parent = parent.parent
+        for parent in reversed(missing_parents):
+            try:
+                parent.mkdir()
+            except FileExistsError:
+                if not parent.is_dir():
+                    raise
+            else:
+                created_parents.append(parent)
+        staging = Path(tempfile.mkdtemp(prefix=f".{dest.name}.export-staging-", dir=dest.parent))
         written: list[tuple[str, Path]] = []
         for rel in sorted(collected):
-            src = REPO_ROOT / rel
+            src = root / rel
             dst = staging / rel
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dst)
@@ -664,12 +734,21 @@ def cmd_export(dest: Path) -> int:
                   file=sys.stderr)
             return 1
         os.rename(staging, dest)
+    except OSError as exc:
+        print(f"EXPORT REFUSED: could not stage or publish closure: {exc}", file=sys.stderr)
+        return 1
     finally:
         # A no-op once the rename above succeeded (the directory no longer exists at `staging`);
         # on any early return or exception, this removes ONLY the staging directory this call
         # itself created — `dest` was never touched, whether it exists, doesn't exist, or (per the
         # refusal above) already had unrelated content.
-        shutil.rmtree(staging, ignore_errors=True)
+        if staging is not None:
+            shutil.rmtree(staging, ignore_errors=True)
+        for parent in reversed(created_parents):
+            try:
+                parent.rmdir()  # Only empty directories we created; preserve concurrent content.
+            except OSError:
+                pass
 
     print(f"EXPORT OK: {len(files)} files -> {dest}")
     for f in manifest["files"]:
@@ -710,17 +789,15 @@ def _verify(dest: Path, *, expect_commit: str | None = None, require_clean: bool
         if actual != entry["sha256"]:
             errors.append(f"drift: {entry['path']} (expected {entry['sha256'][:16]}…, "
                            f"got {actual[:16]}…)")
-    on_disk = set()
-    for suffix in ("*.py", "*.toml", "*.md"):
-        for path in dest.rglob(suffix):
-            if "__pycache__" in path.parts:
-                continue
-            on_disk.add(str(path.relative_to(dest)))
+    on_disk = {
+        str(path.relative_to(dest)) for path in dest.rglob("*")
+        if (not path.is_dir() or path.is_symlink()) and path != manifest_path
+    }
     extra = sorted(on_disk - set(listed))
     for rel in extra:
         errors.append(f"extra: {rel} (present in {dest} but not in {CLOSURE_FILE})")
-    # An interpreter can silently load cached bytecode instead of the verified .py source it
-    # shadows — a vendored closure must ship source only, so ANY .pyc or __pycache__ anywhere
+    # Cached bytecode can bypass source opens in the discovery audit trace (CPython normally
+    # validates caches against source). A closure ships source only: ANY .pyc or __pycache__ anywhere
     # under dest is itself a violation, independent of the file-list checks above.
     for path in sorted(dest.rglob("*.pyc")):
         errors.append(f"bytecode: {path.relative_to(dest)} (a vendored closure ships source only)")
@@ -837,7 +914,7 @@ def _run_smoke(script: Path, argv: tuple[str, ...], cwd: Path, forbidden_root: P
     Scope, stated precisely rather than assumed: the audit hook covers everything that runs
     in-process via `runpy` in THIS one interpreter. None of the consumer verbs this selftest
     exercises spawn a child process of their own (`check_acceptance.py`'s `validate`,
-    `acceptance_protocol.py`'s `check-contract`/`check-package`/`coverage`/`check-decision`/
+    `acceptance_protocol.py`'s `check-spec`/`check-package`/`coverage`/`check-decision`/
     `check-states`/`decide`, and `spec_inventory.py`'s `make`/`check`/`digest` are in-process file/TOML/
     Markdown parsing — verified by reading each: the only `subprocess`/git-shelling code paths in
     `acceptance_protocol.py` belong to `assemble-package`/`project-brief`, which this selftest
@@ -953,7 +1030,7 @@ def _selftest_export_refusals(root: Path) -> bool:
         dest = root / "refused"
         before = set(root.iterdir())
         with patch.multiple(
-            sys.modules[__name__], REPO_ROOT=source,
+            sys.modules[__name__], _repo_root=lambda: source,
             discover_closure=lambda _: {name}, _family_version=lambda _: "0.3.1",
             _source_commit=lambda _: "0" * 40, _source_dirty=lambda _: False,
         ), redirect_stderr(io.StringIO()) as err:
@@ -985,7 +1062,7 @@ def _selftest_probe_refusals(root: Path) -> bool:
             raise RuntimeError(reason)
 
         with patch.multiple(
-            sys.modules[__name__], REPO_ROOT=source,
+            sys.modules[__name__], _repo_root=lambda: source,
             _family_version=lambda _: "0.3.1", _source_commit=lambda _: "0" * 40,
             _source_dirty=lambda _: False, discover_closure=fail_discovery,
         ), redirect_stderr(io.StringIO()) as err:
@@ -1013,7 +1090,7 @@ def _selftest_probe_refusals(root: Path) -> bool:
             return False
         print(f"SELFTEST: export correctly REFUSED probe {label} [{reason}]")
 
-    with patch.multiple(sys.modules[__name__], REPO_ROOT=source,
+    with patch.multiple(sys.modules[__name__], _repo_root=lambda: source,
                         _run_probe=lambda *_args: set()):
         try:
             discover_closure(source)
@@ -1178,7 +1255,7 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
         # assert is that exporting to a destination OUTSIDE the repo never CHANGES that ground
         # truth (the original bug: sampling `source_dirty` AFTER copying files into a `vendor/`
         # dir INSIDE the repo made even a clean checkout read dirty).
-        expected_dirty = _source_dirty(REPO_ROOT)
+        expected_dirty = _source_dirty(_repo_root())
 
         rc = cmd_export(dest)
         if rc != 0:
@@ -1244,7 +1321,7 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
         # repository content; otherwise it asserts refusal AND that nothing was created, and
         # creates/removes nothing itself either way.
         probe_name = "export_closure_selftest_probe_must_not_exist"
-        inside = REPO_ROOT / probe_name
+        inside = _repo_root() / probe_name
         if inside.exists():
             print(f"SELFTEST: skipping the in-repo-destination refusal control — {inside} "
                   f"already exists (this selftest must never touch pre-existing repository "
@@ -1264,8 +1341,8 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
                   "creating nothing (verified: the path still does not exist)")
 
         # Smoke fixture: a self-contained copy of the worked example, its OWN throwaway git repo
-        # (GIT_* scrubbed, hooks disabled), never touching REPO_ROOT.
-        shutil.copytree(REPO_ROOT / _RUST_DELIVERY, smoke)
+        # (GIT_* scrubbed, hooks disabled), never touching _repo_root().
+        shutil.copytree(_repo_root() / _RUST_DELIVERY, smoke)
         _git(smoke, "init", "-q")
         _git(smoke, "config", "user.email", "probe@example.invalid")
         _git(smoke, "config", "user.name", "probe")
@@ -1284,8 +1361,8 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
                 "sys.exit(0 if target.read_text() else 1)\n",
                 encoding="utf-8",
             )
-            result = _run_smoke(planted_reader, (str(REPO_ROOT / "CLASS-LOCK.toml"),), smoke,
-                                 REPO_ROOT, harness)
+            result = _run_smoke(planted_reader, (str(_repo_root() / "CLASS-LOCK.toml"),), smoke,
+                                 _repo_root(), harness)
             if not result.get("exception") or "PermissionError" not in result["exception"]:
                 print(f"SELFTEST FAIL (able-to-fail control): a script that deliberately reads "
                       f"a file inside the source checkout was NOT stopped by the audit hook: "
@@ -1299,22 +1376,22 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
                 ("format_acceptance/tools/check_acceptance.py",
                  ("--strict", "--strict-weight", "acceptance.toml"), 0),
                 ("protocol_acceptance/tools/acceptance_protocol.py",
-                 ("check-contract", "acceptance-contract.toml"), 0),
+                 ("check-spec", "acceptance-specification.toml"), 0),
                 ("protocol_acceptance/tools/acceptance_protocol.py",
-                 ("check-package", "acceptance.toml", "--contract", "acceptance-contract.toml"), 0),
+                 ("check-package", "acceptance.toml", "--spec", "acceptance-specification.toml"), 0),
                 ("protocol_acceptance/tools/acceptance_protocol.py",
-                 ("coverage", "acceptance.toml", "--contract", "acceptance-contract.toml"), 0),
+                 ("coverage", "acceptance.toml", "--spec", "acceptance-specification.toml"), 0),
                 ("protocol_acceptance/tools/acceptance_protocol.py",
-                 ("check-decision", "acceptance-decision.toml", "--contract",
-                  "acceptance-contract.toml", "--package", "acceptance.toml"), 0),
+                 ("check-decision", "acceptance-decision.toml", "--spec",
+                  "acceptance-specification.toml", "--package", "acceptance.toml"), 0),
                 ("protocol_acceptance/tools/acceptance_protocol.py", ("check-states",), 0),
                 ("protocol_acceptance/tools/acceptance_protocol.py",
-                 ("decide", "acceptance.toml", "--contract", "acceptance-contract.toml",
+                 ("decide", "acceptance.toml", "--spec", "acceptance-specification.toml",
                   "--issuer", "probe / lead", "--out", "smoke-decision-skeleton.toml",
                   "--mode", "re-execute-all"), 0),
             ]
             for script_rel, args, expected in golden_checks:
-                result = _run_smoke(dest / script_rel, args, smoke, REPO_ROOT, harness)
+                result = _run_smoke(dest / script_rel, args, smoke, _repo_root(), harness)
                 problems = _smoke_problems(result, expected, f"{script_rel} {' '.join(args)}")
                 if problems:
                     print("SELFTEST FAIL:", file=sys.stderr)
@@ -1326,26 +1403,26 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
             (smoke / "smoke-decision-skeleton.toml").unlink(missing_ok=True)
 
             # --- exercise the assurance-table path from the exported copy.
-            (smoke / "probe-assurance-contract.toml").write_text(_SYNTHETIC_CONTRACT,
+            (smoke / "probe-assurance-specification.toml").write_text(_SYNTHETIC_SPECIFICATION,
                                                                    encoding="utf-8")
             result = _run_smoke(
                 dest / "protocol_acceptance/tools/acceptance_protocol.py",
-                ("check-contract", "probe-assurance-contract.toml"), smoke, REPO_ROOT, harness,
+                ("check-spec", "probe-assurance-specification.toml"), smoke, _repo_root(), harness,
             )
-            problems = _smoke_problems(result, 0, "check-contract (assurance-table path)")
+            problems = _smoke_problems(result, 0, "check-spec (assurance-table path)")
             if problems:
                 print("SELFTEST FAIL:", file=sys.stderr)
                 for p in problems:
                     print(f"  {p}", file=sys.stderr)
                 return 1
-            print("SELFTEST: check-contract exercised the assurance-table path "
+            print("SELFTEST: check-spec exercised the assurance-table path "
                   f"(assurance-classes.toml) -> exit {result['exit_code']}")
 
             # --- exercise the spec-inventory path from the exported copy.
             (smoke / "PROBE-SPEC.md").write_text("## S-1\nProbe heading.\n", encoding="utf-8")
             result_make = _run_smoke(
                 dest / "format_acceptance/tools/spec_inventory.py",
-                ("make", "PROBE-SPEC.md"), smoke, REPO_ROOT, harness,
+                ("make", "PROBE-SPEC.md"), smoke, _repo_root(), harness,
             )
             problems = _smoke_problems(result_make, 0, "spec_inventory.py make (inventory path)")
             if problems:
@@ -1365,7 +1442,7 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
                 (("digest", inventory.name), expected_digest),
             ):
                 result = _run_smoke(dest / "format_acceptance/tools/spec_inventory.py", args,
-                                    smoke, REPO_ROOT, harness)
+                                    smoke, _repo_root(), harness)
                 problems = _smoke_problems(result, 0, f"spec_inventory.py {args[0]}")
                 if problems or not result.get("stdout", "").startswith(expected_output):
                     print(f"SELFTEST FAIL: inventory {args[0]}: {problems}; {result}",
@@ -1382,7 +1459,7 @@ def selftest() -> int:  # noqa: C901 -- a linear checklist, not meaningfully spl
             (broken / "format_acceptance/profiles/bindings/code/rust.md").unlink()
             result = _run_smoke(
                 broken / "format_acceptance/tools/check_acceptance.py",
-                ("--strict", "--strict-weight", "acceptance.toml"), smoke, REPO_ROOT, harness,
+                ("--strict", "--strict-weight", "acceptance.toml"), smoke, _repo_root(), harness,
             )
             problems = _smoke_problems(result, 0, "corrupted-export (missing binding doc)")
             if not problems:

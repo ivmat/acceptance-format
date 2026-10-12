@@ -1,0 +1,39 @@
+   Compiling paint-app v0.1.0 (<WORKSPACE>/paint-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.50s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/paint_app-81130841c95f1287)
+
+running 10 tests
+test tests::circle_not_fully_inside_canvas_is_rejected_not_silently_clipped ... ok
+test tests::parse_ppm_rejects_truncated_and_malformed_input_without_panicking ... ok
+test tests::parses_a_well_formed_invocation_in_any_flag_order ... ok
+test tests::render_circle_dimension_overflow_is_reported_not_panicked ... ok
+test tests::rejects_every_malformed_invocation_without_panicking ... ok
+test tests::ppm_consistent_with_circle_points_not_independent ... ok
+test tests::golden_image_matches_fixture ... ok
+test tests::independent_symmetry_over_disclosed_domain ... ok
+test tests::independent_accuracy_over_disclosed_domain ... ok
+test tests::independent_closedness_8_connectivity_over_disclosed_domain ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (<WORKSPACE>/target/debug/deps/paint-2840909d1bd775eb)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cli.rs (<WORKSPACE>/target/debug/deps/cli-d16f1f27e036516a)
+
+running 3 tests
+test golden_image_matches_fixture ... ok
+test every_malformed_invocation_exits_nonzero_and_never_panics ... ok
+test valid_invocation_writes_a_real_ppm_file_independently_verified ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+   Doc-tests paint_app
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

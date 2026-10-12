@@ -24,7 +24,7 @@ designed for a machine consumer. This facet answers a different question, for a 
 
 > **Per item of the spec: is it covered? how strongly? and what do I run to check that myself?**
 
-Same records, one more rendering — a table a customer reads instead of a proof. It has two uses, and
+Same records, one more rendering — a table a consumer reads instead of a proof. It has two uses, and
 they are the same artifact at two times:
 
 1. **Producer-side, while working** — a live scoreboard against the spec's own item list. Checkmarking
@@ -95,7 +95,7 @@ catch.
 
 ### 3. `[claim.self_verify]` — the recipe, and it is allowed on gaps
 
-> **Added 2026-08-25 (P2, owner-adopted): `watched_fail`.** A weighted recipe must carry a witness
+> **Added 2026-08-25: `watched_fail`.** A weighted recipe must carry a witness
 > that it has been watched to fail — `self_verify.watched_fail`, an observed-red `control` on one of
 > the claim's own evidence records, or (on `not-covered`) `positive_control`. In a rendered ledger
 > the witness is **structured** and must name a recipe of its own row:
@@ -174,7 +174,7 @@ The value is recorded rather than forbidden, because forbidding it would just pu
 prose (a junk-id failure mode recorded in design history, not published). A validator SHOULD warn on `"test-name"`, and MUST
 NOT let it pass silently.
 
-> **Superseded in part, 2026-08-25 (P1, owner-adopted).** `clause_source` is no longer optional on a
+> **Superseded in part, 2026-08-25.** `clause_source` is no longer optional on a
 > claim that claims **weight**: it must be present, and `test-name`/`none` refuse weight (W2.3). It
 > remains optional, and `test-name` remains merely warned, at the unweighted tier — which is the
 > distinction that keeps the junk-id failure mode closed. In a rendered ledger the value is the

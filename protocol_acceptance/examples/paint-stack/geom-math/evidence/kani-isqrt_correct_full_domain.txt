@@ -1,0 +1,166 @@
+Kani Rust Verifier 0.67.0 (cargo plugin)
+   Compiling geom-math v0.1.0 (<WORKSPACE>/geom-math)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.29s
+Checking harness verification::isqrt_correct_full_domain...
+CBMC 6.8.0 (cbmc-6.8.0)
+CBMC version 6.8.0 (cbmc-6.8.0) 64-bit arm64 macos
+Reading GOTO program from file <WORKSPACE>/target/kani/aarch64-apple-darwin/debug/deps/geom_math-374b729f7036dc0e__RNvNtCscpuoVD3UFIE_9geom_math12verification25isqrt_correct_full_domain.out
+Generating GOTO Program
+Adding CPROVER library (arm64)
+Removal of function pointers and virtual functions
+Generic Property Instrumentation
+Running with 16 object bits, 48 offset bits (user-specified)
+Starting Bounded Model Checking
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 1 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 2 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 3 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 4 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 5 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 6 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 7 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 8 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 9 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 10 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 11 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 12 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 13 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 14 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 15 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.0 iteration 16 file geom-math/src/lib.rs line 33 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 1 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 2 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 3 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 4 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 5 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 6 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 7 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 8 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 9 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 10 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 11 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 12 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 13 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 14 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 15 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 16 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 17 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Not unwinding loop _RNvCscpuoVD3UFIE_9geom_math5isqrt.1 iteration 18 file geom-math/src/lib.rs line 37 column 5 function isqrt thread 0
+Runtime Symex: 0.048923s
+size of program expression: 3081 steps
+slicing removed 1698 assignments
+Generated 299 VCC(s), 225 remaining after simplification
+Runtime Postprocess Equation: 0.00102075s
+Passing problem to propositional reduction
+converting SSA
+Runtime Convert SSA: 0.013226s
+Running propositional reduction
+Post-processing
+Runtime Post-process: 5.667e-06s
+Solving with CaDiCaL 2.0.0
+12906 variables, 63658 clauses
+SAT checker: instance is SATISFIABLE
+Runtime Solver: 0.00116733s
+Runtime decision procedure: 0.0145909s
+Running propositional reduction
+Solving with CaDiCaL 2.0.0
+12907 variables, 63659 clauses
+SAT checker: instance is SATISFIABLE
+Runtime Solver: 0.00832333s
+Runtime decision procedure: 0.00845271s
+Running propositional reduction
+Solving with CaDiCaL 2.0.0
+12908 variables, 63660 clauses
+SAT checker: instance is UNSATISFIABLE
+Runtime Solver: 70.8752s
+Runtime decision procedure: 70.8753s
+
+RESULTS:
+Check 1: verification::isqrt_correct_full_domain.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: geom-math/src/lib.rs:82:17 in function verification::isqrt_correct_full_domain
+
+Check 2: verification::isqrt_correct_full_domain.assertion.2
+	 - Status: SUCCESS
+	 - Description: "assertion failed: r64 * r64 <= n64"
+	 - Location: geom-math/src/lib.rs:82:9 in function verification::isqrt_correct_full_domain
+
+Check 3: verification::isqrt_correct_full_domain.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: geom-math/src/lib.rs:83:23 in function verification::isqrt_correct_full_domain
+
+Check 4: verification::isqrt_correct_full_domain.assertion.4
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: geom-math/src/lib.rs:83:35 in function verification::isqrt_correct_full_domain
+
+Check 5: verification::isqrt_correct_full_domain.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to multiply with overflow"
+	 - Location: geom-math/src/lib.rs:83:23 in function verification::isqrt_correct_full_domain
+
+Check 6: verification::isqrt_correct_full_domain.assertion.6
+	 - Status: SUCCESS
+	 - Description: "assertion failed: n64 < (r64 + 1) * (r64 + 1)"
+	 - Location: geom-math/src/lib.rs:83:9 in function verification::isqrt_correct_full_domain
+
+Check 7: isqrt.assertion.1
+	 - Status: SUCCESS
+	 - Description: "attempt to shift left with overflow"
+	 - Location: geom-math/src/lib.rs:32:24 in function isqrt
+
+Check 8: isqrt.assertion.2
+	 - Status: SUCCESS
+	 - Description: "attempt to shift right with overflow"
+	 - Location: geom-math/src/lib.rs:34:9 in function isqrt
+
+Check 9: isqrt.assertion.3
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: geom-math/src/lib.rs:38:17 in function isqrt
+
+Check 10: isqrt.assertion.4
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: geom-math/src/lib.rs:39:18 in function isqrt
+
+Check 11: isqrt.assertion.5
+	 - Status: SUCCESS
+	 - Description: "attempt to subtract with overflow"
+	 - Location: geom-math/src/lib.rs:39:13 in function isqrt
+
+Check 12: isqrt.assertion.6
+	 - Status: SUCCESS
+	 - Description: "attempt to shift right with overflow"
+	 - Location: geom-math/src/lib.rs:40:19 in function isqrt
+
+Check 13: isqrt.assertion.7
+	 - Status: SUCCESS
+	 - Description: "attempt to add with overflow"
+	 - Location: geom-math/src/lib.rs:40:19 in function isqrt
+
+Check 14: isqrt.assertion.8
+	 - Status: SUCCESS
+	 - Description: "attempt to shift right with overflow"
+	 - Location: geom-math/src/lib.rs:42:13 in function isqrt
+
+Check 15: isqrt.assertion.9
+	 - Status: SUCCESS
+	 - Description: "attempt to shift right with overflow"
+	 - Location: geom-math/src/lib.rs:44:9 in function isqrt
+
+Check 16: isqrt.unwind.1
+	 - Status: SUCCESS
+	 - Description: "unwinding assertion loop 1"
+	 - Location: geom-math/src/lib.rs:37:5 in function isqrt
+
+
+SUMMARY:
+ ** 0 of 16 failed
+
+VERIFICATION:- SUCCESSFUL
+Verification Time: 71.01155s
+
+Manual Harness Summary:
+Complete - 1 successfully verified harnesses, 0 failures, 1 total.

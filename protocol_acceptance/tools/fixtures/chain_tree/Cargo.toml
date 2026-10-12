@@ -1,0 +1,3 @@
+[workspace]
+members = ["geom-math", "raster-draw", "paint-app"]
+resolver = "2"

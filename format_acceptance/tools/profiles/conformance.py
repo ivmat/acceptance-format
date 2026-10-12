@@ -1054,6 +1054,10 @@ def main(argv: list[str]) -> int:
         return selftest()
     if not args.manifests:
         parser.error("at least one manifest is required")
+    from check_core import route_documents
+    routed = route_documents(args.manifests, [__file__, *argv], tool_name='profiles/conformance.py')
+    if routed is not None:
+        return routed
     reports = [validate(path, root=args.root, meaning_only=args.meaning_only) for path in args.manifests]
     for rep in reports:
         print(rep.render())

@@ -1,0 +1,33 @@
+   Compiling geom-math v0.1.0 (<WORKSPACE>/geom-math)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/geom_math-bdaee36f851faede)
+
+running 4 tests
+test tests::dist2_known_values ... ok
+test tests::dist2_extremes_do_not_panic ... ok
+test tests::isqrt_exhaustive_small_range ... FAILED
+test tests::isqrt_known_values ... FAILED
+
+failures:
+
+---- tests::isqrt_exhaustive_small_range stdout ----
+
+thread 'tests::isqrt_exhaustive_small_range' (11384828) panicked at geom-math/src/lib.rs:130:13:
+n=1 r=0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- tests::isqrt_known_values stdout ----
+
+thread 'tests::isqrt_known_values' (11384829) panicked at geom-math/src/lib.rs:111:9:
+assertion `left == right` failed
+  left: 0
+ right: 1
+
+
+failures:
+    tests::isqrt_exhaustive_small_range
+    tests::isqrt_known_values
+
+test result: FAILED. 2 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`

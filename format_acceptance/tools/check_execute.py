@@ -580,6 +580,10 @@ def main(argv: list[str]) -> int:
     if not args.manifests:
         print("usage error: no manifest given", file=sys.stderr)
         return 2
+    from check_core import route_documents
+    routed = route_documents(args.manifests, [__file__, *argv], tool_name='check_execute.py')
+    if routed is not None:
+        return routed
     if not args.yes_run_untrusted_commands:
         print("REFUSING TO RUN: --execute mode runs commands taken from a document, with no "
               "sandbox. Pass --yes-run-untrusted-commands to acknowledge, and only for a "

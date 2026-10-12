@@ -478,13 +478,30 @@ side = "both"
 # §11.2.2.1 does not exist in X.690; ENVELOPE rev01 row DER-C-BITS-3 mis-cites it;
 # the rule is §8.6.2.3.
 
-# UNVERIFIED: §8.1.2.3: precise subject not established; no row admitted.
-# UNVERIFIED: §8.9.2 / §8.9.3: component-order subdivision not established here;
-# no additional SEQUENCE subclause row admitted.
-# UNVERIFIED: §8.25 / §8.26 time-type assignment: both crate time modules cite §8.25.
-# No base time-type row admitted until that numbering is resolved.
-# UNVERIFIED: ENVELOPE DER-C-BITS-1/2 and bit_string.rs attach different rules to
-# §11.2.1 / §11.2.2 than the titles above; their rule-to-clause mapping needs review.
-# UNVERIFIED: §11.4 (X690-11.4): proposed GeneralString-family escape-state subject
-# is not established; no row admitted.
-# UNVERIFIED: §11.7 midnight sub-rule: precise subclause not established; no separate row.
+# UNVERIFIED: P26-X690-1 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: ITU-T X.690 (02/2021), candidate §8.1.2.3 subject; no row admitted.
+# UNVERIFIED: P26-X690-2 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: ITU-T X.690 (02/2021), candidate §8.9.2 / §8.9.3 component-order
+# subdivisions; no additional SEQUENCE subclause row admitted.
+# UNVERIFIED: P26-X690-3 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: ITU-T X.690 (02/2021), candidate §8.25 / §8.26 time-type assignment
+# against both crate time modules citing §8.25; no base time-type row admitted.
+# UNVERIFIED: P26-X690-4 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: ITU-T X.690 (02/2021), candidate §11.2.1 / §11.2.2 mapping against
+# ENVELOPE DER-C-BITS-1/2 and bit_string.rs. Existing coarse rows remain;
+# their disputed rule-to-clause mapping is not verified by this disposition.
+# UNVERIFIED: P26-X690-5 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: ITU-T X.690 (02/2021), candidate §11.4 GeneralString-family
+# escape-state subject; no X690-11.4 row admitted.
+# UNVERIFIED: P26-X690-6 — retained-exclusion (2026-10-07).
+# Reason: primary text unavailable offline.
+# Check: ITU-T X.690 (02/2021), §11.7 midnight rule and its exact locator;
+# no separate subclause row admitted.
+# Clause numbers above are inherited citation leads, not newly verified precision.
+# Clause numbers and original short titles only; see README.md for limits and copyright.
+# Sources for existing rows: ENVELOPE.md section 5, DER crate citations, standard structure.

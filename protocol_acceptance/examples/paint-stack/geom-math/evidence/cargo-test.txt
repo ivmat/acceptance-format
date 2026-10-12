@@ -1,0 +1,18 @@
+   Compiling geom-math v0.1.0 (<WORKSPACE>/geom-math)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+     Running unittests src/lib.rs (<WORKSPACE>/target/debug/deps/geom_math-bdaee36f851faede)
+
+running 4 tests
+test tests::dist2_known_values ... ok
+test tests::dist2_extremes_do_not_panic ... ok
+test tests::isqrt_known_values ... ok
+test tests::isqrt_exhaustive_small_range ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+   Doc-tests geom_math
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

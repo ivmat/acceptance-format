@@ -30,10 +30,10 @@ fi
 
 echo
 if [ -f "${PROTOCOL_TOOL}" ]; then
-  echo "== 4/5: protocol-level checks (check-contract, check-package, coverage, check-decision) =="
-  python3 "${PROTOCOL_TOOL}" check-contract acceptance-contract.toml
-  python3 "${PROTOCOL_TOOL}" check-package acceptance.toml --contract acceptance-contract.toml
-  python3 "${PROTOCOL_TOOL}" coverage acceptance.toml --contract acceptance-contract.toml
+  echo "== 4/5: protocol-level checks (check-spec, check-package, coverage, check-decision) =="
+  python3 "${PROTOCOL_TOOL}" check-spec acceptance-specification.toml
+  python3 "${PROTOCOL_TOOL}" check-package acceptance.toml --spec acceptance-specification.toml
+  python3 "${PROTOCOL_TOOL}" coverage acceptance.toml --spec acceptance-specification.toml
   if [ -f acceptance-decision.toml ]; then
     # Two-commit re-stamp (README "The one-commit self-reference lag", core.md B1): this example's
     # crate lives inside the very repo whose tooling validates it, so [subject].dirty is only
@@ -49,7 +49,7 @@ if [ -f "${PROTOCOL_TOOL}" ]; then
     # on check-decision's verdict on this document.
     set +e
     python3 "${PROTOCOL_TOOL}" check-decision acceptance-decision.toml \
-      --contract acceptance-contract.toml --package acceptance.toml
+      --spec acceptance-specification.toml --package acceptance.toml
     decision_check_rc=$?
     set -e
     if [ "${decision_check_rc}" -ne 0 ]; then
@@ -69,7 +69,7 @@ if [ -f "${PROTOCOL_TOOL}" ]; then
   # against declared input paths by exact string, so the path convention must agree.
   if [ -f acceptance-decision.toml ]; then
     python3 "${PROTOCOL_TOOL}" impact acceptance-decision.toml \
-      --contract acceptance-contract.toml --package acceptance.toml \
+      --spec acceptance-specification.toml --package acceptance.toml \
       --new-commit 1111111111111111111111111111111111111111 \
       --changed src/checksum.rs \
       --out-events impact-events.jsonl

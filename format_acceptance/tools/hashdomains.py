@@ -3,13 +3,15 @@
 (core.md B16). Core, conformance, the F2 helper and `protocol_acceptance/tools/m11.py` all import
 this module for the domain set and the shared construction; none of them may keep a private copy.
 
-`DOMAINS` holds three groups: the seven B16-mandated format-core domains (`normative-reference:`,
-`manifest:`, `applicability-record:`, `subject:`, `record:`, `inventory:`, `artifact:`, documented
-with their wire form and writer/verifier in spec/hash-domains.md) plus five domains added here for
-`m11.py`'s own registry (`bundle-root:`, `evidence-record:`, `claim:` — reserved, not computed by
-m11 in this revision — `contract:`, `decision:`; protocol.md §7's additive-separator rule).
-`manifest:` and `subject:` are shared by name and construction across both groups. Adding a domain
-is an edit to this set (B16, "Adding a domain")."""
+`DOMAINS` holds three groups: the eight B16-mandated format-core domains (`normative-reference:`,
+`manifest:`, `applicability-record:`, `subject:`, `record:`, `inventory:`, `artifact:`, `store:`,
+documented with their wire form and writer/verifier in spec/hash-domains.md) plus five domains
+added here for `m11.py`'s own registry (`bundle-root:`, `evidence-record:`, `claim:` — reserved,
+not computed by m11 in this revision — `specification:`, `decision:`; protocol.md §7's
+additive-separator rule). `manifest:` and `subject:` are shared by name and construction across
+both groups. `store:` is a format-core domain whose only writer/verifier are
+the protocol's own directory-store reader (informational listing digest; the format core never
+parses a store). Adding a domain is an edit to this set (B16, "Adding a domain")."""
 import hashlib
 import re
 import sys
@@ -17,8 +19,8 @@ from pathlib import Path
 
 DOMAINS = {
     "normative-reference:", "manifest:", "applicability-record:", "subject:", "record:",
-    "inventory:", "artifact:",
-    "bundle-root:", "evidence-record:", "claim:", "contract:", "decision:",
+    "inventory:", "artifact:", "store:",
+    "bundle-root:", "evidence-record:", "claim:", "specification:", "decision:",
 }
 
 # core.md B16: the registry TABLE in spec/hash-domains.md is

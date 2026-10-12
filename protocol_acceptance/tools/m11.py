@@ -4,8 +4,8 @@ ratified 2026-08-28).
 
 COPIED from the acceptance-format product repository's `tools/m11.py` @ git sha
 aeac93f22f15f72d787970135d61ac97e19f4a8a (2026-08-28), and EXTENDED here for the acceptance
-protocol (`protocol_acceptance/spec/protocol.md` §7): two new domain-separator prefixes, `contract:` (the
-contract hash) and `decision:` (the decision hash), added under the ratified construction's own
+protocol (`protocol_acceptance/spec/protocol.md` §7): two new domain-separator prefixes, `specification:` (the
+specification hash) and `decision:` (the decision hash), added under the ratified construction's own
 additive-separator rule (new prefixes may be added; no existing prefix's meaning changes). The
 `manifest:` domain is unchanged and is the package hash; `subject:` is used for per-file input
 digests (`[[claim.evidence.inputs]]`, protocol.md §4/§8) and now writes the self-describing form
@@ -21,15 +21,15 @@ registry: format core's five domains plus the five added there for this module),
 calls `hashdomains` for the shared `sha512(prefix || bytes)` construction instead of hashing
 locally.
 
-Revision L3 (2026-09-24, "one wire form"): `contract`, `decision` and
+Revision L3 (2026-09-24, "one wire form"): `specification`, `decision` and
 `manifest` now use `hashdomains.digest`'s self-describing wire form, `<domain>:sha-512:<hex>` —
 the SAME form the format core writes for its own five domains — instead of this module's earlier
 own wire form. `bundle-root` and `claim` are UNCHANGED (unwritten/reserved). `evidence-record`'s
 bare form is the pre-existing "untyped legacy" wire `hash-domains.md`'s Read-only legacy record
 wires section already tracks for retirement at conformance 0.2 — out of revision L3's narrower
-contract/package/decision scope, and still out of scope below (a claim's OWN evidence
+specification/package/decision scope, and still out of scope below (a claim's OWN evidence
 `record_hash`, not a change-impact input digest). A bare `sha-512:<hex>` value read back from a
-`contract`/`manifest`/`decision`-domain field is no longer valid input for those three fields;
+`specification`/`manifest`/`decision`-domain field is no longer valid input for those three fields;
 callers reject it explicitly (`acceptance_protocol.py`, no compatibility shim with pre-lock
 drafts, decision L).
 
@@ -37,13 +37,13 @@ As of 2026-09-24, `subject` now ALSO writes the self-describing
 `subject:sha-512:<hex>` form, matching the format core's own convention for this domain (B1
 certified subject identity already writes it self-describing; only this module's own
 `[[claim.evidence.inputs]]` computation lagged) — `acceptance_protocol.py` rejects the retired
-bare form on that field the same way it does for contract/package/decision.
+bare form on that field the same way it does for specification/package/decision.
 
 Pure stdlib, no dependencies. Domain-separated SHA-512 over the RAW bytes of a file as emitted:
 
     digest = sha512(prefix_bytes || file_bytes)
-    # self-describing domains (contract, decision, manifest — revision L3):
-    wire value = prefix + "sha-512:" + hex(digest)     # e.g. "contract:sha-512:<128-hex>"
+    # self-describing domains (specification, decision, manifest — revision L3):
+    wire value = prefix + "sha-512:" + hex(digest)     # e.g. "specification:sha-512:<128-hex>"
     # legacy domains (bundle-root, evidence-record, claim — unchanged):
     wire value = "sha-512:" + hex(digest)              # domain not repeated in the wire string
 
@@ -54,7 +54,7 @@ sha-256 draft that was never published) — this module hard-codes that one algo
 per-call or per-manifest choice to make, by design (a per-manifest choice would be a downgrade
 attack and would split content identity across manifests hashed under different algorithms).
 
-Imported by `protocol_acceptance/tools/acceptance_protocol.py` (contract/package/decision hash checks).
+Imported by `protocol_acceptance/tools/acceptance_protocol.py` (specification/package/decision hash checks).
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ ALGORITHM = "sha-512"
 # The M11 domain-separator prefixes. `manifest`, `bundle-root`, `evidence-record`, `claim` and
 # `subject` are the public format's own (format.md, "Content-hashing (M11)" + "`subject:`
 # domain"); `claim` is RESERVED — not computed in this revision ("Reserved hooks" H3, the
-# per-claim signing slot). `contract` and `decision` are the protocol's own additions
+# per-claim signing slot). `specification` and `decision` are the protocol's own additions
 # (protocol.md §7), added under the ratified construction's additive-separator rule.
 # `normative-reference` (as of 2026-09-24) is a format-core domain this
 # module now ALSO exposes, for `[policy].hash` (protocol.md §3) — the policy document is a
@@ -89,7 +89,7 @@ ALGORITHM = "sha-512"
 # (format_acceptance/tools/hashdomains.py, core.md B16) — this dict only re-derives the byte
 # prefixes this module's own callers key on; it is a thin, non-authoritative mirror.
 _M11_DOMAIN_NAMES = (
-    "manifest", "bundle-root", "evidence-record", "claim", "subject", "contract", "decision",
+    "manifest", "bundle-root", "evidence-record", "claim", "subject", "specification", "decision",
     "normative-reference",
 )
 for _name in _M11_DOMAIN_NAMES:
@@ -104,17 +104,17 @@ _RESERVED_DOMAINS = {"claim"}
 # self-describing `<domain>:sha-512:<hex>` wire form (`hashdomains.digest`), matching the format
 # core's own convention, instead of this module's earlier bare `sha-512:<hex>` form. `subject`
 # (`[[claim.evidence.inputs]]` digests) and `normative-reference` (`[policy].hash`) join
-# `contract`/`decision`/`manifest` (revision L3) here. The remaining domains (`bundle-root`,
+# `specification`/`decision`/`manifest` (revision L3) here. The remaining domains (`bundle-root`,
 # `evidence-record`, `claim`) are UNCHANGED — see the module docstring and `hash-domains.md`'s
 # See the revision L3 note for why (a claim's own `record_hash` is separately tracked legacy).
-_SELF_DESCRIBING_DOMAINS = {"contract", "decision", "manifest", "subject", "normative-reference"}
+_SELF_DESCRIBING_DOMAINS = {"specification", "decision", "manifest", "subject", "normative-reference"}
 
 _HEXDIGITS = set("0123456789abcdef")
 
 
 def digest_bytes(domain: str, data: bytes) -> str:
     """Return the M11 digest of `data`, domain-separated by `domain`'s prefix — the
-    self-describing `<domain>:sha-512:<hex>` wire form for `contract`/`decision`/`manifest`
+    self-describing `<domain>:sha-512:<hex>` wire form for `specification`/`decision`/`manifest`
     (revision L3), the legacy bare `sha-512:<hex>` form (domain baked into the hash bytes, not repeated
     in the wire string) for every other domain this module computes.
 
@@ -144,7 +144,7 @@ def is_well_formed(value) -> bool:
     """Shape check only, EITHER wire form this module produces (revision L3): the legacy bare
     `"sha-512:" + 128 lower-case hex chars` (still written for `bundle-root`/`evidence-record`/
     `claim`/`subject`), or the self-describing `<domain>:sha-512:<128-hex>` form
-    (`hashdomains.parse`; written for `contract`/`decision`/`manifest`). Does not verify anything
+    (`hashdomains.parse`; written for `specification`/`decision`/`manifest`). Does not verify anything
     against a file's actual bytes — callers that need that call digest_file/digest_bytes and
     compare the result against `value` themselves."""
     if not isinstance(value, str):
@@ -210,30 +210,30 @@ def _selftest() -> int:
             check("digest_bytes refuses the RESERVED 'claim' domain", True)
 
         # protocol domains (added over the public copy)
-        want_contract = digest_bytes("contract", b"hello world")
+        want_specification = digest_bytes("specification", b"hello world")
         want_decision = digest_bytes("decision", b"hello world")
         want_manifest = digest_bytes("manifest", b"hello world")
-        check("digest_file('contract', ...) matches digest_bytes", digest_file("contract", p) == want_contract)
+        check("digest_file('specification', ...) matches digest_bytes", digest_file("specification", p) == want_specification)
         check("digest_file('decision', ...) matches digest_bytes", digest_file("decision", p) == want_decision)
-        check("contract and decision domains produce DIFFERENT digests over the same bytes",
-              want_contract != want_decision and want_contract != want and want_decision != want)
+        check("specification and decision domains produce DIFFERENT digests over the same bytes",
+              want_specification != want_decision and want_specification != want and want_decision != want)
 
-        # Revision L3 "one wire form": contract/decision/manifest are now self-describing
+        # Revision L3 "one wire form": specification/decision/manifest are now self-describing
         # (`<domain>:sha-512:<hex>`), matching `hashdomains.digest`'s own output exactly; the
         # unmigrated domains (evidence-record here) keep the bare `sha-512:<hex>` legacy form.
-        check("contract digest uses the self-describing 'contract:sha-512:' wire form (revision L3)",
-              want_contract.startswith("contract:sha-512:"))
+        check("specification digest uses the self-describing 'specification:sha-512:' wire form (revision L3)",
+              want_specification.startswith("specification:sha-512:"))
         check("decision digest uses the self-describing 'decision:sha-512:' wire form (revision L3)",
               want_decision.startswith("decision:sha-512:"))
         check("manifest digest uses the self-describing 'manifest:sha-512:' wire form (revision L3)",
               want_manifest.startswith("manifest:sha-512:"))
-        check("contract digest equals hashdomains.digest('contract:', ...) exactly (one wire form)",
-              want_contract == hashdomains.digest("contract:", b"hello world"))
+        check("specification digest equals hashdomains.digest('specification:', ...) exactly (one wire form)",
+              want_specification == hashdomains.digest("specification:", b"hello world"))
         check("evidence-record digest is UNCHANGED, still the bare legacy wire form (out of revision L3 scope)",
               want.startswith("sha-512:") and not want.startswith("evidence-record:"))
-        check("is_well_formed accepts the self-describing wire form too (revision L3)", is_well_formed(want_contract))
+        check("is_well_formed accepts the self-describing wire form too (revision L3)", is_well_formed(want_specification))
         check("is_well_formed still accepts the bare legacy form (domain-agnostic shape check; a "
-              "domain-specific rejection of the bare form for contract/decision/manifest fields is "
+              "domain-specific rejection of the bare form for specification/decision/manifest fields is "
               "acceptance_protocol.py's job, not this shape check's)", is_well_formed(want))
 
         # As of 2026-09-24, `subject` (§4/§8 change-impact inputs) and
@@ -258,10 +258,10 @@ def _selftest() -> int:
         check("CLI 'evidence-record <file>' exits 0 and prints the digest",
               proc.returncode == 0 and proc.stdout.strip() == want)
 
-        proc = subprocess.run([sys.executable, __file__, "contract", str(p)],
+        proc = subprocess.run([sys.executable, __file__, "specification", str(p)],
                                capture_output=True, text=True)
-        check("CLI 'contract <file>' exits 0 and prints the digest",
-              proc.returncode == 0 and proc.stdout.strip() == want_contract)
+        check("CLI 'specification <file>' exits 0 and prints the digest",
+              proc.returncode == 0 and proc.stdout.strip() == want_specification)
 
         proc = subprocess.run([sys.executable, __file__], capture_output=True, text=True)
         check("CLI with NO ARGS exits nonzero and prints nothing to stdout (never a silent success)",

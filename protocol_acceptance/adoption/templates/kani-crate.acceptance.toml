@@ -1,6 +1,6 @@
 # kani-crate.acceptance.toml — a PRODUCER skeleton package for a Kani-verified Rust crate.
 #
-# This is what a producer ships against `kani-crate.contract.toml` (protocol.md §4). Every
+# This is what a producer ships against `kani-crate.specification.toml` (protocol.md §4). Every
 # placeholder below (search for the string FILL) marks a field you must fill: run the validator on
 # this file AS-IS and it FAILS with named, specific errors pointing at the unfilled fields — that
 # is deliberate (a skeleton with no real evidence cannot pass; a silently-passing skeleton would be
@@ -18,7 +18,7 @@
 
 [format]
 id       = "acceptance/0"
-protocol = "acceptance-protocol/0"
+protocol = "acceptance-protocol/1"
 profile  = "acceptance/verification/code/rust"
 
 [subject]
@@ -27,15 +27,15 @@ kind   = "rust-crate"
 commit = "<FILL: 40-hex commit of the ALREADY-COMMITTED crate — see the guide's two-commit re-stamp pattern>"
 dirty  = false
 
-[contract]
-id                 = "<FILL: matches kani-crate.contract.toml [document].id>"
-hash               = "<FILL: contract:sha-512: 128 lowercase hex chars -- recompute after you edit the contract; see the guide>"
+[specification]
+id                 = "<FILL: matches kani-crate.specification.toml [document].id>"
+hash               = "<FILL: specification:sha-512: 128 lowercase hex chars -- recompute after you edit the specification; see the guide>"
 requirements_total = 2
 
 [spec]
-path    = "acceptance-contract.toml"
+path    = "acceptance-specification.toml"
 version = "<FILL: e.g. AC-your-crate-0001@v1>"
-axis    = "the requirements of contract <FILL: contract id>"
+axis    = "the requirements of specification <FILL: specification id>"
 
 [coverage]
 clauses_total = 2
@@ -79,10 +79,10 @@ captured_at_commit = "<FILL: same 40-hex as [subject].commit>"
     # different identity; collapsing them into one entry loses that distinction (guide §6).
     [[claim.evidence.toolchain]]
     name   = "kani-bundle"
-    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- deterministic manifest digest over the installed ~/.kani/kani-VERSION/ bundle's own files; see the guide's bundle_manifest_digest snippet>"
+    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- deterministic manifest digest over the installed $HOME/.kani/kani-VERSION/ bundle's own files; see the guide's bundle_manifest_digest snippet>"
     [[claim.evidence.toolchain]]
     name   = "cargo-kani-launcher"
-    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- digest of the ~/.cargo/bin/cargo-kani launcher binary's own bytes>"
+    digest = "<FILL: artifact:sha-512: 128 lowercase hex chars -- digest of the $CARGO_HOME/bin/cargo-kani launcher binary's own bytes>"
     # no `commit` on either entry -- cargo-kani reports none; do not invent one (rust.md §5a trap 4)
 
     # build_inputs SHOULD carry Cargo.lock and rust-toolchain.toml (rust.md's required_build_inputs

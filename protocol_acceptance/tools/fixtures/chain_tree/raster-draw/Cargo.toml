@@ -1,0 +1,5 @@
+[package]
+name = "raster-draw"
+version = "0.1.0"
+[dependencies]
+geom-math = { path = "../geom-math" }

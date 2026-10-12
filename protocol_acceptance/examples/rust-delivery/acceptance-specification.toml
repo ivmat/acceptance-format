@@ -1,4 +1,4 @@
-# acceptance-contract.toml — the CONSUMER's contract (protocol.md §3).
+# acceptance-specification.toml — the CONSUMER's specification (protocol.md §3).
 #
 # Authored by the consumer (Acme Payments Ltd) for a small, real deliverable: a hand-rolled IBAN
 # syntax + ISO 7064 mod-97-10 checksum validator, no dependencies. Six requirements: R1-R4 and R6
@@ -13,9 +13,9 @@
 # bounded), driving a declared deviation, a waiver, and an accepted-with-conditions decision.
 
 [document]
-protocol  = "acceptance-protocol/0"
+protocol  = "acceptance-protocol/1"
 minor     = 0
-kind      = "contract"
+kind      = "specification"
 id        = "AC-2026-0001"
 version   = 1
 issued_at = "2026-09-16T10:00:00Z"

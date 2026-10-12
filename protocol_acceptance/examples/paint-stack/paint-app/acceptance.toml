@@ -1,0 +1,352 @@
+# GENERATED FILE — DO NOT HAND-EDIT.
+#
+# Produced by protocol_acceptance/examples/paint-stack/gen_packages.py, which actually ran
+# `cargo test`, `cargo clippy` and real, restored
+# mutation controls against paint-app/ (this directory's sibling). Transcripts are in evidence/.
+#
+# SELF-REFERENCE DISCLOSURE (same convention as ../rust-delivery/gen_package.py, spec/format.md
+# "[format] self-location"): [subject].dirty is `false`: this manifest certifies the committed state of paint-app/ at the commit below, generated after that commit.
+# Transcript paths normalized to <WORKSPACE>, <REPO>, <HOME> before hashing.
+# Generated: 2026-10-12T09:00:13Z
+#
+# Re-run: python3 gen_packages.py
+
+
+[format]
+id       = "acceptance/0"
+protocol = "acceptance-protocol/1"
+profile  = "acceptance/verification/code/rust"
+
+[subject]
+name   = "paint-app"
+kind   = "rust-crate"
+commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+dirty  = false
+
+[spec]
+path    = "SPEC.md"
+version = "v1"
+axis    = "the SPEC.md clauses (S-1..S-4)"
+
+[coverage]
+clauses_total = 4
+claims_total  = 4
+
+# === PA-001 -- S-1 ===
+[[claim]]
+id            = "PA-001"
+clause        = "S-1"
+item          = "paint-app (paint-app/src/lib.rs, tested through the compiled `paint` binary and the library directly)"
+statement     = "paint circle parses any well-formed invocation and rejects every malformed one (missing/duplicate/unknown flags, non-numeric values, unknown subcommand, empty output path, or a circle that does not fit entirely inside the auto-sized canvas) with a clean Err, never a panic — checked both as a library (parse_args, render_circle) and through the compiled binary (tests/cli.rs)."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+bounds        = "bounded: 8 (cx,cy,r) tuples: (0,0,0), (1,1,1), (3,3,3), (10,10,4), (25,25,15), (8,40,8), (45,10,10), (35,40,30); CLI malformed cases and golden fixture separately tested"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo test"
+  expect  = "test result: ok"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "tests::parses_a_well_formed_invocation_in_any_flag_order, tests::rejects_every_malformed_invocation_without_panicking, tests::circle_not_fully_inside_canvas_is_rejected_not_silently_clipped, tests/cli.rs (integration tests through the real binary); tests/cli.rs::valid_invocation_writes_a_real_ppm_file_independently_verified (8 disk files)"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 22
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:07d5753eb7c4ca8e94b24adbfc869449b6567871b391b253d305fd4f3b0d92c1100c7e1194998d602e7b83af5e0f1e3acf1c5bb4cf6dae8aa645f595a2f8e3ce"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:076370d113bd4273eeafab0cd39101b3b8852bc2ceb0566a61fec7b84304de08cbb86ea4ebdd3521cf95761ed58856fd98868a8b7f04d5b6431bf88b5c59e3c3"
+    [[claim.evidence.inputs]]
+    path   = "src/main.rs"
+    digest = "subject:sha-512:af7589a346de372a5164aceccd45a1d61eafcc51ab745ac78f3607906117cf0bf7f79600b63ec4dc23105c12243f745d22eb717efb56c3ac6a3ca09c310ffb6d"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:810d13d3ed1acd7defd44ccf3bfe35e82b4036b6f175dbd2cbe61c018519e2bb3bb131d89bd309ee91ac2a7061eefa00f3fd5ee32ced729279f807330dab5e7a"
+    [[claim.evidence.inputs]]
+    path   = "tests/cli.rs"
+    digest = "subject:sha-512:cd2d31ff48bbf6846ce86f034b9f3db3482c6edaa766a0559a05b7aa4928d8e6b6472edf8b77e6b528d24236b5c41b7386b6f78f25cce46048970aeb8374d01d"
+    [[claim.evidence.inputs]]
+    path   = "tests/fixtures/circle_cx15_cy15_r10.ppm.hex"
+    digest = "subject:sha-512:5141c478d67fc86bd900ca593095eafda1a375caecee84cab17b1c322ed7311e742016668a3dd124fc1259da1d8f67674e899d824b60899a15cc6cabef3e231a"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --lib rejects_every_malformed_invocation_without_panicking (mutant: --r parsing changed to .unwrap(), panics on non-numeric input)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (mutation, reverted)"
+  cases       = 1
+  record      = "evidence/pa1-mutation-control.txt"
+  record_hash = "record:sha-512:d0b7fc9df5ca2b39cb99314ce77c02e4187286658880e0b1c474883371f55c087c45c98595c23072fe20fba4a1797f40524a86edf15a7161c7f2c0c52b0f1590"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "PA-001"
+
+
+# === PA-002 -- S-2 ===
+[[claim]]
+id            = "PA-002"
+clause        = "S-2"
+item          = "paint-app (paint-app/src/lib.rs, tested through the compiled `paint` binary and the library directly)"
+statement     = "For every (cx, cy, r) in the disclosed domain (see DOMAINS in src/lib.rs's test module: 8 combinations, radii 0..=30, including the cx=r/cy=r boundary), and ONLY for circles fully inside the canvas (cx >= r, cy >= r; a circle that would not fit is rejected outright, see PA-001) -- every ink pixel actually present in the output PPM file is within 0.5 of the declared radius from the declared center, checked by an oracle re-derived from scratch in the test itself (not by calling raster-draw's own circle_points/accuracy_ok), plus a byte-for-byte golden-image comparison against a checked-in fixture."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+bounds        = "bounded: 8 (cx,cy,r) tuples: (0,0,0), (1,1,1), (3,3,3), (10,10,4), (25,25,15), (8,40,8), (45,10,10), (35,40,30); CLI malformed cases and golden fixture separately tested"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo test"
+  expect  = "test result: ok"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "tests::golden_image_matches_fixture, tests::independent_accuracy_over_disclosed_domain, tests::ppm_consistent_with_circle_points_not_independent; tests/cli.rs::valid_invocation_writes_a_real_ppm_file_independently_verified (8 disk files)"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 8
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:07d5753eb7c4ca8e94b24adbfc869449b6567871b391b253d305fd4f3b0d92c1100c7e1194998d602e7b83af5e0f1e3acf1c5bb4cf6dae8aa645f595a2f8e3ce"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:076370d113bd4273eeafab0cd39101b3b8852bc2ceb0566a61fec7b84304de08cbb86ea4ebdd3521cf95761ed58856fd98868a8b7f04d5b6431bf88b5c59e3c3"
+    [[claim.evidence.inputs]]
+    path   = "src/main.rs"
+    digest = "subject:sha-512:af7589a346de372a5164aceccd45a1d61eafcc51ab745ac78f3607906117cf0bf7f79600b63ec4dc23105c12243f745d22eb717efb56c3ac6a3ca09c310ffb6d"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:810d13d3ed1acd7defd44ccf3bfe35e82b4036b6f175dbd2cbe61c018519e2bb3bb131d89bd309ee91ac2a7061eefa00f3fd5ee32ced729279f807330dab5e7a"
+    [[claim.evidence.inputs]]
+    path   = "tests/cli.rs"
+    digest = "subject:sha-512:cd2d31ff48bbf6846ce86f034b9f3db3482c6edaa766a0559a05b7aa4928d8e6b6472edf8b77e6b528d24236b5c41b7386b6f78f25cce46048970aeb8374d01d"
+    [[claim.evidence.inputs]]
+    path   = "tests/fixtures/circle_cx15_cy15_r10.ppm.hex"
+    digest = "subject:sha-512:5141c478d67fc86bd900ca593095eafda1a375caecee84cab17b1c322ed7311e742016668a3dd124fc1259da1d8f67674e899d824b60899a15cc6cabef3e231a"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --test cli valid_invocation_writes_a_real_ppm_file_independently_verified (mutant: PPM gray mapping inverted, ink/background swapped)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (mutation, reverted)"
+  cases       = 1
+  record      = "evidence/pa2-mutation-control.txt"
+  record_hash = "record:sha-512:390614150bf51846df46e666c821f92baf907b6952b61f0ff7c03f4598fa3018d0f5e103fcd9d52848be0fc346d8b8eab0cd126e9a2afc24933bfd3c62a9bf00"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "PA-002"
+
+
+# === PA-003 -- S-3 ===
+[[claim]]
+id            = "PA-003"
+clause        = "S-3"
+item          = "paint-app (paint-app/src/lib.rs, tested through the compiled `paint` binary and the library directly)"
+statement     = "For every (cx, cy, r) in the disclosed domain (DOMAINS, src/lib.rs and tests/cli.rs), and only for circles fully inside the canvas: every ink pixel ACTUALLY FOUND in the output PPM file (by exhaustive scan, not by asking the renderer what it drew) has all 7 of its symmetric reflections about the declared center also present as ink in that same file."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+bounds        = "bounded: 8 (cx,cy,r) tuples: (0,0,0), (1,1,1), (3,3,3), (10,10,4), (25,25,15), (8,40,8), (45,10,10), (35,40,30); CLI malformed cases and golden fixture separately tested"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo test"
+  expect  = "test result: ok"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "tests::independent_symmetry_over_disclosed_domain; tests/cli.rs::valid_invocation_writes_a_real_ppm_file_independently_verified (8 disk files)"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 8
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:07d5753eb7c4ca8e94b24adbfc869449b6567871b391b253d305fd4f3b0d92c1100c7e1194998d602e7b83af5e0f1e3acf1c5bb4cf6dae8aa645f595a2f8e3ce"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:076370d113bd4273eeafab0cd39101b3b8852bc2ceb0566a61fec7b84304de08cbb86ea4ebdd3521cf95761ed58856fd98868a8b7f04d5b6431bf88b5c59e3c3"
+    [[claim.evidence.inputs]]
+    path   = "src/main.rs"
+    digest = "subject:sha-512:af7589a346de372a5164aceccd45a1d61eafcc51ab745ac78f3607906117cf0bf7f79600b63ec4dc23105c12243f745d22eb717efb56c3ac6a3ca09c310ffb6d"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:810d13d3ed1acd7defd44ccf3bfe35e82b4036b6f175dbd2cbe61c018519e2bb3bb131d89bd309ee91ac2a7061eefa00f3fd5ee32ced729279f807330dab5e7a"
+    [[claim.evidence.inputs]]
+    path   = "tests/cli.rs"
+    digest = "subject:sha-512:cd2d31ff48bbf6846ce86f034b9f3db3482c6edaa766a0559a05b7aa4928d8e6b6472edf8b77e6b528d24236b5c41b7386b6f78f25cce46048970aeb8374d01d"
+    [[claim.evidence.inputs]]
+    path   = "tests/fixtures/circle_cx15_cy15_r10.ppm.hex"
+    digest = "subject:sha-512:5141c478d67fc86bd900ca593095eafda1a375caecee84cab17b1c322ed7311e742016668a3dd124fc1259da1d8f67674e899d824b60899a15cc6cabef3e231a"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --test cli valid_invocation_writes_a_real_ppm_file_independently_verified (mutant: circle rendered off-center by 1 pixel)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (mutation, reverted)"
+  cases       = 1
+  record      = "evidence/pa3-mutation-control.txt"
+  record_hash = "record:sha-512:c60eb9009ade5ad76023871b0820c63c5b215633e461dfe10600d43ad7cbb8317290e149acda9b8793d60e4244f2259b32db310e3860f35490498cab437a7002"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "PA-003"
+
+
+# === PA-004 -- S-4 ===
+[[claim]]
+id            = "PA-004"
+clause        = "S-4"
+item          = "paint-app (paint-app/src/lib.rs, tested through the compiled `paint` binary and the library directly)"
+statement     = "For every (cx, cy, r) in the disclosed domain (DOMAINS, src/lib.rs and tests/cli.rs), and only for circles fully inside the canvas: every ink pixel ACTUALLY FOUND in the output PPM file (by exhaustive scan) forms exactly ONE 8-connected component (a real flood-fill from one ink pixel reaches every other ink pixel); independently sorted angular order also has Chebyshev-adjacent consecutive pixels, including wraparound."
+band          = "A1"
+status        = "evidenced"
+weight        = "weighted"
+grade         = "test-only"
+clause_source = "spec-document"
+bounds        = "bounded: 8 (cx,cy,r) tuples: (0,0,0), (1,1,1), (3,3,3), (10,10,4), (25,25,15), (8,40,8), (45,10,10), (35,40,30); CLI malformed cases and golden fixture separately tested"
+captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+  [claim.self_verify]
+  command = "cargo test"
+  expect  = "test result: ok"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "tests::independent_closedness_8_connectivity_over_disclosed_domain; tests/cli.rs::valid_invocation_writes_a_real_ppm_file_independently_verified (8 disk files)"
+  result      = "pass"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26)"
+  cases       = 8
+  record      = "evidence/cargo-test.txt"
+  record_hash = "record:sha-512:07d5753eb7c4ca8e94b24adbfc869449b6567871b391b253d305fd4f3b0d92c1100c7e1194998d602e7b83af5e0f1e3acf1c5bb4cf6dae8aa645f595a2f8e3ce"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+    [[claim.evidence.inputs]]
+    path   = "src/lib.rs"
+    digest = "subject:sha-512:076370d113bd4273eeafab0cd39101b3b8852bc2ceb0566a61fec7b84304de08cbb86ea4ebdd3521cf95761ed58856fd98868a8b7f04d5b6431bf88b5c59e3c3"
+    [[claim.evidence.inputs]]
+    path   = "src/main.rs"
+    digest = "subject:sha-512:af7589a346de372a5164aceccd45a1d61eafcc51ab745ac78f3607906117cf0bf7f79600b63ec4dc23105c12243f745d22eb717efb56c3ac6a3ca09c310ffb6d"
+    [[claim.evidence.inputs]]
+    path   = "Cargo.toml"
+    digest = "subject:sha-512:810d13d3ed1acd7defd44ccf3bfe35e82b4036b6f175dbd2cbe61c018519e2bb3bb131d89bd309ee91ac2a7061eefa00f3fd5ee32ced729279f807330dab5e7a"
+    [[claim.evidence.inputs]]
+    path   = "tests/cli.rs"
+    digest = "subject:sha-512:cd2d31ff48bbf6846ce86f034b9f3db3482c6edaa766a0559a05b7aa4928d8e6b6472edf8b77e6b528d24236b5c41b7386b6f78f25cce46048970aeb8374d01d"
+    [[claim.evidence.inputs]]
+    path   = "tests/fixtures/circle_cx15_cy15_r10.ppm.hex"
+    digest = "subject:sha-512:5141c478d67fc86bd900ca593095eafda1a375caecee84cab17b1c322ed7311e742016668a3dd124fc1259da1d8f67674e899d824b60899a15cc6cabef3e231a"
+  [[claim.evidence.toolchain]]
+  name    = "rustc"
+  version = "1.96.1"
+  commit  = "31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd"
+  [[claim.evidence.toolchain]]
+  name    = "cargo"
+  version = "1.96.1"
+  commit  = "356927216a2d746168cf76e5e88cc3f4b58e029d"
+  [[claim.evidence.build_inputs]]
+  path   = "Cargo.lock"
+  digest = "artifact:sha-512:1d4f48093c6af3aedd03ece60e64e6aa2890a8cf0293835060ce3895955a3b6f7c7f286f819f3a9d101ed4c53a848a706aaa48faab22120d445f7539723bf183"
+  [[claim.evidence.build_inputs]]
+  path   = "rust-toolchain.toml"
+  digest = "artifact:sha-512:b6c3e7d6b4771abf89f5335fa296d4bdd55b5a7ab4b7210bcf0dadb21dad61f9a83513e1366fd29e0241d304d9d739c8f0165a48d9e5f46c2652729433a24303"
+
+  [[claim.evidence]]
+  kind       = "unit-test"
+  family     = "dynamic"
+  method     = "unit-test"
+  epistemic_tier= "T3"
+  ref         = "cargo test --test cli valid_invocation_writes_a_real_ppm_file_independently_verified (mutant: every 5th encoded pixel forced to background, punching holes in the curve)"
+  result      = "fail"
+  tool        = "rustc 1.96.1 (31fca3adb 2026-06-26) + cargo 1.96.1 (356927216 2026-06-26) (mutation, reverted)"
+  cases       = 1
+  record      = "evidence/pa4-mutation-control.txt"
+  record_hash = "record:sha-512:6696ea3b0d2638eae50ee1b6db15495a584968eb7dd5da425345a941787ac94981b29538cd08198999f599033eca3743f1a2e52d22c053792ecff14fe6a4fa48"
+  captured_at_commit = "d5307aae8c522a7f0372b59a905fd4184910da12"
+
+    [claim.evidence.control]
+    kind        = "mutation"
+    expectation = "red"
+    observed    = "red"
+    of_claim    = "PA-004"

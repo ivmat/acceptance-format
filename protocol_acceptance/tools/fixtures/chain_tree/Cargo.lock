@@ -1,0 +1,12 @@
+version = 4
+[[package]]
+name = "geom-math"
+version = "0.1.0"
+[[package]]
+name = "raster-draw"
+version = "0.1.0"
+dependencies = ["geom-math"]
+[[package]]
+name = "paint-app"
+version = "0.1.0"
+dependencies = ["raster-draw 0.1.0"]

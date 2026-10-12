@@ -47,7 +47,7 @@ a document that is the SPEC of some other subject is `[spec]`, not this.
 ## Admissibility check (item 8b, this node's contribution)
 
 <!-- TODO(producer): the binding-side admissibility check the core CALLS (protocol.md §6.6 item 8,
-     D1 amendment A1). Slots this node owns: identity shape (an M11 content digest as PRIMARY, a
+     the admissibility rule). Slots this node owns: identity shape (an M11 content digest as PRIMARY, a
      VCS commit plus `dirty` as a secondary form when the document lives in a git tree, or the
      class-level `normative-reference:sha-512:` form (F2) when it does not — open question B2 decides how
      much of this is class-level versus this node's narrowing); admitted `[subject].kind` set

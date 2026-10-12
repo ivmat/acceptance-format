@@ -24,6 +24,7 @@ subject would need.
 admits = ["rust-crate", "rust-workspace"]
 identity = ["git-revision"]
 required_build_inputs = ["Cargo.lock", "rust-toolchain.toml"]
+relations = ["runtime"]
 ```
 
 <!-- TODO(producer): lift verification/code/rust.md §1 row "[subject].kind": `rust-crate` | `rust-workspace`. -->
@@ -34,6 +35,12 @@ block as `admits`/`identity`): once a weighted claim under this binding declares
 and `rust-toolchain.toml` — the pinned dependency graph and the pinned toolchain a build
 actually used. A weighted claim declaring no `build_inputs` is unaffected (B20's nonempty
 guard). Checked by `bindings/code_rust.py`, not by core, which names no file itself.
+
+`relations` is core.md B22's relation-token registry, read generically by `check_core.load_bindings`
+the same way as `admits`/`identity` (B14/B17). `runtime` means "any Cargo-resolved edge (the
+lockfile closure)"; registering it here, additively over `generic`'s own four
+tokens (`build-tool`, `verification-tool`, `language`, `platform`), is what lets a `[[dependency]]`
+row cite `relation = "runtime"` only under this binding's chain.
 
 ## Subject identity
 
@@ -101,3 +108,38 @@ discipline (§5), consumer re-execution (§6) and the phases (§9).
 - Whether `cargo doc --no-deps` is a carrier of this binding (any meaning may run it) or of the
   verification leaf only (verification/code/rust.md §4 places "docs build clean" there). Binding, in this
   skeleton's reading; the leaf decides what the result may evidence.
+
+## Protocol inventory reader
+
+The code/rust binding registers cargo-lock/3 and
+cargo-lock/4, exactly matching the lockfile version; missing or mismatched version is
+ERROR. The inventory must have `covers = ["runtime"]`, and every row citing it must
+carry `relation = "runtime"`; either violation is ERROR. The input set is exactly one Cargo.lock, its directory's Cargo.toml workspace
+manifest, and one Cargo.toml per literal workspace member. All artifact digests are
+recomputed over package-relative B6-contained paths before reading. Missing, extra or
+swapped input rows are ERRORs. The workspace is virtual: workspace required, package
+forbidden, no exclude or glob members. Member paths use B1 grammar. Member package.workspace,
+inherited versions, renamed dependencies, workspace-inherited dependencies and target
+dependency tables are unsupported ERRORs. Names and versions are literal strings.
+
+Canonical lock keys are `name version`; duplicate keys anywhere are ERRORs, even across
+source kinds. Resolve references in the forms `name`, `name version`, and
+`name version (source)` uniquely; unresolved or ambiguous references are ERRORs.
+Members and lock packages without source form a bijection. Subject.path is required;
+its member manifest's name/version derives the starting key, which must be the unique
+source-free lock package for that member. The closure follows lock dependency edges
+transitively, excluding the subject; direct roles are exactly the subject's own edges.
+
+For the subject and every path package in the closure, compare the union of manifest
+dependencies, dev-dependencies and build-dependencies names with lock edge names.
+Every path target must resolve relative to that member to the member named by its lock
+edge. A non-path manifest dependency must target a lock package with source. Any mismatch
+is ERROR naming the package and edge. Any source-bearing closure package makes the whole
+inventory indeterminate (“needs delivered identities (0.4.x)”); no row is required or
+may claim that external package. For each path closure entry the declaration must join
+lock.entry to the canonical key and source.commit/path to the subject commit and member
+repository path. Completeness is verified only for a bijection with declared rows;
+missing and extra rows have separate refusal reasons. Cargo resolution itself is not rerun.
+The runtime relation denotes all Cargo-resolved edges; other generic relations use
+manual inventories with declared completeness. Optional dependency binding is
+build-time-copy or run-time-read, always declared and never reader-verified.

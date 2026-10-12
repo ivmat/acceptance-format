@@ -66,6 +66,12 @@ rule-to-clause mapping. Do not invent a number to close a coverage gap. Comments
 do not enter the clause count and cannot be claimed as inventory rows. Review must resolve an
 uncertain reference before it becomes a row.
 
+**P26 disposition, 2026-10-07:** the six X.690 groups, X.680 string subclauses,
+and RFC 5208/5915 subdivisions are `retained-exclusion`: primary text unavailable
+offline. Each inventory comment names the primary text and question to check later.
+This disposition adds no clause rows and verifies no disputed mapping. It is comment
+metadata, not a new inventory field. Existing coarse rows remain unchanged.
+
 ## Manifest pinning
 
 A manifest binds the inventory under [the format's F2 rule](../../../spec/format.md).

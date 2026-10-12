@@ -1,0 +1,2 @@
+    Checking geom-math v0.1.0 (<WORKSPACE>/geom-math)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s

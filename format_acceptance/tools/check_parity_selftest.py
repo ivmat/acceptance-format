@@ -1247,6 +1247,7 @@ def prove_the_wiring_audit_can_fail(verbose: bool = True) -> list[str]:
 
 # B18 paired class fields: assert lossless parsing AND the shared diagnostics.
 CLASS_FIELD_CASES = [
+    ("b18-path", "subject", "path", "crates/geom-math"),
     ("b18-applicability", "claim", "applicability", "excluded"),
     ("b18-applicability-reason", "claim", "applicability_reason", "No relevant surface"),
     ("b18-gaps", "claim", "gaps", ["No exhaustive review"]),
@@ -1316,7 +1317,7 @@ def main(argv: list[str]) -> int:
     failures += prove_the_shadow_guard_can_fail(verbose)
     failures += prove_the_wiring_audit_can_fail(verbose)
 
-    print(f"check_parity: {len(CASES)} paired cases + 13 class-field pairs + 1 watched-break proof + "
+    print(f"check_parity: {len(CASES)} paired cases + {len(CLASS_FIELD_CASES)+2} class-field pairs + 1 watched-break proof + "
           f"obligations inventory + minimality audit + shared-import wiring audit + "
           f"shadowed-definition guard (+10 watched-break proofs), {len(failures)} failed")
     for f in failures:

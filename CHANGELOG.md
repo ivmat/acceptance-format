@@ -1,20 +1,30 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — 2026-10-12 — locked, not ratified
 
-- The roadmap now states the protocol's scope: pure producer↔consumer artefact acceptance, with
-  transactions, payment, legal standing and business contracts outside it, and the format designed
-  to fit into them. It also sets the 0.4 target: a pure acceptance protocol, trust numbers out of
-  the class, closed grammars, and the "profile" split (0.4.0 at the earliest).
-- `export_closure.py`: an internal pattern name was renamed (no behaviour change), found by a
-  stricter leak scan that now also checks words joined by `_` or `-`.
-- The README opens with a plain-language introduction and a tiny worked example.
-- The publication leak gates no longer ship in this repository. They must list the vocabulary
-  they search for, so shipping them published that list. They now run before each export
-  instead.
-- The gate suite and the README quickstart now also run in a copy without git metadata
-  (a source archive or "Download ZIP"): the protocol tool takes `--root`, like the format
-  validator already did.
+- Retirement of untyped legacy record hashes is deferred again; 0.4.0 still accepts matching legacy wires read-only with warnings.
+
+- **Breaking:** the first document is now a specification, and the protocol is
+  `acceptance-protocol/1`. The current checker refuses 0.3 protocol documents; use
+  [tag v0.3.2](https://github.com/ivmat/acceptance-format/tree/v0.3.2) or migrate.
+- **Removed:** commercial role wording, conditions framed as debts (the verdict stays;
+  conditions are now due-dated items), the work-contract and transaction notes, `legal_ref`,
+  the `legal` domain, money examples, and `pay` among effects. Authority, delegation and
+  effect gating remain, with a planned move to companion layers.
+- **Added:** checked stacking, including B1 subtree `path` identities, B22 dependency
+  declarations, C0/C2 chain requirements, a consumer-configured directory store, `--tree`
+  and `--store`, recursive checks and effect-time checks. The paint-stack example checks
+  runtime libraries; toolchain and platform relations are trusted as the base and are not
+  checked. The label adds no combined assurance.
+- **Added:** [the migration tool](protocol_acceptance/tools/acceptance_migrate.py) for
+  specifications and packages. Decisions are never rewritten; the consumer re-issues them.
+- **Examples:** the Rust examples are regenerated at 0.4.0. The weighted toy's bindings are
+  updated while its historical evidence and subject identity are retained. The README has a
+  plain-language introduction, a tiny example and the stacking walkthrough.
+- **Tools:** selftests cover version routing, migration and chain validation.
+- The gate suite and README quickstart work without git metadata (a source archive or
+  Download ZIP); the protocol tool accepts `--root`. The exported repository now includes
+  a `REPO.md` descriptor. The roadmap separates this release from planned work.
 
 ## 0.3.x — locked, not ratified
 
@@ -46,20 +56,20 @@ change:
 
 Errata release. Profile ids now match as exact strings, never by prefix. The assurance-class
 table's monotonicity check covers the `required_meaning` field, fails closed on a malformed shape,
-and checks the union of a profile's declared scopes. A final-phase contract's requirements must
-all be firm; a draft requirement in a final contract is now an error. A contract's own assurance
-class changes only through a successor contract, never a change-proposal amendment. The untyped
+and checks the union of a profile's declared scopes. A final-phase specification's requirements must
+all be firm; a draft requirement in a final specification is now an error. A specification's own assurance
+class changes only through a successor specification, never a change-proposal amendment. The untyped
 legacy record-hash wire is documented as a read-only warning throughout 0.3.x; its retirement
 remains deferred to 0.4. A package whose caller-forced binding meaning differs from its own
 declared meaning is now indeterminate, never silently accepted. The Rust binding's required
 build-input check now matches by exact path within the manifest's own directory, never by
-filename alone. Amending a contract now re-validates the rendered successor and preserves every
+filename alone. Amending a specification now re-validates the rendered successor and preserves every
 field the checker reads.
 
 ### 0.3.0 — 2026-09-24
 
 Initial 0.3 release. Replaces the 0.2.0-draft format-only tree with the acceptance protocol and
-format: contracts, packages, decisions, assurance classes, verification, conformance and
+format: specifications, packages, decisions, assurance classes, verification, conformance and
 troubleshooting profiles, and a Kani adoption kit. The source version and file
 hashes are recorded in `EXPORT-PROVENANCE.json`.
 

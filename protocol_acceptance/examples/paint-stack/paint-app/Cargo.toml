@@ -1,0 +1,19 @@
+[package]
+name = "paint-app"
+version = "0.1.0"
+edition = "2021"
+description = "A tiny CLI, `paint circle`, that draws a circle to a PPM file. Delivered artifact of the paint-stack example."
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+name = "paint_app"
+path = "src/lib.rs"
+
+[[bin]]
+name = "paint"
+path = "src/main.rs"
+
+[dependencies]
+raster-draw = { path = "../raster-draw" }
+geom-math = { path = "../geom-math" }

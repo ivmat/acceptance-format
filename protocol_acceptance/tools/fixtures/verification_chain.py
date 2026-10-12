@@ -2,7 +2,7 @@
 
 Moved out of acceptance_protocol.py's embedded --selftest (formerly the "# L5-owned" region;
 revision fenced it there because the tool was not yet profile-neutral). This module owns the
-`acceptance/verification` profile's fixture data and the case chain it drives — contract,
+`acceptance/verification` profile's fixture data and the case chain it drives — specification,
 package, decision, amendments, tightening, coverage, states — end to end through the real
 `acceptance_protocol.py` core. It is deliberately OUTSIDE the Class rung's scanned file list
 (gates/check_core_generic.py's CLASS_FILES): this is Instance-rung fixture data (one profile's
@@ -15,16 +15,16 @@ it is simply not a Class carrier.
 from __future__ import annotations
 
 from acceptance_protocol import *  # noqa: F401,F403 — the whole core surface this chain drives
-from acceptance_protocol import _HERE, _check_evidence_floor, _default_states_doc, _render_contract_toml  # noqa: F401 — underscore names a star-import skips
+from acceptance_protocol import _HERE, _check_evidence_floor, _default_states_doc, _render_specification_toml  # noqa: F401 — underscore names a star-import skips
 
 
 _SUBJECT_COMMIT = "deadbeef" * 5  # 40 lowercase hex chars
 
-_CONTRACT_TOML = f"""
+_SPECIFICATION_TOML = f"""
 [document]
 protocol   = "{PROTOCOL_ID}"
 minor      = 0
-kind       = "contract"
+kind       = "specification"
 id         = "AC-TEST-1"
 version    = 1
 issued_at  = "2026-09-16T10:00:00Z"
@@ -33,7 +33,7 @@ status     = "issued"
 
 [parties]
 consumer = {{ name = "Acme Test", contact = "test@acme.example" }}
-producer = {{ name = "supplier-test" }}
+producer = {{ name = "producer-test" }}
 
 [subject]
 kind         = "other"
@@ -113,9 +113,9 @@ _PACKAGE_TOML = f"""
 id      = "acceptance/0"
 profile = "acceptance/verification"
 
-[contract]
+[specification]
 id                 = "AC-TEST-1"
-hash               = "{{{{CONTRACT_HASH}}}}"
+hash               = "{{{{SPECIFICATION_HASH}}}}"
 requirements_total = 4
 
 [subject]
@@ -125,9 +125,9 @@ commit = "{_SUBJECT_COMMIT}"
 dirty  = false
 
 [spec]
-path    = "acceptance-contract.toml"
+path    = "acceptance-specification.toml"
 version = "AC-TEST-1@v1"
-axis    = "the requirements of contract AC-TEST-1"
+axis    = "the requirements of specification AC-TEST-1"
 
 [coverage]
 clauses_total = 4
@@ -228,7 +228,7 @@ issuer    = "Acme Test / lead"
 verdict   = "accepted-with-conditions"
 
 [binds]
-contract = {{ id = "AC-TEST-1", hash = "{{{{CONTRACT_HASH}}}}" }}
+specification = {{ id = "AC-TEST-1", hash = "{{{{SPECIFICATION_HASH}}}}" }}
 package  = {{ hash = "{{{{PACKAGE_HASH}}}}" }}
 subject  = {{ commit = "{_SUBJECT_COMMIT}" }}
 
@@ -269,13 +269,13 @@ owner         = "producer"
 discharged_by = "a superseding package in which coverage(R2) = satisfied"
 
 [validity]
-# Finding 9: capped at issued_at (2026-09-20T09:00:00Z) + the contract's stale_after (P90D) =
+# Finding 9: capped at issued_at (2026-09-20T09:00:00Z) + the specification's stale_after (P90D) =
 # 2026-12-19 — exactly at the ceiling (earlier is allowed, later is an error).
 stale_after = "2026-12-19"
 """
 
 _STATES_TOML_DEAD = """
-protocol = "acceptance-protocol/0"
+protocol = "acceptance-protocol/1"
 minor    = 0
 
 [machine.tiny]
@@ -331,24 +331,24 @@ def run() -> list[tuple[str, bool, object]]:
         (td / "evidence").mkdir()
         for payload in ("c1.json", "c1-mutant.json", "c3.json"):
             _write(td / "evidence", payload, '{"fixture": "protocol selftest"}\n')
-        contract_path = _write(td, "acceptance-contract.toml", _CONTRACT_TOML)
-        contract_hash = m11.digest_file("contract", contract_path)
-        package_path = _write(td, "acceptance.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash))
+        specification_path = _write(td, "acceptance-specification.toml", _SPECIFICATION_TOML)
+        specification_hash = m11.digest_file("specification", specification_path)
+        package_path = _write(td, "acceptance.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash))
         package_hash = m11.digest_file("manifest", package_path)
         decision_path = _write(
             td, "acceptance-decision.toml",
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash),
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash),
         )
 
-        contract, _e = load_toml(contract_path)
+        specification, _e = load_toml(specification_path)
         package, _e = load_toml(package_path)
         decision, _e = load_toml(decision_path)
 
         # --- baseline positive fixtures --------------------------------------------------
-        rep_c = check_contract(contract)
-        cases.check("contract-baseline-valid", rep_c.ok(), rep_c.errors)
+        rep_c = check_specification(specification)
+        cases.check("specification-baseline-valid", rep_c.ok(), rep_c.errors)
 
-        rep_p, cov = check_package(package, contract, package_path, contract_path, strict=False)
+        rep_p, cov = check_package(package, specification, package_path, specification_path, strict=False)
         cases.check("package-baseline-valid", rep_p.ok(), rep_p.errors)
         cases.check("coverage-R1-satisfied-weighted-control-recipe-freshness",
                     cov["requirements"]["R1"]["status"] == "satisfied", cov["requirements"]["R1"])
@@ -361,7 +361,7 @@ def run() -> list[tuple[str, bool, object]]:
         cases.check("coverage-summary-acceptable-is-false",
                     cov["summary"]["acceptable"] is False, cov["summary"])
 
-        rep_d = check_decision(decision, contract, package, contract_path, package_path)
+        rep_d = check_decision(decision, specification, package, specification_path, package_path)
         cases.check(
             "decision-baseline-accepted-with-conditions",
             rep_d.ok() and decision["document"]["verdict"] == "accepted-with-conditions",
@@ -369,7 +369,7 @@ def run() -> list[tuple[str, bool, object]]:
         )
 
         # 0.3.2 correctness lens: missing spec propagation, through the actual CLI
-        # (text and JSON), with the SAME complete contract/package/decision as control.
+        # (text and JSON), with the SAME complete specification/package/decision as control.
         import contextlib
         import io
         from acceptance_protocol import main as protocol_main
@@ -386,9 +386,9 @@ def run() -> list[tuple[str, bool, object]]:
 
         def cli_chain(label, pp, dp, expected):
             commands = [
-                ("package", ["check-package", pp, "--contract", contract_path]),
-                ("decision", ["check-decision", dp, "--contract", contract_path, "--package", pp]),
-                ("effect", ["check-decision", dp, "--contract", contract_path, "--package", pp,
+                ("package", ["check-package", pp, "--spec", specification_path]),
+                ("decision", ["check-decision", dp, "--spec", specification_path, "--package", pp]),
+                ("effect", ["check-decision", dp, "--spec", specification_path, "--package", pp,
                             "--effect", "--allow-conditions", "--now", "2026-09-28"]),
             ]
             for verb, args in commands:
@@ -400,7 +400,7 @@ def run() -> list[tuple[str, bool, object]]:
 
         cli_chain("green", package_path, decision_path, 0)
         missing_path = _write(td, "missing-package.toml", package_path.read_text().replace(
-            'path    = "acceptance-contract.toml"', 'path    = "missing-spec.toml"'))
+            'path    = "acceptance-specification.toml"', 'path    = "missing-spec.toml"'))
         missing_pkg, _ = load_toml(missing_path)
         missing_decision_path = _write(td, "missing-decision.toml", decision_path.read_text().replace(
             package_hash, m11.digest_file("manifest", missing_path)))
@@ -415,17 +415,17 @@ def run() -> list[tuple[str, bool, object]]:
 
         # 0.3.2 correctness lens: weighted-toy carrier shape — dynamic unit-test
         # with method lean-theorem and no explicit tier; raise only R1's floor to T1.
-        high_contract_path = _write(td, "high-contract.toml", _CONTRACT_TOML.replace(
+        high_specification_path = _write(td, "high-specification.toml", _SPECIFICATION_TOML.replace(
             'min_tier          = "T3"', 'min_tier          = "T1"', 1))
-        high_contract, _ = load_toml(high_contract_path)
+        high_specification, _ = load_toml(high_specification_path)
         high_package_path = _write(td, "high-package.toml", package_path.read_text().replace(
-            contract_hash, m11.digest_file("contract", high_contract_path)).replace(
+            specification_hash, m11.digest_file("specification", high_specification_path)).replace(
             'kind      = "unit-test"', 'kind      = "unit-test"\n  method    = "lean-theorem"', 1))
         high_pkg, _ = load_toml(high_package_path)
         high_format = check_core.validate(high_package_path, strict=True)
         cases.check("correctness-2-inferred-tier-format-green", check_core.verdict(high_format)[1] == 0,
                     (high_format.errors, high_format.unknowns))
-        high_rep, high_cov = check_package(high_pkg, high_contract, high_package_path, high_contract_path, True)
+        high_rep, high_cov = check_package(high_pkg, high_specification, high_package_path, high_specification_path, True)
         cases.expect_fail("correctness-2-inferred-T1-dynamic-red", high_rep,
                           "requirement 'R1' is mandatory and coverage computed 'partial'")
         cases.check("correctness-2-T3-cannot-meet-T1-floor",
@@ -463,19 +463,19 @@ def run() -> list[tuple[str, bool, object]]:
             conflict = record_kind_method_conflict(record)
             cases.check(f"correctness-2b-conflict-detect-{label}", bool(conflict) == expect_conflict, conflict)
 
-        conflict_contract_path = _write(td, "conflict-contract.toml", _CONTRACT_TOML.replace(
+        conflict_specification_path = _write(td, "conflict-specification.toml", _SPECIFICATION_TOML.replace(
             'independence      = "none"',
             'independence      = "none"\n  methods           = ["lean-theorem"]', 1))
-        conflict_contract, _ = load_toml(conflict_contract_path)
+        conflict_specification, _ = load_toml(conflict_specification_path)
         conflict_package_path = _write(td, "conflict-package.toml", package_path.read_text().replace(
-            contract_hash, m11.digest_file("contract", conflict_contract_path)).replace(
+            specification_hash, m11.digest_file("specification", conflict_specification_path)).replace(
             'kind      = "unit-test"', 'kind      = "unit-test"\n  method    = "lean-theorem"', 1))
         conflict_pkg, _ = load_toml(conflict_package_path)
         conflict_format = check_core.validate(conflict_package_path, strict=True)
         cases.check("correctness-2b-conflict-format-green", check_core.verdict(conflict_format)[1] == 0,
                     (conflict_format.errors, conflict_format.unknowns))
         conflict_rep, conflict_cov = check_package(
-            conflict_pkg, conflict_contract, conflict_package_path, conflict_contract_path, True)
+            conflict_pkg, conflict_specification, conflict_package_path, conflict_specification_path, True)
         cases.expect_fail("correctness-2b-conflicting-method-refused-red", conflict_rep,
                           "requirement 'R1' is mandatory and coverage computed 'partial'")
         cases.check("correctness-2b-conflicting-method-not-satisfied-red",
@@ -492,15 +492,15 @@ def run() -> list[tuple[str, bool, object]]:
         # methods = ["unit-test"] and C1's record names ONLY kind = "unit-test" (no `method`
         # field at all, the ordinary unmodified fixture shape) — proves the fix refuses a
         # conflicting declaration without breaking a legitimate, non-conflicting one.
-        consistent_contract_path = _write(td, "consistent-contract.toml", _CONTRACT_TOML.replace(
+        consistent_specification_path = _write(td, "consistent-specification.toml", _SPECIFICATION_TOML.replace(
             'independence      = "none"',
             'independence      = "none"\n  methods           = ["unit-test"]', 1))
-        consistent_contract, _ = load_toml(consistent_contract_path)
+        consistent_specification, _ = load_toml(consistent_specification_path)
         consistent_package_path = _write(td, "consistent-package.toml", package_path.read_text().replace(
-            contract_hash, m11.digest_file("contract", consistent_contract_path)))
+            specification_hash, m11.digest_file("specification", consistent_specification_path)))
         consistent_pkg, _ = load_toml(consistent_package_path)
         consistent_rep, consistent_cov = check_package(
-            consistent_pkg, consistent_contract, consistent_package_path, consistent_contract_path, True)
+            consistent_pkg, consistent_specification, consistent_package_path, consistent_specification_path, True)
         cases.check("correctness-2b-consistent-method-satisfies-green",
                     consistent_cov["requirements"]["R1"]["status"] == "satisfied",
                     consistent_cov["requirements"]["R1"])
@@ -513,11 +513,11 @@ def run() -> list[tuple[str, bool, object]]:
         # comparison for the non-commit identity kinds (protocol.md §7).
         _CDIGEST_HEX = "a1" * 64
         _CDIGEST_WRONG_HEX = "b2" * 64
-        cdigest_contract_text = f'''
+        cdigest_specification_text = f'''
 [document]
 protocol   = "{PROTOCOL_ID}"
 minor      = 0
-kind       = "contract"
+kind       = "specification"
 id         = "AC-CDIGEST-1"
 version    = 1
 issued_at  = "2026-09-16T10:00:00Z"
@@ -526,7 +526,7 @@ status     = "issued"
 
 [parties]
 consumer = {{ name = "Acme Test", contact = "test@acme.example" }}
-producer = {{ name = "supplier-test" }}
+producer = {{ name = "producer-test" }}
 
 [subject]
 kind         = "other"
@@ -537,8 +537,8 @@ constraints  = []
 profile      = "acceptance/verification"
 
 [[requirement]]
-id            = "D1"
-statement     = "D1 must hold"
+id            = "digest-requirement"
+statement     = "digest-requirement must hold"
 mandatory     = true
 waivable      = false
 domain        = "correctness"
@@ -557,18 +557,18 @@ consumer_verification = "spot-check"
 authority             = "Acme Test / lead"
 profiles_required     = ["acceptance/verification"]
 '''
-        cdigest_contract_path = _write(td, "acceptance-contract-cdigest.toml", cdigest_contract_text)
-        cdigest_contract_hash = m11.digest_file("contract", cdigest_contract_path)
-        cdigest_contract, _e = load_toml(cdigest_contract_path)
+        cdigest_specification_path = _write(td, "acceptance-specification-cdigest.toml", cdigest_specification_text)
+        cdigest_specification_hash = m11.digest_file("specification", cdigest_specification_path)
+        cdigest_specification, _e = load_toml(cdigest_specification_path)
 
         cdigest_package_text = f'''
 [format]
 id      = "acceptance/0"
 profile = "acceptance/verification"
 
-[contract]
+[specification]
 id                 = "AC-CDIGEST-1"
-hash               = "{cdigest_contract_hash}"
+hash               = "{cdigest_specification_hash}"
 requirements_total = 1
 
 [subject]
@@ -577,9 +577,9 @@ kind   = "other"
 digest = "subject:sha-512:{_CDIGEST_HEX}"
 
 [spec]
-path    = "acceptance-contract-cdigest.toml"
+path    = "acceptance-specification-cdigest.toml"
 version = "AC-CDIGEST-1@v1"
-axis    = "the requirements of contract AC-CDIGEST-1"
+axis    = "the requirements of specification AC-CDIGEST-1"
 
 [coverage]
 clauses_total = 1
@@ -587,9 +587,9 @@ claims_total  = 1
 
 [[claim]]
 id            = "CD1"
-clause        = "D1"
+clause        = "digest-requirement"
 item          = "src/lib.rs::d1"
-statement     = "CD1 satisfies D1"
+statement     = "CD1 satisfies digest-requirement"
 band          = "A1"
 weight        = "weighted"
 grade         = "test-only"
@@ -634,13 +634,13 @@ clause_source = "spec-document"
         cdigest_package, _e = load_toml(cdigest_package_path)
 
         rep_cdigest_pkg, cov_cdigest = check_package(
-            cdigest_package, cdigest_contract, cdigest_package_path, cdigest_contract_path, strict=False,
+            cdigest_package, cdigest_specification, cdigest_package_path, cdigest_specification_path, strict=False,
         )
         cases.check("identity-wire-content-digest-package-valid-PASS", rep_cdigest_pkg.ok(), rep_cdigest_pkg.errors)
         cases.check(
-            "identity-wire-content-digest-coverage-D1-satisfied-PASS",
-            cov_cdigest["requirements"]["D1"]["status"] == "satisfied",
-            cov_cdigest["requirements"]["D1"],
+            "identity-wire-content-digest-coverage-digest-requirement-satisfied-PASS",
+            cov_cdigest["requirements"]["digest-requirement"]["status"] == "satisfied",
+            cov_cdigest["requirements"]["digest-requirement"],
         )
 
         cdigest_decision_ok_text = f'''
@@ -654,7 +654,7 @@ issuer    = "Acme Test / lead"
 verdict   = "accepted"
 
 [binds]
-contract = {{ id = "AC-CDIGEST-1", hash = "{cdigest_contract_hash}" }}
+specification = {{ id = "AC-CDIGEST-1", hash = "{cdigest_specification_hash}" }}
 package  = {{ hash = "{cdigest_package_hash}" }}
 subject  = {{ digest = "subject:sha-512:{_CDIGEST_HEX}" }}
 
@@ -662,14 +662,14 @@ subject  = {{ digest = "subject:sha-512:{_CDIGEST_HEX}" }}
 mode = "spot-check"
 
 [[disposition]]
-requirement = "D1"
+requirement = "digest-requirement"
 status      = "satisfied"
 basis       = ["CD1"]
 '''
         cdigest_decision_ok_path = _write(td, "acceptance-decision-cdigest.toml", cdigest_decision_ok_text)
         cdigest_decision_ok, _e = load_toml(cdigest_decision_ok_path)
         rep_cdigest_decision_ok = check_decision(
-            cdigest_decision_ok, cdigest_contract, cdigest_package, cdigest_contract_path, cdigest_package_path,
+            cdigest_decision_ok, cdigest_specification, cdigest_package, cdigest_specification_path, cdigest_package_path,
         )
         cases.check(
             "identity-wire-content-digest-decision-accepted-PASS",
@@ -688,26 +688,26 @@ basis       = ["CD1"]
         )
         cdigest_decision_mismatch, _e = load_toml(cdigest_decision_mismatch_path)
         rep_cdigest_mismatch = check_decision(
-            cdigest_decision_mismatch, cdigest_contract, cdigest_package, cdigest_contract_path, cdigest_package_path,
+            cdigest_decision_mismatch, cdigest_specification, cdigest_package, cdigest_specification_path, cdigest_package_path,
         )
         cases.expect_fail(
             "identity-wire-content-digest-subject-mismatch-FAIL", rep_cdigest_mismatch, "[binds].subject",
         )
 
         # bare `sha-512:<hex>` wire form — the retired pre-lock m11.py form — on a
-        # contract/package/decision hash field is an explicit ERROR naming the expected
+        # specification/package/decision hash field is an explicit ERROR naming the expected
         # self-describing form, not merely a downstream mismatch (identity-wire "one wire form").
         bare_wire = "sha-512:" + "0" * 128
         cdigest_package_bare_hash_text = cdigest_package_text.replace(
-            f'hash               = "{cdigest_contract_hash}"', f'hash               = "{bare_wire}"',
+            f'hash               = "{cdigest_specification_hash}"', f'hash               = "{bare_wire}"',
         )
         cdigest_package_bare_hash_path = _write(
             td, "acceptance-cdigest-bare-hash.toml", cdigest_package_bare_hash_text,
         )
         cdigest_package_bare_hash, _e = load_toml(cdigest_package_bare_hash_path)
         rep_bare_wire, _cov_bare = check_package(
-            cdigest_package_bare_hash, cdigest_contract, cdigest_package_bare_hash_path,
-            cdigest_contract_path, strict=False,
+            cdigest_package_bare_hash, cdigest_specification, cdigest_package_bare_hash_path,
+            cdigest_specification_path, strict=False,
         )
         cases.expect_fail(
             "identity-wire-bare-sha512-wire-form-is-error-FAIL", rep_bare_wire, "retired bare 'sha-512:<hex>' wire form",
@@ -715,49 +715,49 @@ basis       = ["CD1"]
 
         # --- negative cases, one per rule ------------------------------------------------
 
-        # 1. wrong contract hash — a well-formed self-describing 'contract:sha-512:<hex>' wire
+        # 1. wrong specification hash — a well-formed self-describing 'specification:sha-512:<hex>' wire
         # value that simply does not recompute (revision: the old fixture used a BARE 'sha-512:<hex>'
         # value, which _reject_bare_m11_wire already flags as the retired wire form before the
         # recompute-mismatch check is ever reached — this left §4.1 rule 1's own hash-recompute
         # check mutation-untested; identity-wire-bare-sha512-wire-form-is-error-FAIL already covers the
         # bare-wire case separately).
-        bogus_hash = "contract:sha-512:" + "0" * 128
-        pkg1 = _write(td, "pkg-01.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
-                      .replace(f'hash               = "{contract_hash}"', f'hash               = "{bogus_hash}"'))
+        bogus_hash = "specification:sha-512:" + "0" * 128
+        pkg1 = _write(td, "pkg-01.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
+                      .replace(f'hash               = "{specification_hash}"', f'hash               = "{bogus_hash}"'))
         doc1, _e = load_toml(pkg1)
-        rep1, _cov1 = check_package(doc1, contract, pkg1, contract_path, strict=False)
-        cases.expect_fail("wrong-contract-hash", rep1, "does not match M11")
+        rep1, _cov1 = check_package(doc1, specification, pkg1, specification_path, strict=False)
+        cases.expect_fail("wrong-specification-hash", rep1, "does not match M11")
 
         # 2. requirements_total mismatch — revision: also lowers [coverage].clauses_total to the
         # SAME wrong value so it stays internally consistent with the package's own
         # requirements_total (isolating this check from the separate clauses_total-vs-
         # requirements_total check right below it in check_package, which would otherwise also
-        # fire and mask a disabled requirements_total-vs-contract-count guard).
-        pkg2 = _write(td, "pkg-02.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        # fire and mask a disabled requirements_total-vs-specification-count guard).
+        pkg2 = _write(td, "pkg-02.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                       .replace("requirements_total = 4", "requirements_total = 3")
                       .replace("clauses_total = 4", "clauses_total = 3"))
         doc2, _e = load_toml(pkg2)
-        rep2, _cov2 = check_package(doc2, contract, pkg2, contract_path, strict=False)
+        rep2, _cov2 = check_package(doc2, specification, pkg2, specification_path, strict=False)
         cases.expect_fail("requirements-total-mismatch", rep2, "requirement count")
 
         # 2b (core-lock CONFIRMATION review fold, 2026-09-24, §4.1 rule 1's fourth sub-check):
-        # [coverage].clauses_total disagrees with [contract].requirements_total while
-        # requirements_total itself correctly matches the contract's real count — isolated from
+        # [coverage].clauses_total disagrees with [specification].requirements_total while
+        # requirements_total itself correctly matches the specification's real count — isolated from
         # case 2 above, which deliberately keeps the two in lockstep to isolate ITS OWN check.
         # Before this case, disabling the clauses_total-vs-requirements_total guard produced ZERO
         # named failures (the packet's own proof standard is guard-disabled -> named-red).
-        pkg2b = _write(td, "pkg-02b.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        pkg2b = _write(td, "pkg-02b.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                        .replace("clauses_total = 4", "clauses_total = 3"))
         doc2b, _e = load_toml(pkg2b)
-        rep2b, _cov2b = check_package(doc2b, contract, pkg2b, contract_path, strict=False)
+        rep2b, _cov2b = check_package(doc2b, specification, pkg2b, specification_path, strict=False)
         cases.expect_fail("coverage-clauses-total-mismatch", rep2b, "does not equal")
 
-        # 3. claim.clause not in contract
-        pkg3 = _write(td, "pkg-03.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        # 3. claim.clause not in specification
+        pkg3 = _write(td, "pkg-03.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                       .replace('clause        = "R1"', 'clause        = "R99"'))
         doc3, _e = load_toml(pkg3)
-        rep3, _cov3 = check_package(doc3, contract, pkg3, contract_path, strict=False)
-        cases.expect_fail("claim-clause-not-in-contract", rep3, "not a requirement id")
+        rep3, _cov3 = check_package(doc3, specification, pkg3, specification_path, strict=False)
+        cases.expect_fail("claim-clause-not-in-specification", rep3, "not a requirement id")
 
         # 3b (F3, §4.1 rule 2's second half): a requirement with ZERO claims at all — omission,
         # not a bad clause id. Drops C2 entirely; R2's own [[deviation]] stays (a separate rule).
@@ -769,10 +769,10 @@ basis       = ["CD1"]
         assert _c2_block in _PACKAGE_TOML
         pkg3b = _write(
             td, "pkg-03b.toml",
-            _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(_c2_block, ""),
+            _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(_c2_block, ""),
         )
         doc3b, _e = load_toml(pkg3b)
-        rep3b, _cov3b = check_package(doc3b, contract, pkg3b, contract_path, strict=False)
+        rep3b, _cov3b = check_package(doc3b, specification, pkg3b, specification_path, strict=False)
         cases.expect_fail("requirement-with-no-claim-at-all", rep3b, "omission is forbidden")
 
         # 3c (F6, 2026-09-24): [[claim.evidence.inputs]].digest is
@@ -786,131 +786,131 @@ basis       = ["CD1"]
         _bare_input_digest = "sha-512:" + "cd" * 64
         pkg3c_bare = _write(
             td, "pkg-03c-bare.toml",
-            _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
+            _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
                 _c1_anchor,
                 _c1_anchor + f'  [[claim.evidence.inputs]]\n  path   = "Cargo.lock"\n  digest = "{_bare_input_digest}"\n',
             ),
         )
         doc3c_bare, _e = load_toml(pkg3c_bare)
-        rep3c_bare, _cov3c_bare = check_package(doc3c_bare, contract, pkg3c_bare, contract_path, strict=False)
+        rep3c_bare, _cov3c_bare = check_package(doc3c_bare, specification, pkg3c_bare, specification_path, strict=False)
         cases.expect_fail("claim-evidence-inputs-digest-bare-wire-form-is-error-FAIL", rep3c_bare, "retired bare")
 
         _self_describing_input_digest = "subject:sha-512:" + "cd" * 64
         pkg3c_ok = _write(
             td, "pkg-03c-ok.toml",
-            _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
+            _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
                 _c1_anchor,
                 _c1_anchor + f'  [[claim.evidence.inputs]]\n  path   = "Cargo.lock"\n  digest = "{_self_describing_input_digest}"\n',
             ),
         )
         doc3c_ok, _e = load_toml(pkg3c_ok)
-        rep3c_ok, _cov3c_ok = check_package(doc3c_ok, contract, pkg3c_ok, contract_path, strict=False)
+        rep3c_ok, _cov3c_ok = check_package(doc3c_ok, specification, pkg3c_ok, specification_path, strict=False)
         cases.check(
             "claim-evidence-inputs-digest-self-describing-form-ok-PASS",
             not any("inputs" in e for e in rep3c_ok.errors), rep3c_ok.errors,
         )
 
         # 4. mandatory unmet without deviation
-        text4 = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        text4 = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
         text4 = text4[:text4.index("[[deviation]]")]
         pkg4 = _write(td, "pkg-04.toml", text4)
         doc4, _e = load_toml(pkg4)
-        rep4, _cov4 = check_package(doc4, contract, pkg4, contract_path, strict=False)
+        rep4, _cov4 = check_package(doc4, specification, pkg4, specification_path, strict=False)
         cases.expect_fail("mandatory-unmet-without-deviation", rep4, "no [[deviation]] names it")
 
         # 4b (revision, §4.1 rule 5): no certified subject identity at all.
-        text4b = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
+        text4b = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
             f'commit = "{_SUBJECT_COMMIT}"\ndirty  = false\n', '',
         )
         pkg4b = _write(td, "pkg-04b.toml", text4b)
         doc4b, _e = load_toml(pkg4b)
-        rep4b, _cov4b = check_package(doc4b, contract, pkg4b, contract_path, strict=False)
+        rep4b, _cov4b = check_package(doc4b, specification, pkg4b, specification_path, strict=False)
         cases.expect_fail("package-no-certified-subject-identity", rep4b, "certified identity")
 
-        # 4c (revision, §4.1 rule 6): package's own profile is not one the contract requires.
-        text4c = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
+        # 4c (revision, §4.1 rule 6): package's own profile is not one the specification requires.
+        text4c = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
             'profile = "acceptance/verification"', 'profile = "acceptance/conformance"',
         )
         pkg4c = _write(td, "pkg-04c.toml", text4c)
         doc4c, _e = load_toml(pkg4c)
-        rep4c, _cov4c = check_package(doc4c, contract, pkg4c, contract_path, strict=False)
-        cases.expect_fail("package-own-profile-not-required", rep4c, "is not one the contract requires")
+        rep4c, _cov4c = check_package(doc4c, specification, pkg4c, specification_path, strict=False)
+        cases.expect_fail("package-own-profile-not-required", rep4c, "is not one the specification requires")
 
-        # 4c-bis (A1, WP acceptance 0.3.1 errata): the contract requires the MEANING-ONLY id
+        # 4c-bis (A1, WP acceptance 0.3.1 errata): the specification requires the MEANING-ONLY id
         # `acceptance/verification`; the package declares the more specific LEAF
         # `acceptance/verification/code/rust` (a real registered binding of the same validator,
         # `profiles.py`'s PROFILES table). Exact-leaf matching (§4.1 rule 6, §3.1 rule 7) refuses
         # this: a meaning-only id is satisfied only by a package declaring exactly that id, never
         # by a package declaring a leaf under it — no prefix matching at the protocol layer.
-        text4cbis = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
+        text4cbis = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
             'profile = "acceptance/verification"', 'profile = "acceptance/verification/code/rust"',
         )
         pkg4cbis = _write(td, "pkg-04c-bis.toml", text4cbis)
         doc4cbis, _e = load_toml(pkg4cbis)
-        rep4cbis, _cov4cbis = check_package(doc4cbis, contract, pkg4cbis, contract_path, strict=False)
+        rep4cbis, _cov4cbis = check_package(doc4cbis, specification, pkg4cbis, specification_path, strict=False)
         cases.expect_fail(
             "package-leaf-profile-does-not-satisfy-meaning-only-required-profile-A1",
-            rep4cbis, "is not one the contract requires",
+            rep4cbis, "is not one the specification requires",
         )
 
         # 4d (revision, §4.1 rule 6): a SECOND required profile the package never mentions as
         # [format].profile or any [[filler]].profile — isolated from the "own profile is
         # required" half (the package's own profile IS one of the two required here).
-        contract4d_text = _CONTRACT_TOML.replace(
+        specification4d_text = _SPECIFICATION_TOML.replace(
             'profiles_required     = ["acceptance/verification"]',
             'profiles_required     = ["acceptance/verification", "acceptance/conformance"]',
         )
-        contract4d_path = _write(td, "contract-04d.toml", contract4d_text)
-        contract4d_hash = m11.digest_file("contract", contract4d_path)
-        contract4d, _e = load_toml(contract4d_path)
-        pkg4d = _write(td, "pkg-04d.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract4d_hash))
+        specification4d_path = _write(td, "specification-04d.toml", specification4d_text)
+        specification4d_hash = m11.digest_file("specification", specification4d_path)
+        specification4d, _e = load_toml(specification4d_path)
+        pkg4d = _write(td, "pkg-04d.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification4d_hash))
         doc4d, _e = load_toml(pkg4d)
-        rep4d, _cov4d = check_package(doc4d, contract4d, pkg4d, contract4d_path, strict=False)
+        rep4d, _cov4d = check_package(doc4d, specification4d, pkg4d, specification4d_path, strict=False)
         cases.expect_fail("package-required-profile-not-present", rep4d, "appears neither as")
 
         # 4e (core-lock CONFIRMATION review fold, 2026-09-24): the package declares NO
         # [format].profile at all — B12 (no compatibility default) must be reported as an
         # explicit error by check-package itself, never silently resolved to
         # acceptance/verification's package_validator (the removed default behavior).
-        text4e = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
+        text4e = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
             'profile = "acceptance/verification"\n', '',
         )
         pkg4e = _write(td, "pkg-04e.toml", text4e)
         doc4e, _e = load_toml(pkg4e)
-        rep4e, _cov4e = check_package(doc4e, contract, pkg4e, contract_path, strict=False)
+        rep4e, _cov4e = check_package(doc4e, specification, pkg4e, specification_path, strict=False)
         cases.expect_fail("package-no-format-profile-declared-no-default-assumed", rep4e,
                            "no compatibility default")
 
-        # 5. contract status draft
-        contract5_text = _CONTRACT_TOML.replace('status     = "issued"', 'status     = "draft"')
-        contract5_path = _write(td, "contract-05.toml", contract5_text)
-        contract5_hash = m11.digest_file("contract", contract5_path)
-        contract5, _e = load_toml(contract5_path)
-        pkg5 = _write(td, "pkg-05.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract5_hash))
+        # 5. specification status draft
+        specification5_text = _SPECIFICATION_TOML.replace('status     = "issued"', 'status     = "draft"')
+        specification5_path = _write(td, "specification-05.toml", specification5_text)
+        specification5_hash = m11.digest_file("specification", specification5_path)
+        specification5, _e = load_toml(specification5_path)
+        pkg5 = _write(td, "pkg-05.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification5_hash))
         doc5, _e = load_toml(pkg5)
-        rep5, _cov5 = check_package(doc5, contract5, pkg5, contract5_path, strict=False)
-        cases.expect_fail("contract-status-draft", rep5, "issued")
+        rep5, _cov5 = check_package(doc5, specification5, pkg5, specification5_path, strict=False)
+        cases.expect_fail("specification-status-draft", rep5, "issued")
 
         # 6. issuer == producer
-        dec6_text = (_DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        dec6_text = (_DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                      .replace("{{PACKAGE_HASH}}", package_hash)
-                     .replace('issuer    = "Acme Test / lead"', 'issuer    = "supplier-test"'))
+                     .replace('issuer    = "Acme Test / lead"', 'issuer    = "producer-test"'))
         dec6_path = _write(td, "dec-06.toml", dec6_text)
         doc6, _e = load_toml(dec6_path)
-        rep6 = check_decision(doc6, contract, package, contract_path, package_path)
+        rep6 = check_decision(doc6, specification, package, specification_path, package_path)
         cases.expect_fail("issuer-equals-producer", rep6, "producer")
 
         # 7. issuer != authority
-        dec7_text = (_DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        dec7_text = (_DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                      .replace("{{PACKAGE_HASH}}", package_hash)
                      .replace('issuer    = "Acme Test / lead"', 'issuer    = "Someone Else"'))
         dec7_path = _write(td, "dec-07.toml", dec7_text)
         doc7, _e = load_toml(dec7_path)
-        rep7 = check_decision(doc7, contract, package, contract_path, package_path)
+        rep7 = check_decision(doc7, specification, package, specification_path, package_path)
         cases.expect_fail("issuer-not-authority", rep7, "authority")
 
         # 8. disposition satisfied where coverage partial
-        dec8_text = (_DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        dec8_text = (_DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                      .replace("{{PACKAGE_HASH}}", package_hash)
                      .replace(
                          'requirement = "R3"\nstatus      = "insufficient-evidence"',
@@ -918,11 +918,11 @@ basis       = ["CD1"]
                      ))
         dec8_path = _write(td, "dec-08.toml", dec8_text)
         doc8, _e = load_toml(dec8_path)
-        rep8 = check_decision(doc8, contract, package, contract_path, package_path)
+        rep8 = check_decision(doc8, specification, package, specification_path, package_path)
         cases.expect_fail("disposition-satisfied-coverage-partial", rep8, "coverage computed")
 
         # 9. waiver on non-waivable (R3 is waivable=false)
-        dec9_text = (_DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        dec9_text = (_DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                      .replace("{{PACKAGE_HASH}}", package_hash)
                      .replace(
                          '[[disposition]]\nrequirement = "R3"\nstatus      = "insufficient-evidence"\nbasis       = ["C3"]',
@@ -932,28 +932,28 @@ basis       = ["CD1"]
                      ))
         dec9_path = _write(td, "dec-09.toml", dec9_text)
         doc9, _e = load_toml(dec9_path)
-        rep9 = check_decision(doc9, contract, package, contract_path, package_path)
+        rep9 = check_decision(doc9, specification, package, specification_path, package_path)
         cases.expect_fail("waiver-on-non-waivable", rep9, "non-waivable")
 
         # 10. accepted verdict with a waiver present (R2 stays waived)
-        dec10_text = (_DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        dec10_text = (_DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                       .replace("{{PACKAGE_HASH}}", package_hash)
                       .replace('verdict   = "accepted-with-conditions"', 'verdict   = "accepted"'))
         dec10_path = _write(td, "dec-10.toml", dec10_text)
         doc10, _e = load_toml(dec10_path)
-        rep10 = check_decision(doc10, contract, package, contract_path, package_path)
+        rep10 = check_decision(doc10, specification, package, specification_path, package_path)
         cases.expect_fail("accepted-verdict-with-a-waiver", rep10, "accepted")
 
         # 11. accepted-with-conditions with zero conditions
-        text11 = _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+        text11 = _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
         text11 = text11[:text11.index("[[condition]]")] + text11[text11.index("[validity]"):]
         dec11_path = _write(td, "dec-11.toml", text11)
         doc11, _e = load_toml(dec11_path)
-        rep11 = check_decision(doc11, contract, package, contract_path, package_path)
+        rep11 = check_decision(doc11, specification, package, specification_path, package_path)
         cases.expect_fail("accepted-with-conditions-zero-conditions", rep11, "condition")
 
         # 12. evidence-requested without a producer condition for the insufficient requirement
-        dec12_text = (_DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        dec12_text = (_DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                       .replace("{{PACKAGE_HASH}}", package_hash)
                       .replace('verdict   = "accepted-with-conditions"', 'verdict   = "evidence-requested"')
                       .replace(
@@ -974,37 +974,37 @@ basis       = ["CD1"]
                       ))
         dec12_path = _write(td, "dec-12.toml", dec12_text)
         doc12, _e = load_toml(dec12_path)
-        rep12 = check_decision(doc12, contract, package, contract_path, package_path)
+        rep12 = check_decision(doc12, specification, package, specification_path, package_path)
         cases.expect_fail("evidence-requested-without-producer-condition", rep12, "R2")
 
         # 13. re-execute-all mode but no passing run on the basis
-        dec13_text = (_DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+        dec13_text = (_DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
                       .replace("{{PACKAGE_HASH}}", package_hash)
                       .replace('mode = "spot-check"', 'mode = "re-execute-all"'))
         dec13_path = _write(td, "dec-13.toml", dec13_text)
         doc13, _e = load_toml(dec13_path)
-        rep13 = check_decision(doc13, contract, package, contract_path, package_path)
+        rep13 = check_decision(doc13, specification, package, specification_path, package_path)
         cases.expect_fail("re-execute-all-mode-no-passing-run", rep13, "passing")
 
         # 14. stale binds (package hash changed): a different package file on disk, same decision.
-        pkg14_text = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash) + "\n# mutated for staleness test\n"
+        pkg14_text = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash) + "\n# mutated for staleness test\n"
         pkg14_path = _write(td, "pkg-14.toml", pkg14_text)
         doc14, _e = load_toml(pkg14_path)
-        rep14 = check_decision(decision, contract, doc14, contract_path, pkg14_path)
+        rep14 = check_decision(decision, specification, doc14, specification_path, pkg14_path)
         cases.expect_fail("stale-binds-package-hash-changed", rep14, "stale")
 
-        # 14b (revision, P7): stale binds (CONTRACT hash changed) — the sibling check on the
-        # decision's [binds].contract.hash side, no prior fixture isolated it from the package-
+        # 14b (revision, P7): stale binds (SPECIFICATION hash changed) — the sibling check on the
+        # decision's [binds].specification.hash side, no prior fixture isolated it from the package-
         # hash check right below it.
-        contract14b_text = _CONTRACT_TOML + "\n# mutated for staleness test\n"
-        contract14b_path = _write(td, "contract-14b.toml", contract14b_text)
-        doc14b, _e = load_toml(contract14b_path)
-        rep14b = check_decision(decision, doc14b, package, contract14b_path, package_path)
-        cases.expect_fail("stale-binds-contract-hash-changed", rep14b, "stale")
+        specification14b_text = _SPECIFICATION_TOML + "\n# mutated for staleness test\n"
+        specification14b_path = _write(td, "specification-14b.toml", specification14b_text)
+        doc14b, _e = load_toml(specification14b_path)
+        rep14b = check_decision(decision, doc14b, package, specification14b_path, package_path)
+        cases.expect_fail("stale-binds-specification-hash-changed", rep14b, "stale")
 
-        # --- §3.5 tightening (check-contract --previous) -----------------------------------
+        # --- §3.5 tightening (check-spec --previous) -----------------------------------
         def _successor_text() -> str:
-            return _CONTRACT_TOML.replace(
+            return _SPECIFICATION_TOML.replace(
                 'id         = "AC-TEST-1"\nversion    = 1',
                 'id         = "AC-TEST-1-v2"\nversion    = 2\nsupersedes = "AC-TEST-1"',
             )
@@ -1016,14 +1016,14 @@ basis       = ["CD1"]
         )
 
         succ_a_doc = tomllib.loads(_successor_text())
-        tight_a = check_contract_tightening(succ_a_doc, contract)
+        tight_a = check_specification_tightening(succ_a_doc, specification)
         cases.check("tightening-unchanged-chain-passes", tight_a.ok(), tight_a.errors)
 
         succ_b_text = _successor_text().replace(
             _R1_EVIDENCE_BLOCK, _R1_EVIDENCE_BLOCK.replace('min_tier          = "T3"', 'min_tier          = "T4"')
         )
         succ_b_doc = tomllib.loads(succ_b_text)
-        tight_b = check_contract_tightening(succ_b_doc, contract)
+        tight_b = check_specification_tightening(succ_b_doc, specification)
         cases.expect_fail("tightening-weakened-min-tier-without-relaxed", tight_b, "weakened")
 
         succ_c_text = succ_b_text.replace(
@@ -1036,7 +1036,7 @@ basis       = ["CD1"]
             1,
         )
         succ_c_doc = tomllib.loads(succ_c_text)
-        tight_c = check_contract_tightening(succ_c_doc, contract)
+        tight_c = check_specification_tightening(succ_c_doc, specification)
         cases.check(
             "tightening-weakened-with-relaxed-passes-with-warn",
             tight_c.ok() and any("relaxed" in w for w in tight_c.warnings),
@@ -1048,14 +1048,14 @@ basis       = ["CD1"]
         d_end = succ_d_text.index('[[requirement]]\nid            = "R4"')
         succ_d_text = succ_d_text[:d_start] + succ_d_text[d_end:]
         succ_d_doc = tomllib.loads(succ_d_text)
-        tight_d = check_contract_tightening(succ_d_doc, contract)
+        tight_d = check_specification_tightening(succ_d_doc, specification)
         cases.expect_fail("tightening-dropped-requirement-unlisted", tight_d, "dropped")
 
         succ_e_text = _successor_text().replace(
             'stale_after            = "P90D"', 'stale_after            = "P90D"\nphase                  = "crystallizing"'
         )
         succ_e_doc = tomllib.loads(succ_e_text)
-        tight_e = check_contract_tightening(succ_e_doc, contract)
+        tight_e = check_specification_tightening(succ_e_doc, specification)
         cases.expect_fail("tightening-phase-backwards-without-reopened", tight_e, "phase moved backwards")
 
         # --- §3.6 the amendment document -----------------------------------------------------
@@ -1070,7 +1070,7 @@ issued_by = "producer"
 status    = "proposed"
 
 [binds]
-contract = {{ id = "AC-TEST-1", hash = "{contract_hash}" }}
+specification = {{ id = "AC-TEST-1", hash = "{specification_hash}" }}
 
 [[change]]
 op          = "tighten"
@@ -1086,20 +1086,20 @@ reason      = "producer proposes to add a control now that a mutation harness ex
 '''
         amend_ok_path = _write(td, "amend-ok.toml", amend_ok_text)
         amend_ok_doc, _e = load_toml(amend_ok_path)
-        rep_amend_ok = check_amendment(amend_ok_doc, contract, contract_path)
+        rep_amend_ok = check_amendment(amend_ok_doc, specification, specification_path)
         cases.check("amendment-valid-structure", rep_amend_ok.ok(), rep_amend_ok.errors)
 
         # amendment against a moved base: status must be 'stale', else ERROR.
-        amend_stale_text = amend_ok_text.replace(f'hash = "{contract_hash}"', 'hash = "contract:sha-512:' + "1" * 128 + '"')
+        amend_stale_text = amend_ok_text.replace(f'hash = "{specification_hash}"', 'hash = "specification:sha-512:' + "1" * 128 + '"')
         amend_moved_path = _write(td, "amend-moved.toml", amend_stale_text)
         amend_moved_doc, _e = load_toml(amend_moved_path)
-        rep_amend_moved = check_amendment(amend_moved_doc, contract, contract_path)
+        rep_amend_moved = check_amendment(amend_moved_doc, specification, specification_path)
         cases.expect_fail("amendment-moved-base-without-stale-status", rep_amend_moved, "base moved")
 
         amend_stale_ok_text = amend_stale_text.replace('status    = "proposed"', 'status    = "stale"')
         amend_stale_ok_path = _write(td, "amend-stale-ok.toml", amend_stale_ok_text)
         amend_stale_ok_doc, _e = load_toml(amend_stale_ok_path)
-        rep_amend_stale_ok = check_amendment(amend_stale_ok_doc, contract, contract_path)
+        rep_amend_stale_ok = check_amendment(amend_stale_ok_doc, specification, specification_path)
         cases.check("amendment-moved-base-with-stale-status-ok", rep_amend_stale_ok.ok(), rep_amend_stale_ok.errors)
 
         # apply of a relax without reason fails.
@@ -1108,26 +1108,26 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         )
         amend_relax_path = _write(td, "amend-relax-noreason.toml", amend_relax_noreason_text)
         amend_relax_doc, _e = load_toml(amend_relax_path)
-        rep_amend_relax = check_amendment(amend_relax_doc, contract, contract_path)
+        rep_amend_relax = check_amendment(amend_relax_doc, specification, specification_path)
         cases.expect_fail("amendment-relax-without-reason", rep_amend_relax, "reason")
 
-        # apply-amendment output passes check-contract --previous (and is itself a valid
-        # standalone contract — §3.6 rule 3, "spec-only iterations are legal").
-        new_contract, build_errors = apply_amendment_build(amend_ok_doc, contract, None, "Acme Test / lead")
+        # apply-amendment output passes check-spec --previous (and is itself a valid
+        # standalone specification — §3.6 rule 3, "spec-only iterations are legal").
+        new_specification, build_errors = apply_amendment_build(amend_ok_doc, specification, None, "Acme Test / lead")
         cases.check("apply-amendment-builds-successor", not build_errors, build_errors)
-        if new_contract is not None:
-            tight_applied = check_contract_tightening(new_contract, contract)
+        if new_specification is not None:
+            tight_applied = check_specification_tightening(new_specification, specification)
             cases.check("apply-amendment-output-passes-tightening", tight_applied.ok(), tight_applied.errors)
-            rep_new_contract = check_contract(new_contract)
+            rep_new_specification = check_specification(new_specification)
             cases.check(
-                "apply-amendment-output-is-a-valid-standalone-contract",
-                rep_new_contract.ok(), rep_new_contract.errors,
+                "apply-amendment-output-is-a-valid-standalone-specification",
+                rep_new_specification.ok(), rep_new_specification.errors,
             )
-            rendered = _render_contract_toml(new_contract)
+            rendered = _render_specification_toml(new_specification)
             reparsed = tomllib.loads(rendered)
             cases.check(
                 "apply-amendment-rendered-toml-reparses-and-matches",
-                reparsed.get("document", {}).get("id") == new_contract["document"]["id"],
+                reparsed.get("document", {}).get("id") == new_specification["document"]["id"],
                 reparsed,
             )
 
@@ -1201,25 +1201,25 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         )
 
         # --- audit-4 (Finding 4, §5.0): decision validity is TRANSITIVE — a decision bound (with
-        # matching hashes) to a STRUCTURALLY INVALID contract is itself invalid. ---
-        contract4_text = _CONTRACT_TOML.replace(
+        # matching hashes) to a STRUCTURALLY INVALID specification is itself invalid. ---
+        specification4_text = _SPECIFICATION_TOML.replace(
             'consumer = { name = "Acme Test", contact = "test@acme.example" }',
             'consumer = { name = "", contact = "test@acme.example" }',
         )
-        contract4_path = _write(td, "contract-audit4.toml", contract4_text)
-        contract4_hash = m11.digest_file("contract", contract4_path)
-        contract4, _e = load_toml(contract4_path)
-        pkg4b_path = _write(td, "pkg-audit4.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract4_hash))
+        specification4_path = _write(td, "specification-audit4.toml", specification4_text)
+        specification4_hash = m11.digest_file("specification", specification4_path)
+        specification4, _e = load_toml(specification4_path)
+        pkg4b_path = _write(td, "pkg-audit4.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification4_hash))
         doc4b, _e = load_toml(pkg4b_path)
         pkg4b_hash = m11.digest_file("manifest", pkg4b_path)
         dec4b_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract4_hash).replace("{{PACKAGE_HASH}}", pkg4b_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification4_hash).replace("{{PACKAGE_HASH}}", pkg4b_hash)
         )
         dec4b_path = _write(td, "dec-audit4.toml", dec4b_text)
         doc_dec4b, _e = load_toml(dec4b_path)
-        rep_audit4 = check_decision(doc_dec4b, contract4, doc4b, contract4_path, pkg4b_path)
+        rep_audit4 = check_decision(doc_dec4b, specification4, doc4b, specification4_path, pkg4b_path)
         cases.expect_fail(
-            "audit-4-decision-invalid-when-bound-contract-structurally-invalid", rep_audit4, "consumer",
+            "audit-4-decision-invalid-when-bound-specification-structurally-invalid", rep_audit4, "consumer",
         )
 
         # --- audit-5 (Finding 5, §3.5): the tightening rule compares the WHOLE floor set —
@@ -1248,7 +1248,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
                  "demands": {}},  # control_required and fields both dropped
             ],
         }
-        tight5 = check_contract_tightening(new_c5_weak, old_c5)
+        tight5 = check_specification_tightening(new_c5_weak, old_c5)
         cases.expect_fail("audit-5-methods-removed-without-relaxed", tight5, "methods")
         cases.expect_fail("audit-5-crosscutting-demands-weakened-without-relaxed", tight5, "demands")
         cases.expect_fail("audit-5-profile-floor-removed-without-relaxed", tight5, "REMOVED")
@@ -1265,7 +1265,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
                  "demands": {}, "relaxed": {"reason": "cheaper early iteration", "by": "Acme"}},
             ],
         }
-        tight5_relaxed = check_contract_tightening(new_c5_relaxed, old_c5)
+        tight5_relaxed = check_specification_tightening(new_c5_relaxed, old_c5)
         cases.check(
             "audit-5-weakened-with-relaxed-passes-with-warn-PASS",
             tight5_relaxed.ok() and bool(tight5_relaxed.warnings),
@@ -1290,7 +1290,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
                  "evidence": {"min_tier": "T3", "profile": {"nonexistent-profile-id": {"x": "y"}}}},
             ],
         }
-        tight5_unknown = check_contract_tightening(new_c5_unknown_profile, old_c5_unknown_profile)
+        tight5_unknown = check_specification_tightening(new_c5_unknown_profile, old_c5_unknown_profile)
         cases.expect_fail("audit-5-unknown-profile-comparator-is-error", tight5_unknown, "no comparator available")
 
         # positive: a genuine TIGHTENING (methods narrowed to a subset) passes cleanly.
@@ -1312,16 +1312,16 @@ reason      = "producer proposes to add a control now that a mutation harness ex
                  "evidence": {"min_tier": "T3", "methods": ["unit-test"]}},
             ],
         }
-        tight5_methods_ok = check_contract_tightening(new_c5_methods_tightened, old_c5_methods)
+        tight5_methods_ok = check_specification_tightening(new_c5_methods_tightened, old_c5_methods)
         cases.check("audit-5-methods-narrowed-is-a-tightening-PASS", tight5_methods_ok.ok(), tight5_methods_ok.errors)
 
         # --- audit-6 (Finding 6, §3.6 rule 1): validity != applicability — apply-amendment
-        # refuses a non-'proposed' amendment, and refuses when [binds].contract.hash != the
-        # recomputed hash of --current (which defaults to --contract but may point elsewhere). ---
+        # refuses a non-'proposed' amendment, and refuses when [binds].specification.hash != the
+        # recomputed hash of --current (which defaults to --spec but may point elsewhere). ---
         amend_status_text = amend_ok_text.replace('status    = "proposed"', 'status    = "accepted"')
         amend_status_path = _write(td, "amend-audit6-status.toml", amend_status_text)
         args6a = _types.SimpleNamespace(
-            amendment=str(amend_status_path), contract=str(contract_path), current=None,
+            amendment=str(amend_status_path), specification=str(specification_path), current=None,
             out=str(td / "out6a.toml"), id=None, accept_by="Acme Test / lead", dry_run=False,
         )
         buf6a = _io.StringIO()
@@ -1333,10 +1333,10 @@ reason      = "producer proposes to add a control now that a mutation harness ex
             buf6a.getvalue(),
         )
 
-        other_contract_text = _CONTRACT_TOML.replace('id         = "AC-TEST-1"', 'id         = "AC-OTHER"')
-        other_contract_path = _write(td, "contract-audit6-other.toml", other_contract_text)
+        other_specification_text = _SPECIFICATION_TOML.replace('id         = "AC-TEST-1"', 'id         = "AC-OTHER"')
+        other_specification_path = _write(td, "specification-audit6-other.toml", other_specification_text)
         args6b = _types.SimpleNamespace(
-            amendment=str(amend_ok_path), contract=str(contract_path), current=str(other_contract_path),
+            amendment=str(amend_ok_path), specification=str(specification_path), current=str(other_specification_path),
             out=str(td / "out6b.toml"), id=None, accept_by="Acme Test / lead", dry_run=False,
         )
         buf6b = _io.StringIO()
@@ -1349,7 +1349,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         )
 
         args6c = _types.SimpleNamespace(
-            amendment=str(amend_ok_path), contract=str(contract_path), current=None,
+            amendment=str(amend_ok_path), specification=str(specification_path), current=None,
             out=str(td / "out6c.toml"), id=None, accept_by="Acme Test / lead", dry_run=False,
         )
         buf6c = _io.StringIO()
@@ -1361,11 +1361,11 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         # mechanism — a stateless "compare against a file the caller chose" is NOT this rule. Two
         # sequential applications of the SAME amendment against the SAME base, with the SAME
         # --pointer, cannot both succeed: the first one moves the pointer to the successor, so the
-        # second one's [binds].contract (naming the OLD base) no longer matches it. ---
+        # second one's [binds].specification (naming the OLD base) no longer matches it. ---
         pointer26_path = td / "audit2-6-pointer.current"
         cases.check("audit2-6-pointer-absent-before-first-apply-PASS", not pointer26_path.exists(), None)
         args26a = _types.SimpleNamespace(
-            amendment=str(amend_ok_path), contract=str(contract_path), current=None,
+            amendment=str(amend_ok_path), specification=str(specification_path), current=None,
             pointer=str(pointer26_path), out=str(td / "out-audit2-6-a.toml"), id=None,
             accept_by="Acme Test / lead", dry_run=False,
         )
@@ -1380,15 +1380,15 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         pointer26_after_first = json.loads(pointer26_path.read_text(encoding="utf-8"))
         cases.check(
             "audit2-6-pointer-advanced-to-successor-id-PASS",
-            pointer26_after_first.get("id") not in (None, (base_id := (contract.get("document") or {}).get("id"))),
+            pointer26_after_first.get("id") not in (None, (base_id := (specification.get("document") or {}).get("id"))),
             pointer26_after_first,
         )
 
         # The SAME amendment, SAME base, SAME pointer file, applied a second time — must be
-        # REFUSED: the pointer has moved to the successor, so the amendment's [binds].contract
+        # REFUSED: the pointer has moved to the successor, so the amendment's [binds].specification
         # (still naming the ORIGINAL base) no longer matches it.
         args26b = _types.SimpleNamespace(
-            amendment=str(amend_ok_path), contract=str(contract_path), current=None,
+            amendment=str(amend_ok_path), specification=str(specification_path), current=None,
             pointer=str(pointer26_path), out=str(td / "out-audit2-6-b.toml"), id=None,
             accept_by="Acme Test / lead", dry_run=False,
         )
@@ -1409,37 +1409,37 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         # --- audit-7 (Finding 7, §4.1 rules 4/7): package binding = (issued AND
         # issued_by=consumer) OR ratified; producer='open' requires a producer filler; the
         # producer identity set includes filler producers. ---
-        contract7a_text = _CONTRACT_TOML.replace('issued_by  = "consumer"', 'issued_by  = "producer"')
-        contract7a_path = _write(td, "contract-audit7a.toml", contract7a_text)
-        contract7a_hash = m11.digest_file("contract", contract7a_path)
-        contract7a, _e = load_toml(contract7a_path)
-        pkg7a_path = _write(td, "pkg-audit7a.toml", _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract7a_hash))
+        specification7a_text = _SPECIFICATION_TOML.replace('issued_by  = "consumer"', 'issued_by  = "producer"')
+        specification7a_path = _write(td, "specification-audit7a.toml", specification7a_text)
+        specification7a_hash = m11.digest_file("specification", specification7a_path)
+        specification7a, _e = load_toml(specification7a_path)
+        pkg7a_path = _write(td, "pkg-audit7a.toml", _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification7a_hash))
         doc7a, _e = load_toml(pkg7a_path)
-        rep7a, _cov7a = check_package(doc7a, contract7a, pkg7a_path, contract7a_path, strict=False)
+        rep7a, _cov7a = check_package(doc7a, specification7a, pkg7a_path, specification7a_path, strict=False)
         cases.expect_fail(
             "audit-7-producer-drafted-issued-not-ratified-package-invalid-FAIL", rep7a, "not BINDING",
         )
 
-        contract7b_text = _CONTRACT_TOML.replace('producer = { name = "supplier-test" }', 'producer = { name = "open" }')
-        contract7b_path = _write(td, "contract-audit7b.toml", contract7b_text)
-        contract7b_hash = m11.digest_file("contract", contract7b_path)
-        contract7b, _e = load_toml(contract7b_path)
-        pkg7b_text = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract7b_hash)
+        specification7b_text = _SPECIFICATION_TOML.replace('producer = { name = "producer-test" }', 'producer = { name = "open" }')
+        specification7b_path = _write(td, "specification-audit7b.toml", specification7b_text)
+        specification7b_hash = m11.digest_file("specification", specification7b_path)
+        specification7b, _e = load_toml(specification7b_path)
+        pkg7b_text = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification7b_hash)
         pkg7b_path = _write(td, "pkg-audit7b.toml", pkg7b_text)
         doc7b, _e = load_toml(pkg7b_path)
-        rep7b, _cov7b = check_package(doc7b, contract7b, pkg7b_path, contract7b_path, strict=False)
+        rep7b, _cov7b = check_package(doc7b, specification7b, pkg7b_path, specification7b_path, strict=False)
         cases.expect_fail("audit-7-open-producer-without-filler-invalid-FAIL", rep7b, "open")
 
         pkg7c_text = pkg7b_text + '\n[[filler]]\nprofile = "acceptance/verification"\nparty   = "actual-producer-co"\nrole    = "producer"\n'
         pkg7c_path = _write(td, "pkg-audit7c.toml", pkg7c_text)
         doc7c, _e = load_toml(pkg7c_path)
-        rep7c, _cov7c = check_package(doc7c, contract7b, pkg7c_path, contract7b_path, strict=False)
+        rep7c, _cov7c = check_package(doc7c, specification7b, pkg7c_path, specification7b_path, strict=False)
         cases.check(
             "audit-7-open-producer-with-filler-rule7-satisfied-PASS",
             not any("[[filler]] with role" in e for e in rep7c.errors),
             rep7c.errors,
         )
-        pid_set = producer_identity_set(contract7b, doc7c)
+        pid_set = producer_identity_set(specification7b, doc7c)
         cases.check(
             "audit-7-producer-identity-set-includes-filler-PASS",
             "actual-producer-co" in pid_set,
@@ -1450,7 +1450,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         # unrelated claim is refused); a [[verification.run]] must be COMPLETE; worst-result-wins
         # across conflicting runs on one claim. ---
         dec8a_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
             .replace(
                 'requirement = "R1"\nstatus      = "satisfied"\nbasis       = ["C1"]',
                 'requirement = "R1"\nstatus      = "satisfied"\nbasis       = ["C3"]',
@@ -1458,21 +1458,21 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         )
         dec8a_path = _write(td, "dec-audit8a.toml", dec8a_text)
         doc8a, _e = load_toml(dec8a_path)
-        rep8a = check_decision(doc8a, contract, package, contract_path, package_path)
+        rep8a = check_decision(doc8a, specification, package, specification_path, package_path)
         cases.expect_fail("audit-8-basis-unrelated-claim-refused-FAIL", rep8a, "unrelated claim")
 
         dec8b_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
             .replace('[verification]\nmode = "spot-check"',
                       '[verification]\nmode = "spot-check"\n\n[[verification.run]]\nclaim = "C1"\nresult = "pass"')
         )
         dec8b_path = _write(td, "dec-audit8b.toml", dec8b_text)
         doc8b, _e = load_toml(dec8b_path)
-        rep8b = check_decision(doc8b, contract, package, contract_path, package_path)
+        rep8b = check_decision(doc8b, specification, package, specification_path, package_path)
         cases.expect_fail("audit-8-incomplete-verification-run-refused-FAIL", rep8b, "incomplete run")
 
         dec8c_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
             .replace('mode = "spot-check"', 'mode = "re-execute-all"')
             .replace(
                 '[verification]\nmode = "re-execute-all"',
@@ -1483,11 +1483,11 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         )
         dec8c_path = _write(td, "dec-audit8c.toml", dec8c_text)
         doc8c, _e = load_toml(dec8c_path)
-        rep8c = check_decision(doc8c, contract, package, contract_path, package_path)
+        rep8c = check_decision(doc8c, specification, package, specification_path, package_path)
         cases.expect_fail("audit-8-worst-result-wins-conflicting-runs-refused-FAIL", rep8c, "worst-result-wins")
 
         dec8d_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
             .replace('mode = "spot-check"', 'mode = "re-execute-all"')
             .replace(
                 '[verification]\nmode = "re-execute-all"',
@@ -1497,7 +1497,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         )
         dec8d_path = _write(td, "dec-audit8d.toml", dec8d_text)
         doc8d, _e = load_toml(dec8d_path)
-        rep8d = check_decision(doc8d, contract, package, contract_path, package_path)
+        rep8d = check_decision(doc8d, specification, package, specification_path, package_path)
         cases.check("audit-8-single-passing-run-re-execute-all-ok-PASS", rep8d.ok(), rep8d.errors)
 
         # --- audit-9 (Finding 9, §6.2 cond 8): a relied-on record with NO author fails
@@ -1510,7 +1510,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
             "id": "IA", "clause": "RX", "status": "evidenced",
             "evidence": [{"kind": "lint", "epistemic_tier": "T5", "result": "pass"}],
         }
-        ok9a, reason9a = meets_item_floor(claim_no_author, floor_indep, None, "acceptance/verification", None, {"supplier-test"}, {})
+        ok9a, reason9a = meets_item_floor(claim_no_author, floor_indep, None, "acceptance/verification", None, {"producer-test"}, {})
         cases.check(
             "audit-9-missing-author-fails-independence-FAIL",
             ok9a is False and "no nonempty author" in (reason9a or ""),
@@ -1518,9 +1518,9 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         )
         claim_producer_author = {
             "id": "IB", "clause": "RX", "status": "evidenced",
-            "evidence": [{"kind": "lint", "epistemic_tier": "T5", "result": "pass", "author": "supplier-test"}],
+            "evidence": [{"kind": "lint", "epistemic_tier": "T5", "result": "pass", "author": "producer-test"}],
         }
-        ok9b, reason9b = meets_item_floor(claim_producer_author, floor_indep, None, "acceptance/verification", None, {"supplier-test"}, {})
+        ok9b, reason9b = meets_item_floor(claim_producer_author, floor_indep, None, "acceptance/verification", None, {"producer-test"}, {})
         cases.check(
             "audit-9-producer-author-fails-independence-FAIL",
             ok9b is False and "producer identity set" in (reason9b or ""),
@@ -1530,20 +1530,20 @@ reason      = "producer proposes to add a control now that a mutation harness ex
             "id": "IC", "clause": "RX", "status": "evidenced",
             "evidence": [{"kind": "lint", "epistemic_tier": "T5", "result": "pass", "author": "Lab X"}],
         }
-        ok9c, reason9c = meets_item_floor(claim_lab_author, floor_indep, None, "acceptance/verification", None, {"supplier-test"}, {})
+        ok9c, reason9c = meets_item_floor(claim_lab_author, floor_indep, None, "acceptance/verification", None, {"producer-test"}, {})
         cases.check("audit-9-independent-lab-author-passes-PASS", ok9c is True, (ok9c, reason9c))
 
         # --- audit-10 (Finding 10, §6.6 item 2/§3.3): the profile floor-schema validator rejects
         # unknown keys and out-of-vocabulary tokens; `kinds` is enforced INDEPENDENTLY of
         # `families` (previously ignored unless `families` was also truthy). ---
-        contract10_text = _CONTRACT_TOML.replace(
+        specification10_text = _SPECIFICATION_TOML.replace(
             '  independence      = "none"\n\n[[requirement]]\nid            = "R2"',
             '  independence      = "none"\n  [requirement.evidence.profile."acceptance/verification"]\n'
             '  min_grade = "typo-grade"\n  min_band  = "A999"\n  bogus_key = "x"\n\n[[requirement]]\nid            = "R2"',
             1,
         )
-        rep_contract10 = check_contract(tomllib.loads(contract10_text))
-        cases.expect_fail("audit-10-profile-floor-unknown-key-and-tokens-refused-FAIL", rep_contract10, "min_grade")
+        rep_specification10 = check_specification(tomllib.loads(specification10_text))
+        cases.expect_fail("audit-10-profile-floor-unknown-key-and-tokens-refused-FAIL", rep_specification10, "min_grade")
 
         _fc = PROFILES["acceptance/verification"]["floor_check"]
         claim_kinds_only = {
@@ -1563,7 +1563,7 @@ reason      = "producer proposes to add a control now that a mutation harness ex
         # relaxed/reopened/ratification/amendments from the COPIED base — an inherited
         # relaxation must never excuse a DIFFERENT, later weakening. ---
         import copy as _copy
-        base11 = _copy.deepcopy(contract)
+        base11 = _copy.deepcopy(specification)
         base11["document"]["reopened"] = {"reason": "an old reopen", "by": "Acme Test / lead"}
         for r in base11["requirement"]:
             if r["id"] == "R1":
@@ -1579,7 +1579,7 @@ issued_by = "consumer"
 status    = "proposed"
 
 [binds]
-contract = {{ id = "AC-TEST-1", hash = "{contract_hash}" }}
+specification = {{ id = "AC-TEST-1", hash = "{specification_hash}" }}
 
 [[change]]
 op          = "tighten"
@@ -1595,18 +1595,18 @@ reason      = "audit-11: unrelated tighten, to prove relaxed/reopened are not in
 '''
         amend11_path = _write(td, "amend-audit11.toml", amend11_text)
         amend11_doc, _e = load_toml(amend11_path)
-        new_contract11, build_errors11 = apply_amendment_build(amend11_doc, base11, None, "Acme Test / lead")
-        cases.check("audit-11-apply-strips-reopened-PASS", "reopened" not in new_contract11["document"], new_contract11["document"])
-        r1_new11 = next(r for r in new_contract11["requirement"] if r["id"] == "R1")
+        new_specification11, build_errors11 = apply_amendment_build(amend11_doc, base11, None, "Acme Test / lead")
+        cases.check("audit-11-apply-strips-reopened-PASS", "reopened" not in new_specification11["document"], new_specification11["document"])
+        r1_new11 = next(r for r in new_specification11["requirement"] if r["id"] == "R1")
         cases.check("audit-11-apply-strips-relaxed-from-untouched-requirement-PASS", "relaxed" not in r1_new11, r1_new11)
 
         # --- cv2-1 (§3.6 rule 2): the renderer
         # must preserve EVERY field the checker reads, and the rendered+REPARSED successor of an
-        # UNRELATED amendment (tightening R2 only) must still carry them all: contract-level
+        # UNRELATED amendment (tightening R2 only) must still carry them all: specification-level
         # `assurance_class`, a per-requirement `assurance_class` override, `[requirement.evidence]
         # .{build_inputs_required, tool_qualification_required, coverage_min}`, and `[parties]
         # .{boundary, boundary_terms}`. ---
-        base_cv2_1 = _copy.deepcopy(contract)
+        base_cv2_1 = _copy.deepcopy(specification)
         base_cv2_1["acceptance"]["assurance_class"] = "baseline/0"
         base_cv2_1["parties"]["boundary"] = "cross-org"
         base_cv2_1["parties"]["boundary_terms"] = {"disclosure": "quarterly report", "integrity": "signed hash"}
@@ -1627,12 +1627,12 @@ issued_by = "consumer"
 status    = "proposed"
 
 [binds]
-contract = {{ id = "AC-TEST-1", hash = "{contract_hash}" }}
+specification = {{ id = "AC-TEST-1", hash = "{specification_hash}" }}
 
 [[change]]
 op          = "tighten"
 requirement = "R2"
-reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields on OTHER requirements and the contract itself"
+reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields on OTHER requirements and the specification itself"
   [change.proposed]
   min_tier          = "T3"
   weighted_required = true
@@ -1643,14 +1643,14 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
 '''
         amend_cv2_1_path = _write(td, "amend-cv2-1.toml", amend_cv2_1_text)
         amend_cv2_1_doc, _e = load_toml(amend_cv2_1_path)
-        new_contract_cv2_1, build_errors_cv2_1 = apply_amendment_build(amend_cv2_1_doc, base_cv2_1, None, "Acme Test / lead")
+        new_specification_cv2_1, build_errors_cv2_1 = apply_amendment_build(amend_cv2_1_doc, base_cv2_1, None, "Acme Test / lead")
         cases.check("cv2-1-apply-amendment-builds-successor", not build_errors_cv2_1, build_errors_cv2_1)
-        rep_new_cv2_1 = check_contract(new_contract_cv2_1)
-        cases.check("cv2-1-in-memory-successor-passes-check-contract", rep_new_cv2_1.ok(), rep_new_cv2_1.errors)
-        rendered_cv2_1 = _render_contract_toml(new_contract_cv2_1)
+        rep_new_cv2_1 = check_specification(new_specification_cv2_1)
+        cases.check("cv2-1-in-memory-successor-passes-check-spec", rep_new_cv2_1.ok(), rep_new_cv2_1.errors)
+        rendered_cv2_1 = _render_specification_toml(new_specification_cv2_1)
         reparsed_cv2_1 = tomllib.loads(rendered_cv2_1)
         cases.check(
-            "cv2-1-rendered-reparsed-preserves-contract-assurance-class",
+            "cv2-1-rendered-reparsed-preserves-specification-assurance-class",
             reparsed_cv2_1.get("acceptance", {}).get("assurance_class") == "baseline/0",
             reparsed_cv2_1.get("acceptance"),
         )
@@ -1680,13 +1680,13 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
         )
         # The reparsed document is itself still a fully valid, tightening-compliant successor —
         # exactly the round-trip re-validation `apply-amendment` now performs before issuance.
-        rep_reparsed_cv2_1 = check_contract(reparsed_cv2_1)
-        cases.check("cv2-1-reparsed-successor-passes-check-contract", rep_reparsed_cv2_1.ok(), rep_reparsed_cv2_1.errors)
-        tight_reparsed_cv2_1 = check_contract_tightening(reparsed_cv2_1, base_cv2_1)
+        rep_reparsed_cv2_1 = check_specification(reparsed_cv2_1)
+        cases.check("cv2-1-reparsed-successor-passes-check-spec", rep_reparsed_cv2_1.ok(), rep_reparsed_cv2_1.errors)
+        tight_reparsed_cv2_1 = check_specification_tightening(reparsed_cv2_1, base_cv2_1)
         cases.check("cv2-1-reparsed-successor-passes-tightening", tight_reparsed_cv2_1.ok(), tight_reparsed_cv2_1.errors)
 
         # --- cv2-4 (§3.5/§3.6): check_amendment()
-        # must check a `modify` proposal's firmness against the BASE contract's OWN INHERITED
+        # must check a `modify` proposal's firmness against the BASE specification's OWN INHERITED
         # phase, not a hardcoded "final" — a `crystallizing`/`exploratory` base's draft requirement
         # stays legal to propose a `modify` over; only a `final` base's proposal is held to A4's
         # all-firm rule. ---
@@ -1712,7 +1712,7 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
                     "protocol": PROTOCOL_ID, "minor": 0, "kind": "amendment", "id": "AM-CV2-4",
                     "issued_at": "2026-09-26T09:00:00Z", "issued_by": "consumer", "status": "proposed",
                 },
-                "binds": {"contract": {"id": "AC-CV2-4", "hash": "contract:sha-512:" + "0" * 128}},
+                "binds": {"specification": {"id": "AC-CV2-4", "hash": "specification:sha-512:" + "0" * 128}},
                 "change": [{
                     "op": "modify", "requirement": "R1", "reason": "cv2-4: unrelated floor tweak",
                     "proposed": {
@@ -1746,22 +1746,22 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
         )
 
         # --- audit-12 (Finding 12, §5.0a): check-decision --effect. ---
-        rep_valid12 = check_decision(decision, contract, package, contract_path, package_path)
+        rep_valid12 = check_decision(decision, specification, package, specification_path, package_path)
         _today12 = today_utc_date()
-        eligible12a, reason12a = check_decision_effect(decision, contract, rep_valid12, _today12, True)
+        eligible12a, reason12a = check_decision_effect(decision, specification, rep_valid12, _today12, True)
         cases.check("audit-12-effect-eligible-accepted-with-conditions-allowed-PASS", eligible12a is True, reason12a)
-        eligible12b, reason12b = check_decision_effect(decision, contract, rep_valid12, _today12, False)
+        eligible12b, reason12b = check_decision_effect(decision, specification, rep_valid12, _today12, False)
         cases.check("audit-12-effect-ineligible-conditions-not-allowed-FAIL", eligible12b is False, reason12b)
         decision_expired12 = dict(decision)
         decision_expired12["validity"] = {"stale_after": "2000-01-01"}
-        eligible12c, reason12c = check_decision_effect(decision_expired12, contract, rep_valid12, _today12, True)
+        eligible12c, reason12c = check_decision_effect(decision_expired12, specification, rep_valid12, _today12, True)
         cases.check(
             "audit-12-effect-ineligible-expired-FAIL",
             eligible12c is False and "passed" in reason12c, reason12c,
         )
-        contract_provisional12 = _copy.deepcopy(contract)
-        contract_provisional12["acceptance"]["phase"] = "exploratory"
-        eligible12d, reason12d = check_decision_effect(decision, contract_provisional12, rep_valid12, _today12, True)
+        specification_provisional12 = _copy.deepcopy(specification)
+        specification_provisional12["acceptance"]["phase"] = "exploratory"
+        eligible12d, reason12d = check_decision_effect(decision, specification_provisional12, rep_valid12, _today12, True)
         cases.check("audit-12-effect-ineligible-non-final-phase-FAIL", eligible12d is False, reason12d)
 
         # --- audit-13 (Finding 13, §3.1 rule 1): retired ids never reused across the WHOLE
@@ -1787,7 +1787,7 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
                  "domain": "correctness", "evidence": {"min_tier": "T3"}},
             ],
         }
-        tight13 = check_contract_tightening(new13_reuse, old13)
+        tight13 = check_specification_tightening(new13_reuse, old13)
         cases.expect_fail("audit-13-retired-id-reused-across-chain-FAIL", tight13, "retired")
 
         new13_semantic = {
@@ -1800,7 +1800,7 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
                  "evidence": {"min_tier": "T3"}},
             ],
         }
-        tight13b = check_contract_tightening(new13_semantic, old13)
+        tight13b = check_specification_tightening(new13_semantic, old13)
         cases.expect_fail("audit-13-semantic-replacement-under-same-id-FAIL", tight13b, "semantic replacement")
 
         new13_floor_only = {
@@ -1812,7 +1812,7 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
                  "domain": "correctness", "evidence": {"min_tier": "T2"}},
             ],
         }
-        tight13c = check_contract_tightening(new13_floor_only, old13)
+        tight13c = check_specification_tightening(new13_floor_only, old13)
         cases.check("audit-13-floor-only-revision-same-id-PASS", tight13c.ok(), tight13c.errors)
 
         new13_replaces_ok = {
@@ -1827,7 +1827,7 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
                  "evidence": {"min_tier": "T3"}, "replaces": "R1"},
             ],
         }
-        tight13d = check_contract_tightening(new13_replaces_ok, old13)
+        tight13d = check_specification_tightening(new13_replaces_ok, old13)
         cases.check("audit-13-replaces-linked-to-dropped-id-PASS", tight13d.ok(), tight13d.errors)
 
         new13_replaces_bad = {
@@ -1842,7 +1842,7 @@ reason      = "cv2-1: unrelated tighten, to prove the renderer preserves fields 
                  "evidence": {"min_tier": "T3"}, "replaces": "R-NEVER-DROPPED"},
             ],
         }
-        tight13e = check_contract_tightening(new13_replaces_bad, old13)
+        tight13e = check_specification_tightening(new13_replaces_bad, old13)
         cases.expect_fail("audit-13-replaces-without-dropped-linkage-FAIL", tight13e, "replaces")
 
         amend13_modify_text = f'''
@@ -1856,7 +1856,7 @@ issued_by = "consumer"
 status    = "proposed"
 
 [binds]
-contract = {{ id = "AC-TEST-1", hash = "{contract_hash}" }}
+specification = {{ id = "AC-TEST-1", hash = "{specification_hash}" }}
 
 [[change]]
 op          = "modify"
@@ -1879,7 +1879,7 @@ reason      = "audit-13: attempt to change statement via modify"
 '''
         amend13_modify_path = _write(td, "amend-audit13-modify.toml", amend13_modify_text)
         amend13_modify_doc, _e = load_toml(amend13_modify_path)
-        rep13_modify = check_amendment(amend13_modify_doc, contract, contract_path)
+        rep13_modify = check_amendment(amend13_modify_doc, specification, specification_path)
         cases.expect_fail("audit-13-modify-may-not-change-statement-FAIL", rep13_modify, "op='modify'")
 
         amend13_modify_ok_text = amend13_modify_text.replace(
@@ -1887,7 +1887,7 @@ reason      = "audit-13: attempt to change statement via modify"
         ).replace('control_required  = true', 'control_required  = false')
         amend13_modify_ok_path = _write(td, "amend-audit13-modify-ok.toml", amend13_modify_ok_text)
         amend13_modify_ok_doc, _e = load_toml(amend13_modify_ok_path)
-        rep13_modify_ok = check_amendment(amend13_modify_ok_doc, contract, contract_path)
+        rep13_modify_ok = check_amendment(amend13_modify_ok_doc, specification, specification_path)
         cases.check("audit-13-modify-floor-only-change-ok-PASS", rep13_modify_ok.ok(), rep13_modify_ok.errors)
 
         # --- audit-14 (Finding 14, §8 items 2/3): still-applicable requires a DIGEST on every
@@ -1900,7 +1900,7 @@ reason      = "audit-13: attempt to change statement via modify"
             if c.get("id") == "C1":
                 c["evidence"][0]["inputs"] = [{"path": "src/lib.rs"}]  # no digest
         result14a = compute_impact(
-            decision, contract, package14_undigested, new_commit=_SUBJECT_COMMIT,
+            decision, specification, package14_undigested, new_commit=_SUBJECT_COMMIT,
             changed_paths={"unrelated/other.rs"},
         )
         cases.check("audit-14-changed-path-same-commit-is-stale-PASS", result14a["stale"] is True, result14a["stale"])
@@ -1916,7 +1916,7 @@ reason      = "audit-13: attempt to change statement via modify"
             if c.get("id") == "C1":
                 c["evidence"][0]["inputs"] = [{"path": "src/lib.rs", "digest": "sha-512:" + "a" * 128}]
         result14b = compute_impact(
-            decision, contract, package14_digested, new_commit=_SUBJECT_COMMIT,
+            decision, specification, package14_digested, new_commit=_SUBJECT_COMMIT,
             changed_paths={"unrelated/other.rs"},
         )
         c1_records14b = [r for r in result14b["records"] if r["claim"] == "C1"]
@@ -1939,7 +1939,7 @@ reason      = "audit-13: attempt to change statement via modify"
 
         new_pkg14 = _copy2.deepcopy(package14_digested)
         result14c = compute_impact(
-            decision, contract, package14_digested, new_commit=_SUBJECT_COMMIT,
+            decision, specification, package14_digested, new_commit=_SUBJECT_COMMIT,
             changed_paths={"unrelated/other.rs"}, new_package=new_pkg14,
         )
         # only evidence[0] carries the declared, digested input; evidence[1] (the mutant/control
@@ -1990,7 +1990,7 @@ reason      = "audit-13: attempt to change statement via modify"
         # undecidable (row 2 requires conditions='some'); under the tampered row 4 it wafts
         # through as 'accepted' if the decision's own verdict field claims it, proving the
         # corruption reaches real decision validation, not just check-states.
-        rep_decision_real = check_decision(decision, contract, package, contract_path, package_path)
+        rep_decision_real = check_decision(decision, specification, package, specification_path, package_path)
         cases.check("audit2-10-check-decision-uses-real-verdict-rows-PASS", rep_decision_real.ok(), rep_decision_real.errors)
         real_rows_v10 = load_verdict_rules(_states_doc_v10)
         expected_real = evaluate_verdict_rules(real_rows_v10, {"satisfied", "waived"}, True)
@@ -2005,20 +2005,20 @@ reason      = "audit-13: attempt to change statement via modify"
         # --- audit-17 (Finding 17, §6.6 items 6/8): the Rust profile binding exposes
         # package_constraints (dirty must be false) — WARNED by check-package, ENFORCED (error)
         # by check-decision; both reach the validator ONLY through the profile binding. ---
-        pkg17_text = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("dirty  = false", "dirty  = true")
+        pkg17_text = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("dirty  = false", "dirty  = true")
         pkg17_path = _write(td, "pkg-audit17.toml", pkg17_text)
         doc17, _e = load_toml(pkg17_path)
-        rep17_pkg, _cov17 = check_package(doc17, contract, pkg17_path, contract_path, strict=False)
+        rep17_pkg, _cov17 = check_package(doc17, specification, pkg17_path, specification_path, strict=False)
         cases.check(
             "audit-17-dirty-package-warns-in-check-package-PASS",
             rep17_pkg.ok() and any("dirty" in w for w in rep17_pkg.warnings),
             (rep17_pkg.errors, rep17_pkg.warnings),
         )
         pkg17_hash = m11.digest_file("manifest", pkg17_path)
-        dec17_text = _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", pkg17_hash)
+        dec17_text = _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", pkg17_hash)
         dec17_path = _write(td, "dec-audit17.toml", dec17_text)
         doc_dec17, _e = load_toml(dec17_path)
-        rep17_dec = check_decision(doc_dec17, contract, doc17, contract_path, pkg17_path)
+        rep17_dec = check_decision(doc_dec17, specification, doc17, specification_path, pkg17_path)
         cases.expect_fail("audit-17-dirty-package-refused-in-check-decision-FAIL", rep17_dec, "dirty")
         cases.check(
             "audit-17-package-validator-reached-through-binding-PASS",
@@ -2027,11 +2027,11 @@ reason      = "audit-13: attempt to change statement via modify"
         )
 
         # --- audit-18 (Finding 18, §3.1 rule 4/§6.4): 'over' naming a cross-cutting requirement
-        # is a contract error (no nesting); `fields_exact` requires the WHOLE string, not a
+        # is a specification error (no nesting); `fields_exact` requires the WHOLE string, not a
         # leading token. ---
-        contract18_text = _CONTRACT_TOML.replace('over          = ["R1", "R2"]', 'over          = ["R1", "R2", "R4"]')
-        rep_contract18 = check_contract(tomllib.loads(contract18_text))
-        cases.expect_fail("audit-18-over-names-cross-cutting-requirement-FAIL", rep_contract18, "no nesting")
+        specification18_text = _SPECIFICATION_TOML.replace('over          = ["R1", "R2"]', 'over          = ["R1", "R2", "R4"]')
+        rep_specification18 = check_specification(tomllib.loads(specification18_text))
+        cases.expect_fail("audit-18-over-names-cross-cutting-requirement-FAIL", rep_specification18, "no nesting")
 
         demands_fe = {"fields_exact": {"scope": "whole-domain"}}
         claim_fe_exact = {"id": "IE1", "clause": "R1", "status": "evidenced", "scope": "whole-domain"}
@@ -2167,9 +2167,9 @@ reason      = "audit-13: attempt to change statement via modify"
         )
 
         # --- transition -------------------------------------------------------------------
-        to, terr = find_transition(real_states, "contract", "draft", "issue")
+        to, terr = find_transition(real_states, "specification", "draft", "issue")
         cases.check("transition-legal", to == "issued" and terr is None, (to, terr))
-        _to, terr2 = find_transition(real_states, "contract", "issued", "issue")
+        _to, terr2 = find_transition(real_states, "specification", "issued", "issue")
         cases.check("transition-illegal-reported", terr2 is not None, terr2)
 
         # --- profile/tier selftest additions (spec delta) ----------------------------------
@@ -2307,7 +2307,7 @@ reason      = "audit-13: attempt to change statement via modify"
         # requirement (the cross-requirement bypass) is refused, even when that other requirement
         # legitimately cites the same condition back. ---
         dec3_cross_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
             .replace(
                 '[[disposition]]\nrequirement = "R1"\nstatus      = "satisfied"\nbasis       = ["C1"]',
                 '[[disposition]]\nrequirement = "R1"\nstatus      = "satisfied-with-conditions"\n'
@@ -2316,14 +2316,14 @@ reason      = "audit-13: attempt to change statement via modify"
         )
         dec3_cross_path = _write(td, "dec-audit2-3-cross.toml", dec3_cross_text)
         doc3_cross, _e = load_toml(dec3_cross_path)
-        rep3_cross = check_decision(doc3_cross, contract, package, contract_path, package_path)
+        rep3_cross = check_decision(doc3_cross, specification, package, specification_path, package_path)
         cases.expect_fail(
             "audit2-3-disposition-cites-condition-of-a-different-requirement-FAIL",
             rep3_cross, "THAT SAME requirement",
         )
 
         dec3_ok_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
             .replace(
                 '[[disposition]]\nrequirement = "R1"\nstatus      = "satisfied"\nbasis       = ["C1"]',
                 '[[disposition]]\nrequirement = "R1"\nstatus      = "satisfied-with-conditions"\n'
@@ -2340,14 +2340,14 @@ reason      = "audit-13: attempt to change statement via modify"
         )
         dec3_ok_path = _write(td, "dec-audit2-3-ok.toml", dec3_ok_text)
         doc3_ok, _e = load_toml(dec3_ok_path)
-        rep3_ok = check_decision(doc3_ok, contract, package, contract_path, package_path)
+        rep3_ok = check_decision(doc3_ok, specification, package, specification_path, package_path)
         cases.check("audit2-3-disposition-cites-its-own-requirements-condition-PASS", rep3_ok.ok(), rep3_ok.errors)
 
         # --- audit2-4 (Finding 4, §3.3): the predecessor chain is validated to ITS ROOT — a
         # predecessor two hops back with an empty parties.consumer.name fails its OWN
-        # check-contract; an unavailable ancestor is an error, never a skipped link; --previous-dir
+        # check-spec; an unavailable ancestor is an error, never a skipped link; --previous-dir
         # resolves ancestors by [document].id; a cycle is an error. ---
-        chain_root_bad_text = _CONTRACT_TOML.replace(
+        chain_root_bad_text = _SPECIFICATION_TOML.replace(
             'id         = "AC-TEST-1"', 'id         = "AC-CHAIN-ROOT"',
         ).replace(
             'consumer = { name = "Acme Test", contact = "test@acme.example" }',
@@ -2355,40 +2355,40 @@ reason      = "audit-13: attempt to change statement via modify"
         )
         chain_root_bad_path = _write(td, "chain-root-bad.toml", chain_root_bad_text)
 
-        chain_mid_text = _CONTRACT_TOML.replace(
+        chain_mid_text = _SPECIFICATION_TOML.replace(
             'id         = "AC-TEST-1"\nversion    = 1',
             'id         = "AC-CHAIN-MID"\nversion    = 2\nsupersedes = "AC-CHAIN-ROOT"',
         )
         chain_mid_path = _write(td, "chain-mid.toml", chain_mid_text)
 
-        chain_top = _copy.deepcopy(contract)
+        chain_top = _copy.deepcopy(specification)
         chain_top["document"]["id"] = "AC-CHAIN-TOP"
         chain_top["document"]["version"] = 3
         chain_top["document"]["supersedes"] = "AC-CHAIN-MID"
 
-        rep_chain_bad = check_contract_chain(chain_top, [str(chain_mid_path), str(chain_root_bad_path)], None)
+        rep_chain_bad = check_specification_chain(chain_top, [str(chain_mid_path), str(chain_root_bad_path)], None)
         cases.expect_fail("audit2-4-chain-root-empty-consumer-name-fails-own-check-FAIL", rep_chain_bad, "consumer")
 
-        chain_root_ok_text = _CONTRACT_TOML.replace('id         = "AC-TEST-1"', 'id         = "AC-CHAIN-ROOT"')
+        chain_root_ok_text = _SPECIFICATION_TOML.replace('id         = "AC-TEST-1"', 'id         = "AC-CHAIN-ROOT"')
         chain_root_ok_path = _write(td, "chain-root-ok.toml", chain_root_ok_text)
-        rep_chain_ok = check_contract_chain(chain_top, [str(chain_mid_path), str(chain_root_ok_path)], None)
+        rep_chain_ok = check_specification_chain(chain_top, [str(chain_mid_path), str(chain_root_ok_path)], None)
         cases.check("audit2-4-chain-to-root-all-valid-PASS", rep_chain_ok.ok(), rep_chain_ok.errors)
 
-        rep_chain_missing = check_contract_chain(chain_top, [str(chain_mid_path)], None)
+        rep_chain_missing = check_specification_chain(chain_top, [str(chain_mid_path)], None)
         cases.expect_fail("audit2-4-chain-missing-ancestor-is-error-FAIL", rep_chain_missing, "unavailable")
 
         chain_dir = td / "chain-dir"
         chain_dir.mkdir()
         _write(chain_dir, "mid.toml", chain_mid_text)
         _write(chain_dir, "root.toml", chain_root_ok_text)
-        rep_chain_dir = check_contract_chain(chain_top, None, str(chain_dir))
+        rep_chain_dir = check_specification_chain(chain_top, None, str(chain_dir))
         cases.check("audit2-4-chain-previous-dir-resolves-by-id-PASS", rep_chain_dir.ok(), rep_chain_dir.errors)
 
-        cyc_a_text = _CONTRACT_TOML.replace(
+        cyc_a_text = _SPECIFICATION_TOML.replace(
             'id         = "AC-TEST-1"\nversion    = 1',
             'id         = "AC-CYCLE-A"\nversion    = 1\nsupersedes = "AC-CYCLE-B"',
         )
-        cyc_b_text = _CONTRACT_TOML.replace(
+        cyc_b_text = _SPECIFICATION_TOML.replace(
             'id         = "AC-TEST-1"\nversion    = 1',
             'id         = "AC-CYCLE-B"\nversion    = 1\nsupersedes = "AC-CYCLE-A"',
         )
@@ -2482,16 +2482,16 @@ reason      = "audit-13: attempt to change statement via modify"
         )
 
         # --- audit2-9 (Finding 9, §5.0a): validity.stale_after is REQUIRED and CAPPED at
-        # issued_at + the contract's stale_after when the contract sets one; a lapsed
+        # issued_at + the specification's stale_after when the specification sets one; a lapsed
         # [[condition]].due makes the decision effect-INELIGIBLE; a malformed due date is a
         # structural (not merely effect) invalidity. ---
-        rep_v9 = check_decision(decision, contract, package, contract_path, package_path)
+        rep_v9 = check_decision(decision, specification, package, specification_path, package_path)
         cases.check("audit2-9-baseline-decision-valid-for-effect-tests-PASS", rep_v9.ok(), rep_v9.errors)
         today_v9 = today_utc_date()
 
         decision_no_stale9 = _copy.deepcopy(decision)
         decision_no_stale9["validity"] = {}
-        eligible9a, reason9a = check_decision_effect(decision_no_stale9, contract, rep_v9, today_v9, True)
+        eligible9a, reason9a = check_decision_effect(decision_no_stale9, specification, rep_v9, today_v9, True)
         cases.check(
             "audit2-9-absent-validity-stale-after-required-FAIL",
             eligible9a is False and "REQUIRED" in reason9a, reason9a,
@@ -2499,31 +2499,31 @@ reason      = "audit-13: attempt to change statement via modify"
 
         decision_beyond_ceiling9 = _copy.deepcopy(decision)
         decision_beyond_ceiling9["validity"] = {"stale_after": "2027-06-01"}
-        eligible9b, reason9b = check_decision_effect(decision_beyond_ceiling9, contract, rep_v9, today_v9, True)
+        eligible9b, reason9b = check_decision_effect(decision_beyond_ceiling9, specification, rep_v9, today_v9, True)
         cases.check(
             "audit2-9-validity-stale-after-beyond-ceiling-FAIL",
             eligible9b is False and "ceiling" in reason9b, reason9b,
         )
 
-        eligible9c, reason9c = check_decision_effect(decision, contract, rep_v9, today_v9, True)
+        eligible9c, reason9c = check_decision_effect(decision, specification, rep_v9, today_v9, True)
         cases.check("audit2-9-validity-stale-after-within-ceiling-eligible-PASS", eligible9c is True, reason9c)
 
         decision_lapsed9 = _copy.deepcopy(decision)
         for c in decision_lapsed9.get("condition", []):
             c["due"] = "2020-01-01"
-        eligible9d, reason9d = check_decision_effect(decision_lapsed9, contract, rep_v9, today_v9, True)
+        eligible9d, reason9d = check_decision_effect(decision_lapsed9, specification, rep_v9, today_v9, True)
         cases.check(
             "audit2-9-lapsed-condition-ineligible-FAIL",
             eligible9d is False and "lapsed" in reason9d, reason9d,
         )
 
         dec9e_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace("{{PACKAGE_HASH}}", package_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace("{{PACKAGE_HASH}}", package_hash)
             .replace('due           = "2026-12-01"', 'due           = "nonsense"')
         )
         dec9e_path = _write(td, "dec-audit2-9e.toml", dec9e_text)
         doc9e, _e = load_toml(dec9e_path)
-        rep9e = check_decision(doc9e, contract, package, contract_path, package_path)
+        rep9e = check_decision(doc9e, specification, package, specification_path, package_path)
         cases.expect_fail("audit2-9-malformed-condition-due-is-structurally-invalid-FAIL", rep9e, "ISO date")
 
         # --- audit2-11 (Finding 11, §8 item 2): impact compares each declared input's digest
@@ -2540,7 +2540,7 @@ reason      = "audit-13: attempt to change statement via modify"
                 c["evidence"][0]["inputs"] = [{"path": "src/lib.rs", "digest": "sha-512:" + "b" * 128}]
         _NEW_COMMIT_11 = "2222222222222222222222222222222222222222"
         result11 = compute_impact(
-            decision, contract, package11_old, new_commit=_NEW_COMMIT_11,
+            decision, specification, package11_old, new_commit=_NEW_COMMIT_11,
             changed_paths=set(), new_package=package11_new,
         )
         c1_records11 = [r for r in result11["records"] if r["claim"] == "C1" and r["evidence_id"].endswith("#0")]
@@ -2550,7 +2550,7 @@ reason      = "audit-13: attempt to change statement via modify"
             c1_records11,
         )
         result11b = compute_impact(
-            decision, contract, package11_old, new_commit=_NEW_COMMIT_11,
+            decision, specification, package11_old, new_commit=_NEW_COMMIT_11,
             changed_paths=set(), new_package=_copy.deepcopy(package11_old),
         )
         c1_records11b = [r for r in result11b["records"] if r["claim"] == "C1" and r["evidence_id"].endswith("#0")]
@@ -2576,41 +2576,41 @@ reason      = "audit-13: attempt to change statement via modify"
                               "evidence": {"min_tier": "T3"},  # weaker than old's T2
                               "relaxed": {"reason": "iteration 2", "by": "Acme Co"}}],  # consumer name, NOT authority
         }
-        tight12a = check_contract_tightening(new12_consumer_by, old12)
+        tight12a = check_specification_tightening(new12_consumer_by, old12)
         cases.expect_fail("audit2-12-relaxed-by-consumer-name-not-authority-refused-FAIL", tight12a, "weakened")
 
         new12_authority_by = _copy.deepcopy(new12_consumer_by)
         new12_authority_by["requirement"][0]["relaxed"]["by"] = "Acme Co / platform-lead"
-        tight12b = check_contract_tightening(new12_authority_by, old12)
+        tight12b = check_specification_tightening(new12_authority_by, old12)
         cases.check("audit2-12-relaxed-by-authority-accepted-PASS", tight12b.ok(), tight12b.errors)
 
-        base12_ratified = _copy.deepcopy(contract)
+        base12_ratified = _copy.deepcopy(specification)
         base12_ratified["document"]["issued_by"] = "producer"
         base12_ratified["document"]["status"] = "ratified"
         base12_ratified["ratification"] = {"by": "Acme Test", "at": "2026-09-16T12:00:00Z"}
-        new_contract12, errs12 = apply_amendment_build(amend_ok_doc, base12_ratified, None, "Acme Test / lead")
+        new_specification12, errs12 = apply_amendment_build(amend_ok_doc, base12_ratified, None, "Acme Test / lead")
         cases.check(
             "audit2-12-successor-strips-top-level-ratification-and-issued-by-consumer-PASS",
-            not errs12 and "ratification" not in new_contract12 and new_contract12["document"]["issued_by"] == "consumer",
-            (errs12, new_contract12.get("ratification"), new_contract12["document"].get("issued_by")),
+            not errs12 and "ratification" not in new_specification12 and new_specification12["document"]["issued_by"] == "consumer",
+            (errs12, new_specification12.get("ratification"), new_specification12["document"].get("issued_by")),
         )
 
         # --- audit2-13 (Finding 13, §3.1 rule 1): `replaces` is transition-local — stripped when
         # apply-amendment derives a successor, so a carried-over requirement never re-emerges
-        # carrying a NOW-STALE `replaces` (which would itself be a rule-1 violation the NEXT time
-        # this contract is superseded again). ---
-        base13_carrying_replaces = _copy.deepcopy(contract)
+        # carrying a NOW-STALE `replaces` (which would itself be a rule-1 violation the next time
+        # this specification is superseded again). ---
+        base13_carrying_replaces = _copy.deepcopy(specification)
         for r in base13_carrying_replaces["requirement"]:
             if r["id"] == "R1":
                 r["replaces"] = "R-PRE-EXISTING"  # as if R1 was introduced replacing R-PRE-EXISTING
-        new_contract13b, errs13b = apply_amendment_build(amend_ok_doc, base13_carrying_replaces, None, "Acme Test / lead")
-        r1_after13 = next(r for r in new_contract13b["requirement"] if r["id"] == "R1")
+        new_specification13b, errs13b = apply_amendment_build(amend_ok_doc, base13_carrying_replaces, None, "Acme Test / lead")
+        r1_after13 = next(r for r in new_specification13b["requirement"] if r["id"] == "R1")
         cases.check(
             "audit2-13-replaces-stripped-from-carried-over-requirement-PASS",
             "replaces" not in r1_after13, r1_after13,
         )
-        # The FAIL half: a hand-authored (or pre-fix) contract that DID carry `replaces` over
-        # under the same id is exactly the rule-1 violation check_contract_tightening refuses —
+        # The FAIL half: a hand-authored (or pre-fix) specification that DID carry `replaces` over
+        # under the same id is exactly the rule-1 violation check_specification_tightening refuses —
         # proving the tool's own output, absent the fix above, would have been rejected downstream.
         old13_bad = {
             "document": {"id": "AC13BAD"}, "parties": {"consumer": {"name": "Acme"}},
@@ -2626,7 +2626,7 @@ reason      = "audit-13: attempt to change statement via modify"
                               "statement": "s1", "domain": "correctness", "evidence": {"min_tier": "T3"},
                               "replaces": "R-OLD"}],
         }
-        tight13_bad = check_contract_tightening(new13_bad, old13_bad)
+        tight13_bad = check_specification_tightening(new13_bad, old13_bad)
         cases.expect_fail("audit2-13-replaces-carried-over-under-same-id-refused-FAIL", tight13_bad, "replaces")
 
         # --- audit2-14 (Finding 14, §3.1 rule 1/§3.5): `[requirement.evidence.recipe]` is
@@ -2660,14 +2660,14 @@ reason      = "audit-13: attempt to change statement via modify"
             "requirement": [{"id": "R1", "mandatory": True, "waivable": False, "kind": "item",
                               "evidence": {"min_tier": "T3"}}],
         }
-        tight14 = check_contract_tightening(new14_removed, old14)
+        tight14 = check_specification_tightening(new14_removed, old14)
         cases.expect_fail("audit2-14-recipe-removed-without-relaxed-FAIL", tight14, "recipe")
 
         # --- F10 (§3.5): the WHOLE [requirement.evidence.recipe] table is
         # in the floor set, not just `command` — a weakened `expect` or a dropped `control_patch`
         # must also be flagged as a tightening violation. Confirmed: BEFORE this fix, both
         # `new14_expect_weakened` and `new14_control_patch_removed` below passed
-        # check_contract_tightening cleanly (tight14_expect.ok() / tight14_ctrl_patch.ok() were
+        # check_specification_tightening cleanly (tight14_expect.ok() / tight14_ctrl_patch.ok() were
         # True with no [requirement.relaxed] present). ---
         new14_expect_weakened = {
             "document": {"id": "AC14-v2", "supersedes": "AC14"}, "parties": {"consumer": {"name": "Acme"}},
@@ -2676,7 +2676,7 @@ reason      = "audit-13: attempt to change statement via modify"
                               "evidence": {"min_tier": "T3",
                                            "recipe": {"command": "cargo test", "expect": ""}}}],
         }
-        tight14_expect = check_contract_tightening(new14_expect_weakened, old14)
+        tight14_expect = check_specification_tightening(new14_expect_weakened, old14)
         cases.expect_fail(
             "f10-recipe-expect-weakened-without-relaxed-FAIL", tight14_expect, "recipe.expect",
         )
@@ -2690,7 +2690,7 @@ reason      = "audit-13: attempt to change statement via modify"
                               "evidence": {"min_tier": "T3",
                                            "recipe": {"command": "cargo test", "expect": "ok"}}}],
         }
-        tight14_ctrl_patch = check_contract_tightening(new14_control_patch_removed, old14_ctrl_patch)
+        tight14_ctrl_patch = check_specification_tightening(new14_control_patch_removed, old14_ctrl_patch)
         cases.expect_fail(
             "f10-recipe-control-patch-removed-without-relaxed-FAIL",
             tight14_ctrl_patch, "control_patch",
@@ -2714,18 +2714,18 @@ reason      = "audit-13: attempt to change statement via modify"
                               "evidence": {"min_tier": "T3",
                                            "recipe": {"command": "cargo test", "expect": "ok", "timeout": "999"}}}],
         }
-        tight14_other = check_contract_tightening(new14_other, old14_other)
+        tight14_other = check_specification_tightening(new14_other, old14_other)
         cases.expect_fail(
             "f10-recipe-other-key-changed-flagged", tight14_other, "outside",
         )
 
-        base14 = _copy.deepcopy(contract)
+        base14 = _copy.deepcopy(specification)
         for r in base14["requirement"]:
             if r["id"] == "R1":
                 r["evidence"]["recipe"] = {"command": "cargo test --test malformed", "expect": "ok"}
-        new_contract14, errs14 = apply_amendment_build(amend_ok_doc, base14, None, "Acme Test / lead")
+        new_specification14, errs14 = apply_amendment_build(amend_ok_doc, base14, None, "Acme Test / lead")
         cases.check("audit2-14-build-with-recipe-succeeds-PASS", not errs14, errs14)
-        rendered14 = _render_contract_toml(new_contract14)
+        rendered14 = _render_specification_toml(new_specification14)
         reparsed14 = tomllib.loads(rendered14)
         r1_reparsed14 = next(r for r in reparsed14["requirement"] if r["id"] == "R1")
         cases.check(
@@ -2770,14 +2770,14 @@ reason      = "audit-13: attempt to change statement via modify"
         for r in new16_shrunk["requirement"]:
             if r["id"] == "RC":
                 r["over"] = ["R1"]
-        tight16a = check_contract_tightening(new16_shrunk, old16)
+        tight16a = check_specification_tightening(new16_shrunk, old16)
         cases.expect_fail("audit2-16-over-shrunk-under-same-id-refused-FAIL", tight16a, "Finding 16")
 
         new16_shrunk_relaxed = _copy.deepcopy(new16_shrunk)
         for r in new16_shrunk_relaxed["requirement"]:
             if r["id"] == "RC":
                 r["relaxed"] = {"reason": "trying to excuse it", "by": "Acme"}
-        tight16b = check_contract_tightening(new16_shrunk_relaxed, old16)
+        tight16b = check_specification_tightening(new16_shrunk_relaxed, old16)
         cases.expect_fail("audit2-16-over-shrunk-not-excused-by-relaxed-FAIL", tight16b, "Finding 16")
 
         new16_grown = _copy.deepcopy(old16)
@@ -2791,12 +2791,12 @@ reason      = "audit-13: attempt to change statement via modify"
         for r in new16_grown["requirement"]:
             if r["id"] == "RC":
                 r["over"] = ["R1", "R2", "R3"]
-        tight16c = check_contract_tightening(new16_grown, old16)
+        tight16c = check_specification_tightening(new16_grown, old16)
         cases.check("audit2-16-over-grown-under-same-id-is-tightening-PASS", tight16c.ok(), tight16c.errors)
 
         # --- impact: undeclared inputs classify possibly-invalidated ----------------------
         result = compute_impact(
-            decision, contract, package, new_commit="1111111111111111111111111111111111111111",
+            decision, specification, package, new_commit="1111111111111111111111111111111111111111",
             changed_paths={"unrelated/path.rs"},
         )
         c1_records = [r for r in result["records"] if r["claim"] == "C1"]
@@ -2822,21 +2822,21 @@ reason      = "audit-13: attempt to change statement via modify"
         # now validated as RFC 3339 by check_decision (a nonempty-but-garbage value is an ERROR),
         # and an unparseable issued_at makes check_decision_effect's stale_after ceiling refuse
         # the decision outright rather than silently skip the cap. Reproduction confirmed: BEFORE
-        # this fix, `check-decision <d> --contract <c> --package <p> --effect --allow-conditions
+        # this fix, `check-decision <d> --spec <c> --package <p> --effect --allow-conditions
         # --now 2026-09-16` on this exact mutation (garbage issued_at, far-future stale_after)
         # reported EFFECT-ELIGIBLE.
         dec_f6_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
             .replace("{{PACKAGE_HASH}}", package_hash)
             .replace('issued_at = "2026-09-20T09:00:00Z"', 'issued_at = "sometime"')
             .replace('stale_after = "2026-12-19"', 'stale_after = "2099-01-01"')
         )
         dec_f6_path = _write(td, "dec-f6.toml", dec_f6_text)
         doc_f6, _e = load_toml(dec_f6_path)
-        rep_f6 = check_decision(doc_f6, contract, package, contract_path, package_path)
+        rep_f6 = check_decision(doc_f6, specification, package, specification_path, package_path)
         cases.expect_fail("f6-malformed-issued-at-fails-check-decision", rep_f6, "issued_at")
 
-        eligible_f6, reason_f6 = check_decision_effect(doc_f6, contract, rep_f6, "2026-09-16", True)
+        eligible_f6, reason_f6 = check_decision_effect(doc_f6, specification, rep_f6, "2026-09-16", True)
         cases.check(
             "f6-malformed-issued-at-ineligible-under-effect-via-invalid-gate",
             eligible_f6 is False, (eligible_f6, reason_f6),
@@ -2846,7 +2846,7 @@ reason      = "audit-13: attempt to change statement via modify"
         # from check_decision's new gate above — a synthetically "already valid" Reporter still
         # must not let the malformed issued_at compute a skipped cap.
         fake_ok_rep_f6 = Reporter("d")
-        eligible_f6b, reason_f6b = check_decision_effect(doc_f6, contract, fake_ok_rep_f6, "2026-09-16", True)
+        eligible_f6b, reason_f6b = check_decision_effect(doc_f6, specification, fake_ok_rep_f6, "2026-09-16", True)
         cases.check(
             "f6-ceiling-fails-closed-on-unparseable-issued-at",
             eligible_f6b is False, (eligible_f6b, reason_f6b),
@@ -2857,13 +2857,13 @@ reason      = "audit-13: attempt to change statement via modify"
         # "2026-09-20" and check_decision VALIDated it — the same genus of split as F8. The
         # baseline decision's own full "…T…Z" issued_at is the positive control (still valid).
         dec_f6c_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
             .replace("{{PACKAGE_HASH}}", package_hash)
             .replace('issued_at = "2026-09-20T09:00:00Z"', 'issued_at = "2026-09-20"')
         )
         dec_f6c_path = _write(td, "dec-f6c.toml", dec_f6c_text)
         doc_f6c, _e = load_toml(dec_f6c_path)
-        rep_f6c = check_decision(doc_f6c, contract, package, contract_path, package_path)
+        rep_f6c = check_decision(doc_f6c, specification, package, specification_path, package_path)
         cases.expect_fail("f6-date-only-issued-at-rejected-rfc3339", rep_f6c, "RFC 3339")
 
         # --- F8 (load_toml): the `key = val; key2 = val2` semicolon-shorthand
@@ -2914,7 +2914,7 @@ reason      = "audit-13: attempt to change statement via modify"
             err_f2_no_adverse is not None and "meaningless" in err_f2_no_adverse, err_f2_no_adverse,
         )
 
-        # --- F10 (§3.5, check_contract_tightening): tested above as
+        # --- F10 (§3.5, check_specification_tightening): tested above as
         # f10-recipe-expect-weakened-without-relaxed-FAIL and
         # f10-recipe-control-patch-removed-without-relaxed-FAIL (audit2-14 block).
 
@@ -2933,7 +2933,7 @@ reason      = "audit-13: attempt to change statement via modify"
             {"row": 4, "mandatory_any": ["unsatisfied"], "conditions": "any", "verdict": "rejected"},
         ]
         rep_f11 = check_decision(
-            decision, contract, package, contract_path, package_path,
+            decision, specification, package, specification_path, package_path,
             verdict_rules=tampered_verdict_rules_f11,
         )
         cases.expect_fail(
@@ -3029,11 +3029,11 @@ status        = "gap"
         with tempfile.TemporaryDirectory() as t2_tdstr:
             t2_td = Path(t2_tdstr)
             (t2_td / ".git").mkdir()  # B6 root for the assembled package
-            t2_contract_text = f"""
+            t2_specification_text = f"""
 [document]
 protocol   = "{PROTOCOL_ID}"
 minor      = 0
-kind       = "contract"
+kind       = "specification"
 id         = "AC-T2RT-1"
 version    = 1
 issued_at  = "2026-09-16T10:00:00Z"
@@ -3089,12 +3089,12 @@ authority             = "T2 Test Consumer / lead"
 profiles_required     = []
 stale_after           = "P90D"
 """
-            t2_contract_path = _write(t2_td, "t2-contract.toml", t2_contract_text)
-            t2_contract, t2_cerr = load_toml(t2_contract_path)
+            t2_specification_path = _write(t2_td, "t2-specification.toml", t2_specification_text)
+            t2_specification, t2_cerr = load_toml(t2_specification_path)
 
             # §1: project-brief. No profile bound (None) — a core-only fixture, no vocabulary.
             t2_brief_fields, t2_brief_warnings = build_brief_fields(
-                t2_contract or {}, t2_contract_path, "subject/**", None,
+                t2_specification or {}, t2_specification_path, "subject/**", None,
             )
             t2_brief_roundtrip = parse_window_brief_yaml(render_window_brief_yaml(t2_brief_fields))
             t2_brief_has_both = (
@@ -3162,7 +3162,7 @@ transcript = "transcripts/check2.txt"
 
             # §2: assemble-package. fill.toml's shape as a plain dict (the worker's semantic slice
             # only: statement/band/grade/clause_source + the worker-proposed recipe per requirement,
-            # since this fixture's contract declares no [requirement.evidence.recipe] of its own).
+            # since this fixture's specification declares no [requirement.evidence.recipe] of its own).
             t2_fill = {
                 "claim": [
                     {
@@ -3194,7 +3194,7 @@ transcript = "transcripts/check2.txt"
             t2_out = t2_td / "t2-acceptance.toml"
             try:
                 assemble_package(
-                    t2_brief_fields, t2_report, t2_contract, t2_contract_path, t2_fill, t2_out, t2_profile,
+                    t2_brief_fields, t2_report, t2_specification, t2_specification_path, t2_fill, t2_out, t2_profile,
                 )
                 t2_asm_error = None
             except AssembleError as e:
@@ -3202,10 +3202,10 @@ transcript = "transcripts/check2.txt"
 
             t2_pkg, t2_pkg_err = (load_toml(t2_out) if t2_out.is_file() else (None, "not written"))
             t2_claims = {c.get("id"): c for c in (t2_pkg.get("claim") or [])} if t2_pkg else {}
-            t2_rep_c = check_contract(t2_contract) if t2_contract else None
+            t2_rep_c = check_specification(t2_specification) if t2_specification else None
             t2_rep_p, t2_cov = (
-                check_package(t2_pkg, t2_contract, t2_out, t2_contract_path, strict=False)
-                if t2_pkg and t2_contract else (None, None)
+                check_package(t2_pkg, t2_specification, t2_out, t2_specification_path, strict=False)
+                if t2_pkg and t2_specification else (None, None)
             )
 
             # Finding #26 (lens completeness-coherence): `assemble-package` MUST write the typed
@@ -3248,10 +3248,10 @@ transcript = "transcripts/check2.txt"
                 "t2-roundtrip-two-requirement-brief-report-package",
                 t2_ok,
                 {
-                    "contract_err": t2_cerr, "brief_warnings": t2_brief_warnings,
+                    "specification_err": t2_cerr, "brief_warnings": t2_brief_warnings,
                     "brief_has_both": t2_brief_has_both, "asm_error": t2_asm_error,
                     "pkg_err": t2_pkg_err, "claims": t2_claims,
-                    "contract_errors": getattr(t2_rep_c, "errors", None),
+                    "specification_errors": getattr(t2_rep_c, "errors", None),
                     "package_errors": getattr(t2_rep_p, "errors", None),
                     "package_unknowns": getattr(t2_rep_p, "unknowns", None), "coverage": t2_cov,
                     "record_hashes_typed": t2_record_hashes_typed,
@@ -3269,7 +3269,7 @@ transcript = "transcripts/check2.txt"
                 {"typed": t2_c1_record_hash, "legacy": t2_legacy_form},
             )
 
-        # --- §16c fold fixtures (owner pre-agreed CANON, 2026-09-16) ----------------------------
+        # --- §16c regression fixtures ------------------------------------------------------
 
         # --- Q5 (BLOCKER, §5.0/§5.2): the adverse (worst-result) check ranges over
         # witnesses(R) ∪ cited basis — the union is normative so a consumer cannot narrow the
@@ -3343,13 +3343,13 @@ transcript = "transcripts/check2.txt"
         new_q1_switch = _copy.deepcopy(old_q1)
         new_q1_switch["document"] = {"id": "ACQ1-v2", "supersedes": "ACQ1"}
         new_q1_switch["subject"] = {"profile": "rust-code"}
-        tight_q1_switch = check_contract_tightening(new_q1_switch, old_q1)
+        tight_q1_switch = check_specification_tightening(new_q1_switch, old_q1)
         cases.expect_fail("q1-projection-pinning-profile-switch-refused-FAIL", tight_q1_switch, "profile")
 
         new_q1_removed = _copy.deepcopy(old_q1)
         new_q1_removed["document"] = {"id": "ACQ1-v2", "supersedes": "ACQ1"}
         new_q1_removed["acceptance"]["profiles_required"] = []
-        tight_q1_removed = check_contract_tightening(new_q1_removed, old_q1)
+        tight_q1_removed = check_specification_tightening(new_q1_removed, old_q1)
         cases.expect_fail(
             "q1-projection-pinning-profiles-required-removed-refused-FAIL", tight_q1_removed, "profiles_required",
         )
@@ -3357,7 +3357,7 @@ transcript = "transcripts/check2.txt"
         new_q1_added = _copy.deepcopy(old_q1)
         new_q1_added["document"] = {"id": "ACQ1-v2", "supersedes": "ACQ1"}
         new_q1_added["acceptance"]["profiles_required"] = ["acceptance/verification", "rust-code"]
-        tight_q1_added = check_contract_tightening(new_q1_added, old_q1)
+        tight_q1_added = check_specification_tightening(new_q1_added, old_q1)
         cases.check(
             "q1-projection-pinning-profiles-required-gained-passes-PASS",
             tight_q1_added.ok(), tight_q1_added.errors,
@@ -3397,7 +3397,7 @@ transcript = "transcripts/check2.txt"
         # this loop was not scoped to mandatory and wrongly demanded a producer condition for R3
         # too, refusing an otherwise-valid decision. ---
         dec_q7_text = (
-            _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash)
+            _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash)
             .replace("{{PACKAGE_HASH}}", package_hash)
             .replace('verdict   = "accepted-with-conditions"', 'verdict   = "evidence-requested"')
             .replace(
@@ -3411,7 +3411,7 @@ transcript = "transcripts/check2.txt"
         )
         dec_q7_path = _write(td, "dec-q7.toml", dec_q7_text)
         doc_q7, _e = load_toml(dec_q7_path)
-        rep_q7 = check_decision(doc_q7, contract, package, contract_path, package_path)
+        rep_q7 = check_decision(doc_q7, specification, package, specification_path, package_path)
         cases.check(
             "q7-optional-insufficient-evidence-needs-no-producer-condition-PASS",
             rep_q7.ok(), rep_q7.errors,
@@ -3422,16 +3422,16 @@ transcript = "transcripts/check2.txt"
         # decision (§5.5).
         # ==================================================================================
 
-        def _l8_min_contract(boundary=None, boundary_terms=None):
+        def _l8_min_specification(boundary=None, boundary_terms=None):
             doc = {
                 "document": {
-                    "protocol": PROTOCOL_ID, "minor": 0, "kind": "contract", "id": "AC-L8-1",
+                    "protocol": PROTOCOL_ID, "minor": 0, "kind": "specification", "id": "AC-L8-1",
                     "version": 1, "issued_at": "2026-09-24T00:00:00Z", "issued_by": "consumer",
                     "status": "issued",
                 },
                 "parties": {
                     "consumer": {"name": "Acme L8"},
-                    "producer": {"name": "supplier-l8"},
+                    "producer": {"name": "producer-l8"},
                 },
                 "subject": {"kind": "other", "name": "component-l8", "profile": "acceptance/verification"},
                 "acceptance": {
@@ -3454,26 +3454,37 @@ transcript = "transcripts/check2.txt"
             return doc
 
         # --- §3.4a: party boundary --------------------------------------------------------
-        rep_l8_internal = check_contract(_l8_min_contract())
+        rep_l8_internal = check_specification(_l8_min_specification())
         cases.check("l8-boundary-internal-default-PASS", rep_l8_internal.ok(), rep_l8_internal.errors)
 
-        rep_l8_cross_missing = check_contract(_l8_min_contract(boundary="cross-org"))
+        rep_l8_cross_missing = check_specification(_l8_min_specification(boundary="cross-org"))
         cases.expect_fail(
             "l8-boundary-cross-org-missing-disclosure-FAIL", rep_l8_cross_missing, "disclosure",
         )
 
-        rep_l8_cross_ok = check_contract(_l8_min_contract(
+        rep_l8_cross_ok = check_specification(_l8_min_specification(
             boundary="cross-org",
             boundary_terms={
                 "disclosure": "evidence referenced, not fully attached",
-                "integrity": "DSSE envelope, unbuilt",
+                "integrity": "cross-organisation signing, planned",
             },
         ))
         cases.check("l8-boundary-cross-org-with-terms-PASS", rep_l8_cross_ok.ok(), rep_l8_cross_ok.errors)
 
+        # Retired outer-concern fields must fail the closed key/domain sets.
+        rep_outer_key = check_specification(_l8_min_specification(
+            boundary_terms={"legal_ref": "outside acceptance"},
+        ))
+        cases.expect_fail("outer-boundary-key-FAIL", rep_outer_key, "legal_ref is not a declared parameter")
+
+        outer_domain = _l8_min_specification()
+        outer_domain["requirement"][0]["domain"] = "legal"
+        rep_outer_domain = check_specification(outer_domain)
+        cases.expect_fail("outer-requirement-domain-FAIL", rep_outer_domain, "domain must be one of")
+
         # --- §5.4 derived decisions / §5.5 closed-without-merits, over the baseline
-        # AC-TEST-1 contract/package pair built at the top of run() ------------------------
-        l8_base_dec_text = _DECISION_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
+        # AC-TEST-1 specification/package pair built at the top of run() ------------------------
+        l8_base_dec_text = _DECISION_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
             "{{PACKAGE_HASH}}", package_hash,
         )
         l8_derivation_block = """
@@ -3491,7 +3502,7 @@ rule          = "external CI green AND 2 reviewers approved => verdict=accepted-
         l8_dec_derived_ok_path = _write(td, "dec-l8-derived-ok.toml", l8_dec_derived_ok_text)
         l8_dec_derived_ok, _e = load_toml(l8_dec_derived_ok_path)
         rep_l8_derived_ok = check_decision(
-            l8_dec_derived_ok, contract, package, contract_path, package_path,
+            l8_dec_derived_ok, specification, package, specification_path, package_path,
             decision_path=l8_dec_derived_ok_path,
         )
         cases.check("l8-derived-decision-valid-PASS", rep_l8_derived_ok.ok(), rep_l8_derived_ok.errors)
@@ -3500,7 +3511,7 @@ rule          = "external CI green AND 2 reviewers approved => verdict=accepted-
         l8_dec_derived_missing_path = _write(td, "dec-l8-derived-missing.toml", l8_dec_derived_missing_text)
         l8_dec_derived_missing, _e = load_toml(l8_dec_derived_missing_path)
         rep_l8_derived_missing = check_decision(
-            l8_dec_derived_missing, contract, package, contract_path, package_path,
+            l8_dec_derived_missing, specification, package, specification_path, package_path,
             decision_path=l8_dec_derived_missing_path,
         )
         cases.expect_fail(
@@ -3509,12 +3520,12 @@ rule          = "external CI green AND 2 reviewers approved => verdict=accepted-
 
         l8_dec_recorder_producer_text = l8_base_dec_text.replace(
             'issuer    = "Acme Test / lead"',
-            'issuer    = "Acme Test / lead"\nrecorded_by = "supplier-test"',
+            'issuer    = "Acme Test / lead"\nrecorded_by = "producer-test"',
         ) + l8_derivation_block
         l8_dec_recorder_producer_path = _write(td, "dec-l8-recorder-producer.toml", l8_dec_recorder_producer_text)
         l8_dec_recorder_producer, _e = load_toml(l8_dec_recorder_producer_path)
         rep_l8_recorder_producer = check_decision(
-            l8_dec_recorder_producer, contract, package, contract_path, package_path,
+            l8_dec_recorder_producer, specification, package, specification_path, package_path,
             decision_path=l8_dec_recorder_producer_path,
         )
         cases.expect_fail(
@@ -3531,10 +3542,10 @@ issued_at = "2026-09-24T00:00:00Z"
 issuer    = "Acme Test / lead"
 verdict   = "lapsed"
 merits    = false
-reason    = "closed by the upstream project for reasons outside the delivered artifact (owner, 2026-09-24)"
+reason    = "closed by the upstream project for reasons outside the delivered artifact"
 
 [binds]
-contract = {{ id = "AC-TEST-1", hash = "{contract_hash}" }}
+specification = {{ id = "AC-TEST-1", hash = "{specification_hash}" }}
 package  = {{ hash = "{package_hash}" }}
 subject  = {{ commit = "{_SUBJECT_COMMIT}" }}
 
@@ -3544,7 +3555,7 @@ mode = "spot-check"
         l8_dec_lapsed_ok_path = _write(td, "dec-l8-lapsed-ok.toml", l8_dec_lapsed_ok_text)
         l8_dec_lapsed_ok, _e = load_toml(l8_dec_lapsed_ok_path)
         rep_l8_lapsed_ok = check_decision(
-            l8_dec_lapsed_ok, contract, package, contract_path, package_path,
+            l8_dec_lapsed_ok, specification, package, specification_path, package_path,
             decision_path=l8_dec_lapsed_ok_path,
         )
         cases.check(
@@ -3557,7 +3568,7 @@ mode = "spot-check"
         l8_dec_merits_rejected_path = _write(td, "dec-l8-merits-rejected.toml", l8_dec_merits_rejected_text)
         l8_dec_merits_rejected, _e = load_toml(l8_dec_merits_rejected_path)
         rep_l8_merits_rejected = check_decision(
-            l8_dec_merits_rejected, contract, package, contract_path, package_path,
+            l8_dec_merits_rejected, specification, package, specification_path, package_path,
             decision_path=l8_dec_merits_rejected_path,
         )
         cases.expect_fail(
@@ -3567,13 +3578,13 @@ mode = "spot-check"
         # revision: merits = false REQUIRES [document].reason (§5.5) — no prior fixture forced this
         # branch; the PASS case above always carried a reason.
         l8_dec_merits_no_reason_text = l8_dec_lapsed_ok_text.replace(
-            '\nreason    = "closed by the upstream project for reasons outside the delivered artifact (owner, 2026-09-24)"',
+            '\nreason    = "closed by the upstream project for reasons outside the delivered artifact"',
             '',
         )
         l8_dec_merits_no_reason_path = _write(td, "dec-l8-merits-no-reason.toml", l8_dec_merits_no_reason_text)
         l8_dec_merits_no_reason, _e = load_toml(l8_dec_merits_no_reason_path)
         rep_l8_merits_no_reason = check_decision(
-            l8_dec_merits_no_reason, contract, package, contract_path, package_path,
+            l8_dec_merits_no_reason, specification, package, specification_path, package_path,
             decision_path=l8_dec_merits_no_reason_path,
         )
         cases.expect_fail(
@@ -3582,19 +3593,19 @@ mode = "spot-check"
         )
 
         # --- §4 / S4: [spec].upstream_status — carried, displayed, never gating -----------
-        l8_pkg_upstream_text = _PACKAGE_TOML.replace("{{CONTRACT_HASH}}", contract_hash).replace(
-            'axis    = "the requirements of contract AC-TEST-1"',
-            'axis    = "the requirements of contract AC-TEST-1"\nupstream_status = "Under Review"',
+        l8_pkg_upstream_text = _PACKAGE_TOML.replace("{{SPECIFICATION_HASH}}", specification_hash).replace(
+            'axis    = "the requirements of specification AC-TEST-1"',
+            'axis    = "the requirements of specification AC-TEST-1"\nupstream_status = "Under Review"',
         )
         l8_pkg_upstream_path = _write(td, "acceptance-l8-upstream.toml", l8_pkg_upstream_text)
         l8_pkg_upstream, _e = load_toml(l8_pkg_upstream_path)
         rep_l8_upstream, _cov_l8_upstream = check_package(
-            l8_pkg_upstream, contract, l8_pkg_upstream_path, contract_path, strict=False,
+            l8_pkg_upstream, specification, l8_pkg_upstream_path, specification_path, strict=False,
         )
         cases.check("l8-upstream-status-package-valid-PASS", rep_l8_upstream.ok(), rep_l8_upstream.errors)
 
         l8_rendered = render_markdown(
-            contract, l8_pkg_upstream, l8_dec_lapsed_ok, contract_path, l8_pkg_upstream_path,
+            specification, l8_pkg_upstream, l8_dec_lapsed_ok, specification_path, l8_pkg_upstream_path,
             l8_dec_lapsed_ok_path,
         )
         cases.check(
@@ -3619,7 +3630,7 @@ mode = "spot-check"
             # Publication sources carry Markdown as .in; exported copies already use .md.
             if (example / "SPEC.md.in").exists():
                 shutil.copyfile(example / "SPEC.md.in", example / "SPEC.md")
-            cp, pp = example / "acceptance-contract.toml", example / "acceptance.toml"
+            cp, pp = example / "acceptance-specification.toml", example / "acceptance.toml"
             c, _ = load_toml(cp)
             pdoc, _ = load_toml(pp)
             r, cov = check_package(pdoc, c, pp, cp, strict=True)
@@ -3631,29 +3642,29 @@ mode = "spot-check"
                 # timestamps for issuance and expiry) is already fixed, but nothing regression-
                 # gated it — a future re-drift would pass every OTHER check silently. Run the
                 # SHIPPED decision through `--effect` on a date inside its validity window, and
-                # separately assert its `[validity].stale_after` equals issuance + the contract's
+                # separately assert its `[validity].stale_after` equals issuance + the specification's
                 # own stale_after DURATION, computed in UTC (the exact arithmetic the defect got
                 # wrong) — not merely that the decision happens to still be unexpired today.
                 d_clean, _e = load_toml(dp)
                 dr_clean = check_decision(d_clean, c, pdoc, cp, pp)
                 cases.check("correctness-3-rust-delivery-decision-valid-green", dr_clean.ok(), dr_clean.errors)
-                eligible, eff_reason = check_decision_effect(d_clean, c, dr_clean, "2026-09-28", True)
+                eligible, eff_reason = check_decision_effect(d_clean, c, dr_clean, d_clean["document"]["issued_at"][:10], True)
                 cases.check("correctness-3-rust-delivery-effect-eligible-in-window-green", eligible, eff_reason)
                 issued_dt = datetime.datetime.fromisoformat(
                     d_clean["document"]["issued_at"].replace("Z", "+00:00"))
-                contract_dur = c["acceptance"]["stale_after"]
-                expected_expiry = (issued_dt + duration_to_timedelta(contract_dur)).date().isoformat()
+                specification_dur = c["acceptance"]["stale_after"]
+                expected_expiry = (issued_dt + duration_to_timedelta(specification_dur)).date().isoformat()
                 actual_expiry = d_clean["validity"]["stale_after"]
                 cases.check(
                     "correctness-3-rust-delivery-expiry-equals-issuance-plus-duration-utc-green",
                     actual_expiry == expected_expiry,
-                    {"issued_at": d_clean["document"]["issued_at"], "stale_after_duration": contract_dur,
+                    {"issued_at": d_clean["document"]["issued_at"], "stale_after_duration": specification_dur,
                      "expected_expiry": expected_expiry, "actual_expiry": actual_expiry},
                 )
                 # Able-to-fail control: the exact shape of the fixed defect (an off-by-one-day
                 # drift between the two dates) MUST be distinguishable from the real, correct
                 # value — proving this assertion is not vacuously true.
-                drifted_expiry = (issued_dt + duration_to_timedelta(contract_dur)
+                drifted_expiry = (issued_dt + duration_to_timedelta(specification_dur)
                                    + datetime.timedelta(days=1)).date().isoformat()
                 cases.check(
                     "correctness-3-rust-delivery-expiry-one-day-drift-detectable-red",
@@ -3677,9 +3688,9 @@ mode = "spot-check"
                 cases.check("correctness-rust-missing-spec-effect-blocked", not eligible and
                             "INDETERMINATE" in reason and not any(cov["weight_grants"].values()), reason)
             else:
-                old_hash = m11.digest_file("contract", cp)
+                old_hash = m11.digest_file("specification", cp)
                 cp.write_text(cp.read_text().replace('min_tier = "T3"', 'min_tier = "T1"'))
-                text = pp.read_text().replace(old_hash, m11.digest_file("contract", cp))
+                text = pp.read_text().replace(old_hash, m11.digest_file("specification", cp))
                 text = re.sub(r'(?m)^([ \t]*)method\s*=.*$', r'\1method = "lean-theorem"', text)
                 text = re.sub(r'(?m)^[ \t]*epistemic_tier\s*=.*\n', '', text)
                 pp.write_text(text)

@@ -1,12 +1,12 @@
 ---
 type: proposal
-digest: The profile-neutral acceptance base format — Class→Instance→Run, design rules 1–7, B1–B20, validator ownership, representation parity, ordered verdict composition, generic spec-inventory coverage, and generic typed toolchain/build-input identity; transcribed from the 2026-09-22 v2 design, pending owner ratification.
+digest: The profile-neutral acceptance base format — Class→Instance→Run, design rules 1–7, B1–B22, validator ownership, representation parity, ordered verdict composition, generic spec-inventory coverage, and generic typed toolchain/build-input identity; pending ratification.
 ---
 
 # Acceptance — the base format
 
-**Class text LOCKED at 0.3.2 (2026-09-27).** This text is frozen: a change needs a new `[[lock]]` entry
-(new version + reason) in `CLASS-LOCK.toml`, enforced by `gates/check_class_lock.py`. Generic-core and apparatus scans run in the upstream development repository. Locked is not
+**Class text LOCKED at 0.4.0 (2026-10-11).** This text is frozen: a change needs a new `[[lock]]` entry
+(new version + reason) in `CLASS-LOCK.toml`, enforced by `gates/check_class_lock.py`. Generic-core scans run in the upstream development repository. Locked is not
 ratified: the status below stays CANDIDATE until the owning authority ratifies the class.
 
 This CANDIDATE specification states the proposed contract. Its MUST and MUST NOT
@@ -18,15 +18,14 @@ statements do not claim ratification or completed implementation. Module names b
 |---|---|---|
 | Class | claim, evidence, deciding rule, identity, registries, verdicts, and representation parity | `spec/core.md`, `spec/format.md`, `spec/profiles.md`, `spec/hash-domains.md`; `tools/acceptance_grammar.py`, `tools/check_core.py`, `tools/check_ledger.py`, `tools/check_execute.py`, `tools/check_parity_selftest.py`, `tools/hashdomains.py` |
 | Instance | a meaning, optionally projected onto a refine-only binding | `profiles/<meaning>/PROFILE.md`, `profiles/<meaning>/<binding path>.md`, `profiles/bindings/`; `tools/profiles/*.py`, `tools/bindings/*.py` |
-| Run | one subject, one manifest, exact locators, and actual evidence records | `acceptance.toml` and its Markdown twin; `examples/` here and a subject inventory in a paired private repository |
+| Run | one subject, one manifest, exact locators, and actual evidence records | `acceptance.toml` and its Markdown twin; `examples/` and any consumer-maintained subject inventory |
 
 The class lives in `format_acceptance/`. The protocol remains in
 `protocol_acceptance/`; its profile documents are protocol projections of format leaves.
 `tools/check_acceptance.py` remains the compatibility entry point (core + verification)
-until every caller moves. A paired private repository keeps subjects, trials, review history,
-publication staging and pinned local inventory mirrors. Its resolver MUST verify the pin closure
-before running a validator; direct invocation of the class validator bypasses that repository's
-pin.
+until every caller moves. A consumer using pinned local inventory mirrors MUST verify
+that the mirrors match their canonical bytes before running a validator. Direct invocation
+of the class validator checks the declared digest, but does not establish mirror equality.
 ## Glossary
 
 Four terms this spec and the sibling protocol spec (`protocol_acceptance/spec/protocol.md`) use
@@ -38,10 +37,11 @@ with one meaning each:
   name that may carry a meaning alone or a meaning refined by a binding path; the field's stored
   value can name a leaf, but the vocabulary word "profile" still means the meaning half of that
   identifier.
-- **assurance class** — the criticality a contract declares for the delivery this class accepts
+- **assurance class** — the criticality a specification declares for the delivery this class accepts
   (blast radius × irreversibility); it selects a target floor set. The class table and the
-  maturity rule that scales it live in the protocol contract, not here.
-- **party boundary** — the declared internal-vs-cross-org parameter set on a protocol contract.
+  maturity rule that scales it live in the protocol specification, not here.
+- **party boundary** — the declared internal-vs-cross-org parameter set on a protocol specification
+  (party identity, document integrity, transport, evidence disclosure, where re-runs happen).
   This class never branches on it.
 - **readiness level** — a separate maturity-tier ladder for a subsystem or artifact, recorded
   outside this class, distinct from both the assurance class and a profile's own build status
@@ -136,13 +136,22 @@ chronologically after, and outside, the commit it certifies. A cross-organisatio
 already behaves this way (the release is tagged before the package that certifies it exists)
 and so never meets this case at all.
 
-WHY: Identity must name the content certified while allowing a subject with no certified content yet to disclose what was read. Typed locators make that distinction usable across artifact types.
+A `git-revision` identity MAY carry `path`, naming the subtree at `path` in `commit`. `path` is
+one or more segments joined by `/`; each segment matches `[A-Za-z0-9._-]+` and is neither `.` nor
+`..` (so no empty segment, no leading or trailing `/`, no `\`, NUL, newline or non-ASCII). It is
+relative to the repository root. Absent `path` keeps the whole-tree meaning; existing manifests need
+no change. Two git-revision identities are equal iff `commit` and `path` are both byte-equal; an
+absent `path` never equals a present one. Wire form: `git-revision:<40-hex>` or
+`git-revision:<40-hex>:<path>`. `path` is admitted wherever a git-revision identity is, and is an
+ERROR inside a `[[subject.components]]` locator. `dirty` remains a whole-tree marker.
 
-CHECKED BY: `check_core.check_subject`; binding identity narrowing also belongs to `check_core.check_binding_chain` (B17).
+WHY: Identity must name the content certified while allowing a subject with no certified content yet to disclose what was read. Typed locators make that distinction usable across artifact types. `path` lets one commit's identity distinguish its subtrees, the shape a stacked, same-commit workspace needs.
 
-**Validation examples:** `b1-*`: two retrospective identities; none; code binding with digest identity; prospective with `commit` and no read-locator. Positive cases: prospective unpinned and retrospective document digest. Components beyond shape have only git-revision/content-digest fixture coverage.
+CHECKED BY: `check_core.check_subject`; binding identity narrowing also belongs to `check_core.check_binding_chain` (B17); `path`'s grammar is checked inline by the same function, and is refused wherever it appears inside a `[[subject.components]]` locator.
 
-**Representation:** The ledger header MUST parse typed locators, `digest`, and `read_at_*`; both representations MUST preserve the distinction between certified and read identity.
+**Validation examples:** `b1-*`: two retrospective identities; none; code binding with digest identity; prospective with `commit` and no read-locator. Positive cases: prospective unpinned and retrospective document digest. Components beyond shape have only git-revision/content-digest fixture coverage. `b1-path-*`: a path present (GREEN) and the commit/path equality rule (GREEN, `b1-path-equality`); each R44 path-grammar violation — a dot segment, a doubled separator, `..`, a leading separator, a backslash, a non-ASCII character, the empty string; R45, `path` carried inside a `[[subject.components]]` locator (ERROR).
+
+**Representation:** The ledger header MUST parse typed locators, `digest`, `path`, and `read_at_*`; both representations MUST preserve the distinction between certified and read identity, and MUST preserve `path` unchanged where present (representation parity; carried losslessly by the existing fenced-TOML header, no separate twin mechanism).
 
 ### B2 — Assurance-band mechanism
 
@@ -263,9 +272,9 @@ manifest's repository root (nearest `.git` ancestor of that manifest, or `--root
 Absolute paths and escapes MUST fail. An unresolved root MUST yield INDETERMINATE.
 `--root` MUST NOT widen containment to a second repository. A canonical
 document owned elsewhere MUST be mirrored locally when needed: canonical inventories
-live under `profiles/conformance/standards/`, paired private repository mirrors under
-`standards/<id>.clauses.toml`. `[spec].version` MUST bind the mirror through its F2
-digest; the pin gate MUST additionally assert mirror equals canonical bytes.
+live under `profiles/conformance/standards/`; consumers keep local mirrors within their
+repository root. `[spec].version` MUST bind the mirror through its F2
+digest; a consumer using a mirror MUST additionally check that it equals the canonical bytes.
 
 | pointer outcome | required result |
 |---|---|
@@ -282,7 +291,7 @@ A present-but-unreadable native record payload MUST be treated as missing (WARNI
 
 WHY: Contained pointers make dereferencing reproducible within one repository; local mirrors preserve that boundary while digest and pin checks preserve external document identity.
 
-CHECKED BY: `check_core._resolve_pointer` (base and containment), `check_core.check_record_hashes` (every resolvable record hash on every validation path), and `check_core.check_spec` (external normative-reference recomputation under every profile); a paired private repository's pin verifier supplies the additional mirror-equality check.
+CHECKED BY: `check_core._resolve_pointer` (base and containment), `check_core.check_record_hashes` (every resolvable record hash on every validation path), and `check_core.check_spec` (external normative-reference recomputation under every profile); the consumer supplies the additional mirror-equality check.
 
 **Validation examples:** `b6-*`: parent-directory escape; absolute path; symlink out; mirror digest differs from `[spec].version`.
 
@@ -544,7 +553,7 @@ Identity kinds MUST narrow and MUST NOT substitute for their parent's kinds. Car
 inputs and constraint forms MUST be additive; this requirement is documented but is
 NOT mechanically checked in `/0`. Binding modules MUST construct
 `check_child = check_parent ∧ delta`. Meanings MUST NOT inherit. A leaf MAY add a
-cross-product constraint (D1/A1 6c). A binding-declared over-claim guard (B9) MUST be
+cross-product constraint (protocol §6.6 item 6c). A binding-declared over-claim guard (B9) MUST be
 inherited by every leaf under that binding's node.
 
 WHY: A child binding must remain interpretable under its parent’s contract; another meaning is a sibling, not an opportunity to weaken inherited artifact constraints.
@@ -588,7 +597,7 @@ missing ids. A claim's `clause` MUST name a declared item id UNLESS the claim ca
 `addition = true`, in which case its `clause` MUST NOT match a declared item id; such an
 addition claim MUST be counted and reported separately from inventory coverage, never
 silently merged into it. When `[spec].inventory` is absent, this rule adds no check —
-existing manifests need no change; the acceptance protocol's contracts require it later
+existing manifests need no change; the acceptance protocol's specifications require it later
 (`protocol_acceptance/spec/protocol.md`).
 
 A conformance `<standard-id>.clauses.toml` (profiles/conformance/standards/) is expressible
@@ -712,6 +721,58 @@ neither (unaffected).
 **Representation:** No B21 twin is assigned; `coverage` and `tool_qualification` are not added to B18's
 claim/header field list — they are evidence-record fields only.
 
+### B22 — Dependency declaration (shape)
+
+RULE: A manifest MAY carry `[[dependency_inventory]]` and `[[dependency]]`. They are meaning-neutral
+disclosure: any manifest may carry them, and they change no claim's weight, tier or band.
+
+`[[dependency_inventory]]`: `id` (unique, `[a-z0-9][a-z0-9._-]*`); `source` ∈ {`lockfile`, `manual`}
+(`toolchain` is reserved: ERROR); `covers` (nonempty list of relation tokens); `entries` (integer ≥ 0,
+MUST equal the number of `[[dependency]]` rows citing this inventory; 0 is the explicit empty
+inventory). For `source = "lockfile"`: `reader` (REQUIRED, a reader id; the format core checks only
+its shape `[a-z0-9-]+/[0-9]+`) and one or more `[[dependency_inventory.input]]` rows, each with
+`role` ∈ {`lockfile`, `workspace-manifest`, `member-manifest`}, `path` (B6, manifest-relative) and
+`digest` (`artifact:sha-512:<hex>`), which the validator MUST recompute over the file at `path`;
+exactly one input has `role = "lockfile"`. For `source = "manual"`: no `reader`, no inputs.
+
+`[[dependency]]`: `id` (unique within the manifest); `relation` (a token registered by a binding on
+this manifest's binding chain, `generic` included; unknown = ERROR; it MUST be in the cited
+inventory's `covers`); `role` ∈ {`direct`, `transitive`}; `inventory` (an existing inventory id);
+`consumed = "source"` (the only value in this release; `delivered` is reserved: ERROR); `name`
+(display only, never matched); `[dependency.source]` with `commit` (40 lowercase hex) and OPTIONAL
+`path` (B1 grammar), REQUIRED; `[dependency.lock]` with `entry` (nonempty string), REQUIRED iff the
+cited inventory is a lockfile and FORBIDDEN otherwise; OPTIONAL `binding` ∈ {`build-time-copy`,
+`run-time-read`}, declared, never verified. Reserved, each an ERROR when present: `[dependency.delivered]`,
+`[dependency.bridge]`, `[dependency.toolchain]`, `lock.checksum`.
+
+Every other key in these tables is an ERROR. The format core never parses a lockfile or a build
+manifest: lockfile readers, closure, identity joins and completeness belong to the protocol.
+
+WHY: Stacking needs a shape every binding can register its own relation tokens against (`generic`'s
+`build-tool`/`verification-tool`/`language`/`platform`, a binding's own additional token such as
+`code/rust`'s `runtime` (illustrative; profile vocabulary)) without the format core ever having to
+understand a lockfile — that understanding, and the join against it, is squarely the protocol's
+job (joins, closure, completeness), the same core/protocol split B1's `path` amendment serves on
+the identity side.
+
+CHECKED BY: `check_core.check_dependency_declaration`, called on every manifest from `check_core.validate`;
+relation-token registration is `check_core.registered_relations` over the loaded binding chain (B17) —
+`generic`'s four tokens are the implicit root of every chain, and each binding module adds its own,
+declared the same way as `admits`/`identity` (B14/B17).
+
+**Validation examples:** `b22-*`: a lockfile inventory with inputs whose digests match real files, a manual
+inventory, and an explicit empty inventory (`entries = 0`) (GREEN); a binding-registered token such as
+`code/rust`'s `runtime` (illustrative; profile vocabulary) accepted under that chain (GREEN) and refused
+outside it (RED, unregistered); an entries mismatch; an input digest mismatch;
+two lockfile-role inputs; `reader` on a manual inventory; `lock` on a manual row; `lock` missing on a
+lockfile row; an unknown relation; a relation absent from the cited inventory's `covers`;
+`consumed = "delivered"`; each reserved table (`delivered`, `bridge`, `toolchain`) and `lock.checksum`; an
+unknown key; a duplicate inventory id; a bad `binding` value; an input path escaping B6 (B6 already owns the
+escape check; this is its B22 call site).
+
+**Representation:** No ledger twin is assigned; `[[dependency_inventory]]`/`[[dependency]]` are TOML-only
+disclosure in 0.4.0, parsed by `check_core` alone.
+
 ## §4 Verdict table (B11, verbatim)
 
 | condition | verdict | exit |
@@ -751,7 +812,7 @@ The prospective row resolves B1's ceiling: a prospective subject's manifest neve
   pending built-artifact node, or mechanically check carrier/input/constraint-form additivity. [A-06]
 - B21 does not validate that a declared `coverage.value` is true, that the counted `of` set is
   complete, or that a declared `tool_qualification` argument actually holds — shape and registry
-  membership only; a consumer floor comparing against these fields (the protocol contract's
+  membership only; a consumer floor comparing against these fields (the protocol specification's
   `coverage_min`) is a protocol-side concern, not a class check. [A-07]
 - Design rule 6's "never reused across publication history" (§2) is checkable by a
   single-manifest validator only as in-file uniqueness — no id ever repeats within the ONE

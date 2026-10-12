@@ -1,0 +1,22 @@
+   Compiling paint-app v0.1.0 (<WORKSPACE>/paint-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.23s
+     Running tests/cli.rs (<WORKSPACE>/target/debug/deps/cli-d16f1f27e036516a)
+
+running 1 test
+test valid_invocation_writes_a_real_ppm_file_independently_verified ... FAILED
+
+failures:
+
+---- valid_invocation_writes_a_real_ppm_file_independently_verified stdout ----
+
+thread 'valid_invocation_writes_a_real_ppm_file_independently_verified' (11437108) panicked at paint-app/tests/cli.rs:61:13:
+real file: pixel (1,0) fails independent accuracy check
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    valid_invocation_writes_a_real_ppm_file_independently_verified
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.25s
+
+error: test failed, to rerun pass `--test cli`

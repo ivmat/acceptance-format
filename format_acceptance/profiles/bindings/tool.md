@@ -50,7 +50,7 @@ and the source tree is usually not the producer's.
 ## Admissibility check (item 8b, this node's contribution)
 
 <!-- TODO(producer): the binding-side admissibility check the core CALLS (protocol.md §6.6 item 8,
-     D1 amendment A1). Slots this node owns: identity shape (`tool@<version>` plus build commit
+     the admissibility rule). Slots this node owns: identity shape (`tool@<version>` plus build commit
      where obtainable, or the weak-identity form `tool@<version> (commit unknown — <why>)` — never
      an invented sha); admitted `[subject].kind` set (`tool`, and whether `toolchain` is a
      separate token or a components list); the package-level constraints declared above

@@ -1102,8 +1102,8 @@ def process_row(row_id: str, line_no: int, cells: list[str], col_map: dict[str, 
 
     # --- §7.1: status x grade x weight coherence -----------------------------
     # A `gap` claim carrying a weighted `contract` passed every check before 2026-08-25.
-    # ERROR when the row claims weight; WARNING when it does not -- an unweighted prospective
-    # grade is proposal P5, which the owner DEFERRED, and this rule must not adopt it sideways.
+    # ERROR when the row claims weight; WARNING when it does not. An unweighted prospective
+    # grade is not defined by the current specification.
     status_cell = _cell(cells, col_map, "status")
     status_norm = normalize_status(status_cell)
     # A status this tool cannot place is not a status. Skipping the coherence check when

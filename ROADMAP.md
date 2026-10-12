@@ -1,7 +1,7 @@
 # Roadmap
 
-*Planned, not final. Nothing described in the 0.4.x sections below is built; this page states
-direction, not a commitment to exact scope or dates.*
+*Planned, not final. The next steps below state direction, not a commitment to exact scope
+or dates.*
 
 ## Scope: what the acceptance protocol is, and what it is not
 
@@ -27,25 +27,11 @@ by stable identifiers, content hashes and verdicts. The acceptance documents car
 process's fields. Such layers can be built as separate protocols composed on top of this one, and
 they never change the acceptance core.
 
-The 0.3.2 release still contains some of these outer concerns, in its specification, its tools and
-its tests:
-- buyer, seller, supplier, customer and vendor wording for the consumer and producer roles, in the
-  protocol specification (for example "the buyer's word" for ratification), in the format
-  documentation, in tool comments, and in test fixtures and examples (producers named `supplier-…`,
-  a supplier-policy reference, a request-for-proposal note, vendor-assurance examples);
-- conditions on an acceptance framed as debts, with the producer as debtor and the consumer as
-  creditor;
-- the work-contract envelope, and the transaction and compensation notes, in
-  `protocol_acceptance/spec/stack.md` and in §9 of the protocol;
-- the `[parties]` boundary terms, including `legal_ref`;
-- a `legal` requirement domain;
-- assurance classes illustrated with monetary examples (an investing application);
-- effect eligibility, with payment named among the effects a gate may unlock (publish, deploy, pay,
-  merge).
-
-They are not part of the acceptance core, and the 0.4 line moves them out (next section). The worked
-Rust example's consumer is a fictional payments company because the delivered crate validates bank
-account numbers (IBANs). That is the example's subject matter, not a protocol concern.
+The 0.4.0 release removed these outer concerns: commercial role wording, conditions framed
+as debts (the verdict stays; conditions are now due-dated items), the work-contract and
+transaction notes, `legal_ref`, the `legal` domain, money examples, and `pay` among effects.
+Authority, delegation and effect gating remain in this release and are planned to move to
+optional companion layers.
 
 Two kinds of mention are **not** outer concerns, and they stay:
 - **Requirements about the artefact itself**, such as the licence it must carry, are ordinary
@@ -54,15 +40,34 @@ Two kinds of mention are **not** outer concerns, and they stay:
   the standards a conformance profile checks against. These concern the repository and its inputs,
   not the protocol.
 
-## 0.4 line: the pure acceptance protocol (target)
+## 0.4.0 — this release
 
-The 0.4 line restructures the protocol around a pure core. Target shape:
+- Removed the outer concerns listed above.
+- Renamed the first acceptance document from contract to specification.
+- Introduced `acceptance-protocol/1`. The
+  [migration tool](protocol_acceptance/tools/acceptance_migrate.py) updates specifications
+  and packages. Decisions are never rewritten; the consumer re-issues them. The current
+  checker refuses 0.3 protocol documents; use tag v0.3.2 to check those unchanged.
+- Added checked stacking for workspace libraries. A package declares its dependencies from
+  `Cargo.lock`, and the checker verifies that the declaration matches. A chain requirement
+  can require dependencies to be disclosed (C0) or accepted by a named acceptor (C2).
+  The consumer configures a directory of trusted decisions. Checks recurse through child
+  acceptances and check them again when a decision is used to authorize an effect.
+- Added the [paint-stack example](protocol_acceptance/examples/paint-stack/README.md).
+  Its stack label covers runtime libraries. Toolchain and platform relations are trusted as
+  the base and are not checked. Acceptance adds no combined assurance across the stack;
+  if any dependency in the closure comes from crates.io or git, the whole stack check is
+  undecided (indeterminate), never accepted.
 
-- **Two roles**, producer and consumer. Each document names who wrote it, because independence
-  checks need that.
-- **Three documents**: specification, package and judgment. Today's "contract" is renamed
-  *specification*, so that it is not read as a business contract.
-- **The moves listed above.** A clarification or expansion produces a new specification version.
+## Next (planned, not final)
+
+### The pure acceptance core
+
+- **The verdict without conditions.** Mandatory requirements decide the verdict: rejected if
+  any fails at its floor, open if any remains unresolved, accepted otherwise. A failure at
+  the floor overrides a conflicting success. Optional requirements never block acceptance.
+  To accept with a mandatory requirement outstanding, the consumer must explicitly relax or
+  drop it in a new specification version.
 - **Verification strength as several independent axes, not one ladder.** The consumer sets a floor
   on each axis per requirement. The planned axes are:
   - soundness tier;
@@ -75,82 +80,70 @@ The 0.4 line restructures the protocol around a pure core. Target shape:
   - reproducibility;
   - tool qualification;
   - coverage.
-- **A verdict decided by mandatory requirements only.** It is *rejected* if any mandatory requirement
-  fails at its floor; otherwise *open* if any remains unresolved; otherwise *accepted*. A failure at
-  the floor overrides a conflicting success at the floor. Evidence below the floor leaves a
-  requirement unresolved. Optional requirements never block acceptance. To accept with a mandatory requirement still outstanding, the
-  consumer must explicitly relax or drop it, which produces a new specification version. There are no
-  conditions carried as debts.
-- **Everything else moves to optional companion layers** that cite the core and never alter it.
-  That covers the outer concerns listed under Scope, authority and delegation, and effects such as
-  merging or publishing.
-- **The documents will also be specified as an information protocol.** Each message declares what
-  it binds and what it needs. The existing hash binding is the backbone of that encoding, and the
-  encoding will be checked before any conformance is claimed.
+- **Closed grammars.** Every key is declared by the class or a typed extension registry;
+  undeclared keys are rejected consistently.
+- **Role-bound identity.** Each document names its author as producer or consumer, so
+  independence checks can use that identity.
+- **Information-protocol encoding.** Each message declares what it binds and what it needs.
+  The encoding is checked before any conformance claim.
+- **Trust numbers out of the class.** Calibrated `alpha`/`beta`/`lr` move to an optional trust
+  extension. The class already refuses them without a calibration.
+- **The "profile" split.** Sibling meanings (verification, conformance, …) and narrowing
+  bindings (generic → code → one language) get separate names and rules.
 
-Changes planned for the format class in the same line:
+### More languages
 
-- **Trust numbers leave the class.** Calibrated `alpha`/`beta`/`lr` on an evidence record move to an
-  optional trust extension. The class already refuses them without a calibration.
-- **Closed grammars.** Every key a document carries is declared, either by the class or by a typed
-  extension registry. Undeclared keys will be rejected consistently, including where 0.3.2 silently
-  accepts them.
-- **"Profile" splits into two named operations, at 0.4.0 at the earliest and possibly later.**
-  Today the word covers both a sibling *meaning* (verification, conformance, …) and a narrowing
-  *binding* (generic → code → one language). Each gets its own name and rules.
+The code binding today is Rust. Planned next: bindings for **C**, **Python** and **Go**. Each comes with
+its own rules for evidence (the tools and test kinds of that language) and a lockfile reader, so that
+stacking works in that ecosystem the way it does for Cargo workspaces today.
 
-The release order of this restructure relative to 0.4.0–0.4.2 below is not fixed yet. The
-additions below are planned to sit on the pure core. For example, consumer source policy is the
-first instance of choosing a floor on the tool-qualification and independence axes.
+### Consumer source policy
 
-## 0.4.0 — consumer source policy and stacking
-
-Two additions to the acceptance protocol.
-
-**Consumer source policy.** A consumer will be able to declare, per contract, which verification
+**Consumer source policy.** A consumer will be able to declare, per specification, which verification
 tools and which reviewer identities it accepts. Evidence produced by a tool or reviewer the
 consumer has not listed will not count toward that consumer's acceptance decision, even when the
 evidence is otherwise well-formed. A single requirement will be able to narrow that list further,
 never widen it.
 
-**Stacking (dependency acceptance).** This is a different sense of "stack" from
-`protocol_acceptance/spec/protocol.md` §9 ("Composition with the rest of the stack"), which is
-about this protocol composing with OTHER external protocol models (obligations, grants,
-work-contracts) — none of which ship as part of this release (see
-[KNOWN-LIMITS.md](KNOWN-LIMITS.md)); stacking here is about a producer's OWN dependency chain.
+### Stacking for published packages
 
-A producer will be able to declare its own dependencies
-(direct and transitive, drawn from its lockfile) as part of its acceptance package. A consumer will
-be able to require that some or all of those dependencies — and the tools that built them — are
-themselves accepted, not merely present. Four levels are planned, of increasing strength:
+- crates.io and git dependencies with delivered identities, including the `.crate` digest;
+- imported decisions with a consumer-approved claim mapping;
+- package integrity;
+- configuration receipts from the actual build, including features and target platform;
+- output on standard carriers: in-toto, CycloneDX and cargo-vet;
+- companion assessment of a library's own acceptance file.
 
-- the dependency is disclosed, with its exact identity checked;
-- the dependency ships its own acceptance package (self-attestation);
-- the dependency has an actual acceptance decision from a named acceptor, checked against a store
-  of trusted decisions the consumer configures;
-- the consumer re-evaluates the dependency's own evidence directly against its own contract.
-
-0.4.0 plans the first and third of these levels, for one ecosystem (Rust) to start. An unsigned,
-consumer-configured store of trusted decisions stands in for a full trust infrastructure until
-signing arrives later. Whole-stack acceptance — covering every dependency in a producer's declared
-closure — is planned without walking a full dependency graph: the flattened list of transitive
-dependencies is the declaration a consumer checks against. Temporal rules apply throughout: a
-dependency's acceptance decision must still be valid at the time it is relied on, not merely have
-been true once.
-
-## 0.4.1 — function-level tracing
+### Function-level tracing
 
 Extends stacking from whole-dependency acceptance to tracing which specific accepted claims back a
 particular function call across a chain of libraries, so a consumer can check not just "is this
 dependency accepted" but "is the exact code path I call accepted."
 
-## 0.4.2 — configuration receipts
+### Signing
 
-Adds tool-emitted evidence of the actual build configuration (compile-time features, target
-platform, and similar) used to produce an accepted artifact, so a claim's stated configuration
-assumptions can be checked against what was really built, rather than only declared.
+Signing for exchanges across organisations.
 
-## Also planned for 0.4
+### Authority, delegation and effect gating
 
-Carried over from 0.3.x's stated known limits — see [KNOWN-LIMITS.md](KNOWN-LIMITS.md) for the
-complete, current list.
+These mechanisms move to optional companion layers that cite the core without altering it.
+
+## Open to other kinds of artefact
+
+The format and the protocol are not specific to code. A specification, its evidence and a decision can
+be about any artefact, and the format already includes skeleton binding documents for documents, tools
+and built artifacts. Further kinds would be new bindings. The core permits them, although today's
+dependency and freshness checks still assume source code identified by a git commit. Examples:
+
+- built artifacts and verification tools: accepting the exact bytes shipped (archives, binaries, images),
+  or a specific tool version for a stated use;
+- documents and specifications: a standard or design document accepted against requirements, clause by
+  clause;
+- datasets, machine-learning models and configuration: evaluation claims and policy checks, each with a
+  control showing the check can fail.
+
+These are not planned work. They will be developed if the format is taken up by people who need them.
+
+## Also planned
+
+See [KNOWN-LIMITS.md](KNOWN-LIMITS.md) for the complete, current list of deferred mechanisms.
