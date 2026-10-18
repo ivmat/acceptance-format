@@ -18,12 +18,15 @@ themselves.
 **SARIF carries tool findings. An envelope carries claims and can cite SARIF output as evidence.**
 
 SARIF is a results-interchange format. A run contains results that point to rules and locations;
-`result.level` separates error, warning, and note; `result.kind` supports `pass` and `fail`; results
-map to taxonomies such as CWE; and the run can record its invocation.
+`result.level` is `error`, `warning`, `note`, or `none`; `result.kind` is `pass`, `fail`, `open`,
+`review`, `informational`, or `notApplicable`; results map to taxonomies such as CWE; and the run can
+record its invocation.
 
 SARIF's unit is a tool finding. This format's unit is a claim about a specification rule, including
-one no tool examined. Absence of a SARIF result does not express that row. SARIF also lacks a
-required evidence-strength axis, per-claim self-verify recipe, and tier for unsupported claims.
+one no tool examined. Absence of a SARIF result does not express that row. The kinds `open` (the
+tool could not decide) and `review` (a person must decide) are partial analogues of an admitted but
+unweighted claim, but each still belongs to a result that a tool produced. SARIF also lacks a
+required evidence-strength axis and a per-claim self-verify recipe.
 Property bags can carry these fields, but SARIF's core semantics neither require nor grade them.
 A local property-bag convention therefore lacks the same enforcement. Severity and evidence
 strength are separate: a symbolic proof and fixture test can have the same `level`. The formats
@@ -72,28 +75,30 @@ whose buffers were too small to contain a well-formed object. Both appeared unde
 check as the strongest rows, and neither result was false. The pipeline omitted evidence shape,
 which consumers need.
 
-The refusal mechanism has an ancestor in a narrower domain: SV-COMP counts a verifier's answer as
-correct only after an independent validator validates its witness. An unconfirmed answer remains in
-the results table but receives no credit.
+The refusal mechanism has an ancestor in a narrower domain: in categories that require witnesses,
+SV-COMP counts a verifier's answer as correct only after a witness validator confirms its witness.
+An unconfirmed answer remains in the results table but receives no credit.
 
 ## vs assurance cases: CAE, GSN, SACM, Assurance 2.0
 
 **Assurance cases are a closely related family. They check argument structure and evidence presence; this
 format checks evidence-producing machinery and withholds weight when it is absent.**
 
-An assurance case is a structured argument from evidence to a top-level claim. ISO/IEC 15026-2 sets
-the minimum structure, GSN is the dominant notation, OMG's SACM is the interchange metamodel, and
-Assurance 2.0 (Bloomfield and Rushby) is the modern rigorous treatment. Per-claim epistemic tiers
+An assurance case is a structured argument from evidence to a top-level claim. ISO/IEC/IEEE
+15026-2:2022 defines the structure and terminology of assurance cases, GSN is the dominant
+notation, OMG's SACM is the interchange metamodel, and Assurance 2.0 (Bloomfield and Rushby) is the
+modern rigorous treatment. Per-claim epistemic tiers
 predate this work: SACM's `AssertionDeclaration` values (`asserted`, `needsSupport`, `assumed`,
 `axiomatic`, `defeated`, `asCited`) closely match `weight`. We intend to declare the mapping.
 
-Assurance 2.0 grades the (item, evidence) *pair* by separating an *evidentially measured* claim ("the
-tests achieve MC/DC coverage") from the *evidentially useful* claim above it ("there is no
-unreachable code"). We reached the same rule independently through review of a mis-graded row;
-Assurance 2.0 has priority.
+Assurance 2.0 separates an *evidentially measured* claim ("the tests achieve MC/DC coverage") from
+the *evidentially useful* claim above it ("there is no unreachable code"), and weighs confidence in
+the step between them with confirmation measures ("Assessing Confidence with Assurance 2.0",
+arXiv 2205.04522; "Confidence in Assurance 2.0 Cases", arXiv 2409.10665). We reached the same
+separation independently through review of a mis-graded row; Assurance 2.0 has priority.
 
-Automated assurance-case checking operates on logical structure and treats evidence presence, not
-merit, as validity. Quantified confidence propagates subjective probability compositionally, which
+Automated assurance-case tools check logical validity mechanically and leave evidential merit to
+human judgment. Quantified confidence propagates subjective probability compositionally, which
 this format refuses. Assurance cases do not withhold claim status for lack of a runnable recipe,
 declared bounds, or a control showing that the check can fail. They also provide capabilities this
 format lacks: defeaters and eliminative argumentation for recording *reasons to doubt*, argument
@@ -113,10 +118,9 @@ signatures and links to versioned standards that this format lacks.
 
 An evidence description is prose about the evidence and its creation, not a command with expected
 output. There is no positive control, bounds, clause-source discipline, declared axis, or obligation
-to record uncovered rows. Within `declarations`, only a signature and an
-external-reference/organization pair are required. A free-text `predicate` therefore validates, and
-an assessor may assign `confidence: 0.95`. This format refuses weight instead of using 0–1 trust
-arithmetic.
+to record uncovered rows. No field of a claim or attestation is required. A free-text `predicate`
+therefore validates, and an assessor may assign `confidence: 0.95`. This format refuses weight
+instead of using 0–1 trust arithmetic.
 
 CDXA's `counterEvidence` addresses a gap in this format: no field records a reason to doubt a row,
 which assurance cases represent with defeaters. Adoption remains a growth proposal against the spec
@@ -124,13 +128,15 @@ and has not occurred.
 
 ## vs VEX (OpenVEX, CSAF)
 
-**VEX provides machine-readable status and a closed set of reasons but does not check them.**
+**VEX provides machine-readable status and offers a closed set of reasons but does not check them.**
 
-VEX states whether a product is `not_affected`, `affected`, `fixed`, or `under_investigation` by a
-known vulnerability. For `not_affected`, its closed vocabulary is `component_not_present`,
-`vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`,
-`vulnerable_code_cannot_be_controlled_by_adversary`, and `inline_mitigations_already_exist`. It does
-that job at scale; this format does not replace it.
+OpenVEX states whether a product is `not_affected`, `affected`, `fixed`, or `under_investigation` by
+a known vulnerability. For `not_affected`, it offers a closed vocabulary of justifications:
+`component_not_present`, `vulnerable_code_not_present`, `vulnerable_code_not_in_execute_path`,
+`vulnerable_code_cannot_be_controlled_by_adversary`, and `inline_mitigations_already_exist`. The
+vocabulary is not mandatory: OpenVEX v0.2.0 accepts a free-text impact statement instead. CSAF 2.0
+uses its own status names, such as `known_not_affected`, and carries the same five labels as
+`flags[].label`. VEX does that job at scale; this format does not replace it.
 
 VEX does not require machine verification of a justification, and the status guidance says some are
 difficult to prove conclusively. Reachability analysis and human judgment produce statements of the
@@ -144,17 +150,17 @@ decide it.
 **Supply-chain attestation establishes provenance and signer. This format records what would falsify
 a claim. The layers can be combined.**
 
-An SBOM enumerates components. Build provenance and signed attestations establish that an artifact
-came from given sources and a given build without intermediate tampering. In SCITT (the IETF
-Supply Chain Integrity, Transparency, and Trust architecture), an issuer signs an artifact
-statement, a transparency service applies a registration policy and adds it to an append-only log,
-and a receipt travels with it. in-toto's signed statement-and-predicate envelope has the same role.
-None checks artifact behavior.
+An SBOM enumerates components. Build provenance (as in SLSA v1.2) and signed attestations establish
+that an artifact came from given sources and a given build without intermediate tampering. In SCITT
+(the IETF Supply Chain Integrity, Transparency, and Trust architecture, RFC 9943), an issuer signs
+an artifact statement, a transparency service applies a registration policy and adds it to an
+append-only log, and a receipt travels with it. in-toto's signed statement-and-predicate envelope
+has the same role. None checks artifact behavior.
 
-SCITT separates registration from endorsement: issuers can make false statements, and
-registration proves only which issuer produced one. The architecture therefore provides admission
-without vouching. Refusal concerns syntax and identity, including signatures, required headers, and
-issuer trust anchors, rather than whether claim content is checkable.
+RFC 9943 states that issuers can make false statements, and that registration proves only which
+issuer produced a statement (§9.2). The architecture therefore provides admission without vouching.
+The mandatory registration checks are the signature and the issuer's identity. A registration
+policy may add checks, but the architecture does not require that claim content be checkable.
 
 The records differ: attestation identifies the artifact and signer; the envelope identifies the
 commit, tree state, toolchain, gate receipt, and freshness condition; the ledger records what was
@@ -177,7 +183,7 @@ criteria are ecosystem trust policies ("is this safe to deploy?"), not per-claim
 They require no deciding recipe, bounds, observed-failure witness, or declared specification axis. A
 crate enters `exemptions` because nobody audited it, not because a validator refused weight, though
 an exemption resembles a not-covered row. cargo-crev is further away: a crev proof self-declares a
-`thoroughness` level, and its lower levels do not require reading the code.
+`thoroughness` level, and its lowest level allows skimming the code.
 
 A vet audit can support an unweighted row. cargo-vet supplies cross-organization audit import with
 criteria translation, and crev supplies signed distributed proofs; this format supplies neither.
@@ -201,8 +207,8 @@ and weight. The validator **refuses weight** without a deciding recipe, bounds, 
 recipe has reported the claim false, or a clause read from its own evidence. The claim remains
 *admitted*.
 
-The component ideas are established. Mutation testing, model-checking vacuity detection, and
-fault-injection mandates for tool qualification require evidence that checks can fail. The
-claims-and-evidence shape comes from assurance cases. This format makes
+The component ideas are established. Mutation testing and model-checking vacuity detection require
+evidence that checks can fail, and tool-qualification regimes require evidence that a tool detects
+the errors it targets. The claims-and-evidence shape comes from assurance cases. This format makes
 a demonstrated ability to fail a mandatory per-claim condition inside the document format rather than
 an optional score.
