@@ -1,0 +1,1 @@
+full-regression: GREEN @ 8f28aa1eadc99bba02a6a9136ddb5d4f0eaf6e8f — bash gates/run_all.sh in the real tree, porcelain-clean, HEAD == this sha, exit 0 (PUBLIC SUITE GREEN, 57 s), 2026-10-19; leak gate git-range 3dbd403..8f28aa1 passed (tree, message, identities). Owner push word 2026-10-19: "push acceptance format".
