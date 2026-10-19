@@ -190,7 +190,10 @@ across checkable specification, package and decision documents, with one combine
 - requirements set by the consumer, before the code exists;
 - a decision that goes stale when what it was bound to changes.
 
-[WHY.md](WHY.md) compares it with each of these formats in turn.
+A format of our own also leaves us free to design it for every use case we care about, with no
+external constraint. Where an existing format is adequate, we can still fall back to it, with
+extensions if needed. [WHY.md](WHY.md) compares it with each of these formats in
+turn.
 
 ## Status
 

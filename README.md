@@ -12,6 +12,9 @@ and troubleshooting profiles add domain rules. Assurance classes set evidence fl
 For a longer overview, with one example walked through end to end, every use case, and what the
 format does and does not cover, see [OVERVIEW.md](OVERVIEW.md).
 
+For the theory behind it, see the paper [Acceptance as a Protocol for Delegated Work](docs/papers/acceptance/README.md)
+(draft, not peer reviewed).
+
 ## What is this? (start here)
 
 You wrote some code, or an AI agent wrote it for you. How do you know it is correct?
@@ -294,5 +297,5 @@ repository-resident and are not themselves exported files, so they carry no prov
 entry. The source family version there is authoritative for later editorial exports.
 
 Dual licensed under Apache-2.0 or MIT; see [LICENSE-APACHE](LICENSE-APACHE) and
-[LICENSE-MIT](LICENSE-MIT). [LICENSE-NOTES.md](LICENSE-NOTES.md) records the license
-rationale per material type.
+[LICENSE-MIT](LICENSE-MIT). The paper under `docs/papers/` is the one exception: it is licensed
+under CC BY 4.0. [LICENSE-NOTES.md](LICENSE-NOTES.md) records the license rationale per material type.

@@ -13,6 +13,16 @@ carries weight only when it names a command whose failure would falsify it; othe
 refuses weight. Without these fields, readers must distinguish supported and unconsidered rules
 themselves.
 
+## Why a new format at all
+
+A format of our own has no external constraint: no other standard's scope, schedule or
+compatibility obligations. That leaves us free to design the best format for every use case we
+care about, and that we think others care about too. It does not close off interoperability. Where an
+existing format is adequate, we can fall back to it, with extensions if needed, and map our
+records onto it. And, last of the reasons: because we can.
+
+The sections below compare the format with each of those formats in turn.
+
 ## vs SARIF
 
 **SARIF carries tool findings. An envelope carries claims and can cite SARIF output as evidence.**

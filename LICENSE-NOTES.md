@@ -1,7 +1,7 @@
 # License notes — by material type
 
 This repository is dual-licensed under [LICENSE-APACHE](LICENSE-APACHE) / [LICENSE-MIT](LICENSE-MIT)
-as a whole (see [README.md](README.md), "Dual licensed under Apache-2.0 or MIT"). This note records
+as a whole, except the paper under `docs/papers/` (CC BY 4.0; see the table) (see [README.md](README.md), "Dual licensed under Apache-2.0 or MIT"). This note records
 the license *rationale per material type*, so a consumer of one part of the tree does not have to
 infer it from the two license files alone. It does not change either license file, and it grants
 nothing beyond what those files already grant — it is a map, not a new grant.
@@ -15,6 +15,7 @@ and carry no provenance entry of their own.
 | code — `format_acceptance/tools/**/*.py`, `protocol_acceptance/tools/**/*.py`, `gates/*.py` | Apache-2.0 / MIT, dual | standard for a validator/tooling repo; matches the repo-wide license already in force |
 | data — `*.toml` manifests, fixtures and clause inventories (e.g. `CLASS-LOCK.toml`, `protocol_acceptance/spec/*.toml`, `format_acceptance/profiles/conformance/standards/*.clauses.toml`) | Apache-2.0 / MIT, dual | generated or hand-written alongside the code and spec they support; a clause inventory carries only clause numbers and short titles in this repository's own words, never the cited standard's normative text (see `format_acceptance/profiles/conformance/standards/README.md`'s copyright rule) |
 | prose spec — `format_acceptance/spec/**/*.md`, `format_acceptance/profiles/**/*.md`, `protocol_acceptance/spec/**/*.md` (including `protocol_acceptance/spec/adapters/`), `protocol_acceptance/adoption/*.md`, `README.md`, `WHY.md`, `KNOWN-LIMITS.md`, `CHANGELOG.md`, `ROADMAP.md`, `ASSUMPTIONS.md`, `docs/*.md` | Apache-2.0 / MIT, dual (default) | kept in the same license family as the code it specifies, rather than splitting the repo across a code license and a separate prose license; this is the *default*, not a claim that an alternative (e.g. CC-BY-4.0) was considered and rejected on the merits — see "Open items," below |
+| paper — `docs/papers/acceptance/paper_acceptance.tex` and its released PDF | **CC BY 4.0** (exception to the repository-wide dual licence) | a paper is cited and redistributed as a document; CC BY 4.0 matches the author's other papers. The paper's README states the exception; the code and specification it describes stay Apache-2.0 / MIT |
 | examples — `examples/*`, `format_acceptance/examples/*`, `format_acceptance/profiles/*/examples/*`, `protocol_acceptance/examples/*` | Apache-2.0 / MIT, dual | every example in this release is either illustrative/synthetic (a fictional subject, invented clause standard, or placeholder evidence pointer) or a small crate written for this repository (`iban-check`, in `protocol_acceptance/examples/rust-delivery/`); none certifies a real, separately-licensed external subject, so none needs a license distinct from the repository's own |
 
 ## Contributor provenance

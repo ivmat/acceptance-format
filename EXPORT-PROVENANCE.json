@@ -17,13 +17,13 @@
       "sha256": "8721590cd57e2a6b6b2687a59a7097f1027a1d44fa954b9641a5ff6728758464"
     },
     "LICENSE-NOTES.md": {
-      "sha256": "e08c3c751db79dcc92bc48720340cc9c48d2f1c3d03c2c1f2ec9ededf4f4e676"
+      "sha256": "f7d4f2ec29c8f445a53056193880f5534cee6c23624c91637ab06fe08dc6dabc"
     },
     "OVERVIEW.md": {
-      "sha256": "3bcbe23f03563e96f680de79e13743c06243c31b0817b73d61bfcba72f85e76c"
+      "sha256": "c440b2ebff30701ef2044c01837a23a5d88e2f0ad30a3fb9a53522baa3a5ae16"
     },
     "README.md": {
-      "sha256": "776154e18e6f85d1cb1eddf47d5f6814d3042e5159193491c6e8cc9efd7e996c"
+      "sha256": "3ad3d3a43e53075485daf1e36c138d70028b988089cc3e7ab3e0aaff2e2549d7"
     },
     "REPO.md": {
       "sha256": "98b7d0d9e26d112813df90ac7422d0006e6ba59f7f8dce4db5aca047a26f0aac"
@@ -32,10 +32,16 @@
       "sha256": "edf437c28bb8b4a7a84c670194f779916ca689ec2dcf22fdc1d8a41a81be2e79"
     },
     "WHY.md": {
-      "sha256": "569bcecfbe5ac1a609d9dc64356a89e4f6a33bf069e65ad51adc246c04fc485b"
+      "sha256": "09086b6ff3f0b694fd29b2500e41a63ec54ec98b11fa4eb4eef3a9d5ca79fbe7"
     },
     "docs/CASE-STUDY.md": {
       "sha256": "492741513f6d911c8233f23f0cb28383341626e5e7506909e2e9c513acd0cac1"
+    },
+    "docs/papers/acceptance/README.md": {
+      "sha256": "73f288d08a3b4e5940a175bc9f0a2ca31aa86255c3a1d6aaa4203fb09803d904"
+    },
+    "docs/papers/acceptance/paper_acceptance.tex": {
+      "sha256": "e5edc1a77c52804bbf8a501cf20a43c52c503862d5378d0c4dc0e6354f1b2fba"
     },
     "examples/weighted-toy/README.md": {
       "sha256": "93ab0feb53dc4d1c691ae26759855c13e04989200d326f4cae80c0d2029a53b0"
@@ -701,6 +707,6 @@
       "sha256": "3d7a45b6cd2a9416dc3974728f938d68fc19484f0acd6fe063b5f2de1fba8847"
     }
   },
-  "source_commit": "c53f10f6697c7aeff3d77c1d0b9327021e4b5500",
+  "source_commit": "c2462f1ae45d846e9f62f90e416e6df3fd888a13",
   "source_dirty": false
 }

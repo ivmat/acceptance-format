@@ -1,0 +1,909 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[expansion=false]{microtype}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\hypersetup{
+  pdftitle={Acceptance as a Protocol for Delegated Work: Claims, Failure Witnesses and Refusal},
+  pdfauthor={Ivo Matijasevic}
+}
+\setlength{\emergencystretch}{3em}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}[proposition]{Lemma}
+\newtheorem{corollary}[proposition]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{hypothesis}{Hypothesis}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\Acc}{\mathrm{acceptable}}
+\newcommand{\T}[1]{\mathrm{T}#1}
+\newcommand{\tok}[1]{\texttt{#1}}
+\newcommand\blfootnote[1]{\begingroup\renewcommand\thefootnote{}\footnote{#1}\addtocounter{footnote}{-1}\endgroup}
+
+\title{\vspace{-2em}Acceptance as a Protocol for Delegated Work:\\
+\large Claims, Failure Witnesses and Refusal}
+\author{Ivo Matija\v{s}evi\'c\\ \small Independent Researcher \\ \small ivomatijasevic@gmail.com}
+\date{October 2026 \\ \small Draft. Protocols and formats, paper 1. Not peer reviewed. \\
+\small Version 1, 19 October 2026. Specification 0.4.0 (commit 3dbd403).}
+
+\begin{document}
+\maketitle
+\blfootnote{This work is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0).}
+
+\begin{abstract}
+When work is delegated to a person, a tool or a language-model agent, it ends in a judgment: the
+party that needs the work accepts it or does not. Green test badges, proof counts and review
+approvals do not say what that judgment rested on. We describe \emph{acceptance}, a document
+format and a protocol for that judgment, and give its theory. It is a direct attempt to mechanize
+acceptance in actual systems. A consumer writes a specification before the work exists. A producer
+delivers a package of claims with evidence. The consumer records a decision that is bound by content
+hashes to both. The format's one new rule is this: a claim gets
+weight only if its document carries a recorded witness that the claim's deciding check can fail,
+and a command that anyone with the artefact can re-run. Otherwise the claim stays admitted but
+unweighted, and gaps stay visible. We prove that coverage is a total function, that floors which
+only tighten preserve computed acceptability backwards (and we find two ways in which the current
+tightening check admits a weakening), that decisions go stale exactly when what they judged
+changes, and that the recorded labels alone cannot give a nontrivial bound on the failure of a
+stack of accepted parts. This is why the format refuses to combine them. We argue, as a design
+result, that a proposed pure core of acceptance underlies the other protocols a delegated worker
+needs. We also show how behaviour specifications can be
+made independent of the implementation language, and why agreement between implementations is
+evidence about a specification, never proof. The specification (version 0.4.0) is public and
+locked, not ratified.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Delegated work has a simple shape. Someone needs an artefact: a library, a proof, a dataset, a
+document. Someone else produces it. At the end, the first party decides whether to accept it. That
+decision is the point where the risk of the work moves from the producer to the consumer.
+
+Today the decision usually rests on signals that do not say what they establish. A green build says
+that some checks passed. It does not say which requirement each check decides, or whether a check
+could have failed at all. A test that asserts nothing passes. So does a proof of the wrong property,
+and so does a harness whose precondition is unsatisfiable. These failures are well known in mutation
+testing~\cite{demillo1978} and in vacuity detection for model checking~\cite{beer2001,kupferman1999}.
+They matter more as the producer becomes a language-model agent. Such an agent can write the checks
+that judge its own work, and it can produce a green signal at almost no cost.
+
+This paper describes \emph{acceptance}, a format and protocol for the decision itself, and the
+theory behind it. The paper is a direct attempt to mechanize acceptance in actual systems: the
+record and protocol by which the acceptance of real work is checked by programs, wherever it can
+be. Its central rule is a refusal:
+
+\begin{quote}
+A claim gets weight only if its document carries a recorded witness that the claim's deciding check
+can fail, and a command that anyone who has the artefact can re-run. Otherwise the claim stays in the
+document, admitted but unweighted, and every requirement without admissible evidence stays visible as
+a gap.
+\end{quote}
+
+Around this rule, the protocol has three documents. A consumer writes a \emph{specification} before
+the work exists. A producer delivers a \emph{package}. The consumer records a \emph{decision}. Each
+document is bound to the previous one by a content hash. Coverage of the specification by the
+package is computed, never asserted. Floors may rise across versions of a specification, but never
+fall silently. The format refuses every aggregate score, and it refuses to combine assurance levels
+across a stack of dependencies.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item A model of the format and protocol that is independent of the artefact kind (§\ref{sec:model}).
+\item Eight results about it, with proofs (§\ref{sec:results}): coverage is total; tightening is
+  monotone when each step preserves implication, and the current tightening check admits a
+  weakening in two ways;
+  staleness is exact up to hash collision; no label-only stack bound is nontrivial; chains are
+  non-interfering and fail closed; duties are separated; a failure control witnesses exactly
+  ``not constant-pass''; and the verdict fold of the proposed pure core is total.
+\item A design argument that a proposed pure core of acceptance underlies the protocols a
+  delegated worker needs, and that everything else composes above it (§\ref{sec:protocols}).
+\item A design for behaviour specifications that do not depend on the implementation language,
+  with a lemma on what agreement and disagreement between implementations show, and one pilot
+  experiment (§\ref{sec:behaviour}).
+\item A comparison with SARIF, assurance cases, CycloneDX attestations, VEX, supply-chain
+  provenance and cargo-vet, explaining why a new format was needed and why we chose design freedom
+  over extending an existing format (§\ref{sec:related}).
+\end{enumerate}
+
+The results are small. Most are close to definitional once the model is written down. Their value
+is that they make the format's guarantees exact, and that they name what the format does \emph{not}
+guarantee. §\ref{sec:practice} states the practical evidence exactly. §\ref{sec:open} lists the open
+problems.
+
+\section{Setting: delegated work and its acceptance}\label{sec:setting}
+
+\paragraph{Roles.} A \emph{consumer} needs an artefact and decides whether to accept it. A
+\emph{producer} delivers it. Either may be a person, a team, an organisation, a tool or an agent
+session. An optional \emph{verifier} re-runs checks for the consumer. The \emph{authority} is the
+party the specification names as entitled to decide. It is never the producer. A third party, a
+\emph{dispatcher}, may route work between consumers and producers. It is neither party to an
+acceptance.
+
+\paragraph{Artefacts.} We call any product of work that a consumer judges against a
+specification an \emph{artefact}: code, a proof, a document, a design, a dataset, a review, a
+decision. The core of the format names no artefact kind. Code enters only through a binding that
+refines the core for one ecosystem. The first binding is for Rust.
+
+\paragraph{The mechanization frame.} A companion paper~\cite{matijasevic2026psm} models
+intellectual work as a program with typed semantic holes. Each hole is open or closed separately on
+three axes: decision, production and acceptance. Work is moved to deterministic mechanisms by an
+acceptance-controlled promotion. In that frame:
+\begin{itemize}[itemsep=1pt]
+\item the executor proposes and does not accept;
+\item a hole's acceptance is a gate stack;
+\item same-family evidence inherits the family's indistinguishability (its Proposition on twins).
+\end{itemize}
+This paper supplies the acceptance axis with a concrete record. A promotion of a mechanism is
+itself an acceptance, of a mechanism, for one axis and one input scope (§\ref{sec:protocols}).
+
+\section{The model}\label{sec:model}
+
+We give the model of specification version 0.4.0~\cite{acceptance040}. We keep only what the
+results need. The specification itself is normative. The model covers \emph{item} requirements:
+requirements met by one claim attached to them. Cross-cutting requirements (a universal test over a
+set of claims, never satisfied by an empty set) are outside the model. Chain requirements appear
+only in Definition~\ref{def:chain} and Proposition~\ref{prop:chain}.
+
+\begin{definition}[Evidence record, tier, control]
+An \emph{evidence record} carries:
+\begin{itemize}[itemsep=1pt]
+\item a result (pass, fail, unsupported and others);
+\item a tier in the closed order $\T1>\T2>\T3>\T4>\T5$ (deductive; sound over a declared domain;
+  sampled; syntactic; judgment). The tier is declared, or, if absent, it is the ceiling the
+  profile assigns to the record's method; a record the profile cannot place has no tier;
+\item a method;
+\item optionally an author, the revision of the artefact it was captured against, its build
+  inputs, and a \emph{control}, a block $(\mathit{kind},\mathit{expectation},\mathit{observed},
+  \mathit{of\_claim})$.
+\end{itemize}
+A control is \emph{observed-red} if $\mathit{expectation}=\mathit{observed}=\text{red}$. It attests
+only the claim it names. A claim may instead carry a \emph{watched-fail} record: the claim's
+re-run command, observed to fail on a recorded perturbation.
+\end{definition}
+
+\begin{definition}[Claim, weight, gap]
+A \emph{claim} names one requirement and has a status: evidenced, partial, gap, parked, blocked or
+not-applicable. It carries evidence records and, optionally, a re-run recipe (a command and its
+expected output). Its \emph{tier} is the strongest tier among its passing records.
+
+A claim is \emph{weighted} only if the format's validator grants weight. Above the control-free
+ceiling of its meaning, weight requires an observed-red control that names the claim. A claim that
+asks for weight without earning it is admitted and unweighted. A requirement with no admissible
+evidence must appear as a claim with status \emph{gap}, unless it is declared not applicable with a
+reason. Omission is a validation error.
+\end{definition}
+
+\begin{definition}[Specification]
+A \emph{specification} $S$ is a finite set of requirements. Each requirement $r$ has:
+\begin{itemize}[itemsep=1pt]
+\item an identifier and a statement;
+\item flags \emph{mandatory} and \emph{waivable};
+\item a firmness (draft or firm);
+\item a \emph{floor set} $F_S(r)$: a minimum tier; the flags \emph{weighted}, \emph{control} and
+  \emph{recipe}; a freshness level; an independence level; an optional set of admitted methods;
+  and further floors (input pinning, tool qualification, a coverage minimum per metric, and
+  profile floors).
+\end{itemize}
+$S$ has a phase: exploratory, crystallizing or final. A final specification has only firm
+requirements. Only decisions under a final specification may unlock an effect such as a merge, a
+release or a deployment.
+\end{definition}
+
+\begin{definition}[Meeting a floor]\label{def:meet}
+Let $c$ be a claim and $r$ an item requirement. The records $c$ \emph{relies on} are:
+\begin{itemize}[itemsep=1pt]
+\item its passing records that establish its tier and family;
+\item the record that carries the control, when the control floor is met by a control;
+\item the watched-fail record, when it is met that way.
+\end{itemize}
+Claim $c$ \emph{meets} $F_S(r)$ iff all of the following hold:
+\begin{enumerate}[label=(\roman*),itemsep=1pt]
+\item $c$ names $r$ and is evidenced;
+\item if \emph{weighted} is set, the validator granted $c$ weight;
+\item $c$'s tier is at least the minimum tier;
+\item if a method set is given, some passing record's method is in it;
+\item if \emph{control} is set, $c$ carries an observed-red control naming $c$, or a watched-fail
+  record;
+\item if \emph{recipe} is set, $c$ has a re-run recipe;
+\item if freshness is \emph{delivered-revision}, every relied-on record carries a capture revision
+  equal to the package's subject identity (a commit, in the code binding). A record without one
+  fails;
+\item if independence is \emph{author-not-producer}, every relied-on record has a nonempty author
+  outside the producer's identities. If it is \emph{third-party}, every such author also differs
+  from the consumer. The level \emph{consumer-run} adds no condition here; its duty, a passing
+  re-run by the consumer, is checked when the decision is made;
+\item every further floor holds on the relied-on records, and every declared profile floor is met.
+  A profile floor that cannot be evaluated is not met.
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Package, coverage]
+A \emph{package} $P$ carries:
+\begin{itemize}[itemsep=1pt]
+\item the subject identity of the artefact;
+\item the digest of the specification it answers;
+\item claims attached to the specification's requirement identifiers;
+\item a declared deviation for every mandatory requirement it does not satisfy.
+\end{itemize}
+\emph{Coverage} $\cov(S,P)$ maps each item requirement $r$ to the \emph{first} status whose guard
+holds:
+\begin{enumerate}[itemsep=1pt]
+\item \emph{missing}: no claim names $r$;
+\item \emph{satisfied}: some claim meets $F_S(r)$;
+\item \emph{partial}: some claim naming $r$ is evidenced or partial;
+\item \emph{deviation-declared}: a deviation names $r$;
+\item \emph{gap}: otherwise, for example when every claim naming $r$ is a gap, parked, blocked or
+  not applicable.
+\end{enumerate}
+$\Acc(S,P)$ holds iff every mandatory requirement is satisfied.
+\end{definition}
+\noindent This is the order the shipped validator uses. The specification's prose lists the gap
+case only for gap, parked and blocked claims, which leaves a claim that is not applicable without a
+status; the validator's last case closes that hole.
+
+\begin{definition}[Decision]
+A \emph{decision} $J$ binds:
+\begin{itemize}[itemsep=1pt]
+\item the digest of $S$;
+\item the digest of $P$;
+\item the subject identity.
+\end{itemize}
+It records a disposition per requirement and one verdict: accepted, accepted with conditions,
+rejected, evidence-requested, or lapsed. A disposition may not call a requirement satisfied unless
+coverage computes it as satisfied. The consumer overrides its own specification only by an
+explicit waiver, with a reason and an authority, and only on a requirement marked waivable.
+\end{definition}
+
+\begin{definition}[Tightening]\label{def:tight}
+A successor $S'$ passes the \emph{tightening check} against $S$ if, for every requirement present
+in both, no element of the floor set weakens:
+\begin{itemize}[itemsep=1pt]
+\item no lower minimum tier;
+\item no restriction flag going from true to false;
+\item freshness never moving from \emph{delivered-revision} to \emph{any};
+\item independence never moving down the order
+  $\text{none}<\text{author-not-producer}<\text{consumer-run}<\text{third-party}$;
+\item an admitted-method set only narrowing, and never removed or emptied;
+\item no coverage minimum removed, lowered or moved to another metric;
+\item mandatory never becoming optional, and waivable never becoming true.
+\end{itemize}
+A profile floor is compared by that profile's own comparator. A weakening is allowed only with an
+explicit \emph{relaxed} record that carries a reason and the authority's name.
+\end{definition}
+
+\begin{definition}[Chain]\label{def:chain}
+A \emph{chain requirement} asks that every in-scope element of the artefact's declared dependency
+closure has an applicable witness. A C0 witness discloses a well-formed identity. A C2 witness is
+an actual decision of a named acceptor under that acceptor's own specification. Chains add an
+obligation on the parent. They never add warrant to the parent's claims.
+\end{definition}
+
+\section{Results}\label{sec:results}
+
+Proofs are short. Where a result depends on a premise that the format cannot check, we state the
+premise.
+
+\begin{proposition}[Coverage is total and deterministic]\label{prop:total}
+For finite $S$ and $P$, $\cov(S,P)$ assigns exactly one status to every item requirement of $S$.
+The assignment depends only on $S$, $P$, the validator's weight grants and the profiles' floor
+checks. If those floor checks are decidable, so is coverage. A requirement is satisfied iff some
+claim meets its floor set.
+\end{proposition}
+\begin{proof}
+The guards are tested in a fixed order and the last case is unconditional, so exactly one status
+applies. The guards may overlap, for example a below-floor evidenced claim together with a
+deviation; the first match decides, and that claim's requirement is partial. Each condition of
+Definition~\ref{def:meet} reads finitely many fields of finitely many records, apart from the
+profile floors, which we assume decidable. No other input is read.
+\end{proof}
+
+\begin{hypothesis}[Implication-preserving tightening]\label{hyp:comp}
+For every claim $c$ and every step that the tightening check admits, if $c$ meets $S'$'s floor set,
+then $c$ meets $S$'s floor set. This implication is over complete claim predicates, including which
+records are relied on.
+\end{hypothesis}
+
+\begin{proposition}[Monotone tightening]\label{prop:mono}
+Under Hypothesis~\ref{hyp:comp}, let $S'$ pass the tightening check against $S$ with no relaxed
+record. Then for every package $P$ and every item requirement $r$ present in both:
+\[
+\cov(S',P)(r)=\text{satisfied}\;\Rightarrow\;\cov(S,P)(r)=\text{satisfied}.
+\]
+Along a chain of successors with no relaxation, computed acceptability under the last version
+implies computed acceptability under every earlier version, for the mandatory requirements
+carried throughout.
+\end{proposition}
+\begin{proof}
+Let $c$ meet $F_{S'}(r)$. By Hypothesis~\ref{hyp:comp}, $c$ meets $F_S(r)$. The statement about
+chains follows by induction.
+\end{proof}
+
+\begin{remark}[Exceptions in the 0.4.0 tightening check]\label{rem:indep}
+Hypothesis~\ref{hyp:comp} is not vacuous. The current check has three known exceptions.
+\begin{itemize}[itemsep=1pt]
+\item \emph{Independence.} The check admits the step from \emph{author-not-producer} to
+  \emph{consumer-run}. The first demands that every relied-on author is outside the producer set;
+  the second demands nothing about authors at coverage time. Its decision-time duty does not
+  restore the lost condition: evidence that the producer wrote and the consumer re-ran passes
+  \emph{consumer-run} and fails \emph{author-not-producer}. So the ordinal order is not
+  implication-preserving. The repair is to treat independence as three separate facts (author is
+  not the producer; author is not the consumer; the consumer re-ran it and it passed), each of
+  which may only switch on (§\ref{sec:protocols}). A separately built mechanized model reaches the
+  same counterexample (see Mechanization below). Version 0.4.0 states this exception as a known
+  limit, and its repair is planned for the next version.
+\item \emph{Relied-on records.} A stricter \emph{control-required} floor enlarges the relied-on set
+  by adding the control carrier. An existential condition such as the coverage minimum can then
+  pass on that carrier where it failed before. This exception was found in the final review and is
+  not yet stated in the specification.
+\item \emph{Profile comparators.} A profile comparator that answers ``equal'' for every pair
+  passes the check while its floor weakens. The specification names this residual. A mechanically
+  checkable soundness condition for comparators is open (§\ref{sec:open}).
+\end{itemize}
+Proposition~\ref{prop:mono} holds for every step that meets the hypothesis. Each exception above is
+a step that does not.
+\end{remark}
+
+\begin{proposition}[Staleness is exact up to collision]\label{prop:stale}
+Suppose a decision binds digests $d_S, d_P$ and subject identity $\iota$. Suppose it is presented
+with $(S^*,P^*,\iota^*)$ and the binding check passes. Then $(S^*,P^*,\iota^*)=(S,P,\iota)$, unless
+the domain-separated construction $h(x)=\mathrm{SHA512}(\mathit{prefix}\,\|\,x)$ has a collision.
+\end{proposition}
+\begin{proof}
+The check recomputes $h(S^*)$ and $h(P^*)$ and compares them with $d_S$ and $d_P$, and it compares
+$\iota^*$ with $\iota$. If $S^*\neq S$ while $h(S^*)=h(S)$, then $(S,S^*)$ is a collision; the same
+holds for $P$. The prefixes separate the document domains, so a collision across domains also
+yields a collision of $h$.
+\end{proof}
+\noindent The guarantee covers the bound documents and the source files whose digests a package
+records. Files with no recorded digest are not covered. A subject identity is trusted as the
+version-control system reports it.
+
+\begin{proposition}[No label-only stack bound]\label{prop:agg}
+A \emph{stack} is a finite set of accepted parts and their composition. Its \emph{ordinal labels}
+are, per part, the values the format orders or enumerates: tiers, bands, weights, floor values,
+verdicts and chain-witness levels. Digests and identities are not labels. Fix a use distribution
+$\mu$ and let the \emph{failure rate} of a stack be the probability under $\mu$ that the composed
+artefact fails its consumer. A function $L$ from label tuples to $[0,1]$ is a \emph{sound bound} if
+$L(\ell)\ge$ the failure rate of every stack with labels $\ell$. If a label tuple $\ell$ is realized
+by two stacks with failure rates $0$ and $1$, every sound bound has $L(\ell)=1$: no nontrivial bound
+exists for $\ell$. Such pairs exist: for example, when an interface carries a convention that no
+recorded check exercises, and the use distribution puts its mass on uses that cross that interface.
+\end{proposition}
+\begin{proof}
+Soundness on the two stacks gives $L(\ell)\ge 1$. For existence, let a library $X$ return a length,
+and let no specification state its unit. Let the top-level part $T$ use $X$'s result, and let $T$'s
+recorded checks not exercise that path. Build stack $A$ with a top-level part $T_A$ that reads the
+unit correctly. Build stack $B$ with the same $X$, byte for byte, and a part $T_B$ that differs from
+$T_A$ only in the unit it assumes. Every recorded check passes on both, with the same tiers,
+controls, weights and verdicts, so the ordinal labels are equal; only digests differ. Let $\mu$ put
+all its mass on uses that compute a length as part of this example; then $B$ always fails and $A$
+never does.
+\end{proof}
+
+\begin{remark}[Why the format refuses]
+Proposition~\ref{prop:agg} is an impossibility for bounds that read only labels. It is not a
+general impossibility. A nontrivial bound needs information beyond the labels; per-part rates
+measured on stated scopes, with stated composition assumptions, are one route. The condition of
+the proposition is weak in practice. Failure is judged against the consumer's intent in use, a
+specification is only the consumer's current statement of that intent, and no document records
+whether the two coincide. The format therefore prints ``stack accepted'' only together with the
+sentence that the label combines no assurance levels, and it forbids scores on every assertion
+surface. The same argument shows that the componentwise meet of strengths (§\ref{sec:protocols})
+is a label, not an error bound.
+\end{remark}
+
+\begin{proposition}[Chains are non-interfering and fail closed]\label{prop:chain}
+\leavevmode
+\begin{enumerate}[label=(\alph*),itemsep=1pt]
+\item A chain requirement changes no claim's tier, band or weight. It only adds a requirement to
+  $S$.
+\item An element whose evaluation meets a cycle, a self-edge, an unmapped decision store,
+  unresolved required bytes or an exhausted budget is \emph{indeterminate}. Chain coverage is
+  satisfied only if every in-scope element is satisfied, a boundary or a permitted gap, every
+  relation has a covering inventory that meets its completeness rule, and the inventory does not
+  exceed its declared maximum. So an indeterminate element never lets the requirement be
+  satisfied: it is partial, or deviation-declared if a deviation names it. A missing or
+  unresolvable reader input is a validation error.
+\item Evaluation terminates. Each candidate evaluation counts one visit, without a result cache,
+  against declared budgets for depth and for the number of evaluations, with fixed ceilings.
+\end{enumerate}
+\end{proposition}
+\begin{proof}
+(a) Chain evaluation reads claims and decisions and writes only the chain requirement's status.
+(b) This restates the evaluation rules: the indeterminate cases are assigned per element, and the
+satisfied guard admits only the three listed element statuses. (c) Every visit consumes budget,
+and both budgets are finite.
+\end{proof}
+
+\begin{proposition}[Separation of duties]\label{prop:sod}
+Assume that distinct role names resolve to distinct parties. Then no party can produce a valid
+accepted decision on a package it produced.
+\end{proposition}
+\begin{proof}
+A valid decision's issuer must resolve to the specification's authority and must differ from the
+package's producer. If the producer drafted the specification, its requirements bind only after
+the consumer's recorded ratification.
+\end{proof}
+\noindent The assumption is real. Inside one organisation the format uses no cryptographic
+identity, and write access to the decision store is authority. Planned signing for exchanges
+across organisations would authenticate records relative to a trusted mapping from keys to
+parties and their authorizations. That mapping stays an assumption: one party can hold several
+keys.
+
+\begin{proposition}[What a control witnesses]\label{prop:control}
+Assume that recorded runs are truthful, and that a control and a baseline name the same fixed
+check: the same command and oracle in the same execution context. An observed-red control on
+claim $c$ shows that this check is not the constant-pass function: on a recorded perturbation of
+the artefact, it failed. If $c$ also has a passing record of the same check on the unperturbed
+artefact at the same revision, the check separates the artefact from that perturbation. Neither
+fact implies that the check decides $c$'s stated proposition.
+\end{proposition}
+\begin{proof}
+The first two statements restate the records. For the third, take a check for a proposition $Q'$
+that differs from the stated $Q$ but is also violated by the perturbation. It produces the same
+records.
+\end{proof}
+\noindent The premise about the same check is real: a code binding may let a faster command serve
+as the failure witness for a claim whose main evidence is another run. The result is deliberately
+weak, and it is the honest core of the format. A control rules out a constant-pass check. It does
+not rule out the wrong check. Choosing the right check stays a reviewer's judgment. The format
+records that judgment; it does not replace it.
+
+\begin{proposition}[The verdict fold of the proposed pure core is total]\label{prop:fold}
+This proposition concerns the pure core proposed in §\ref{sec:protocols}, not the 0.4.0 decision.
+Let each mandatory requirement $m$ of $S$ carry finitely many materialized judgments, each with an
+outcome in $\{\text{holds},\text{fails},\text{unknown}\}$ and a strength. Assume that comparing a
+strength with a floor is decidable. Classify $m$ by the first match:
+\begin{enumerate}[itemsep=1pt]
+\item \emph{fails}, if some judgment fails at a strength that meets $m$'s floor;
+\item \emph{holds}, if some judgment holds at such a strength;
+\item \emph{open}, otherwise.
+\end{enumerate}
+Then the verdict is: rejected if some $m$ fails; else open if some $m$ is open; else accepted. It is
+total and decidable. An open mandatory requirement never yields \emph{accepted}.
+\end{proposition}
+\begin{proof}
+First-match classification over a finite set, with decidable guards, is total, disjoint and
+decidable. The verdict table is first-match over three exhaustive cases.
+\end{proof}
+\noindent In the pure core, accepting with a mandatory requirement still open needs a successor
+specification in which it is optional or absent: a \emph{relax} or \emph{drop} move. The judgment
+against the original keeps its verdict. The open items of a verdict are the natural seed of the
+next specification. Version 0.4.0 differs. It has five verdicts, allows a waiver on a requirement
+marked waivable, and lets a decision be accepted with conditions that are tracked to a due date.
+The pure core moves waivers to the relax move and conditions to a composed contracting layer.
+
+\paragraph{Mechanization.} A Lean~4 model (core library only, no external mathematics library)
+mechanizes four of these results within stated abstractions:
+\begin{itemize}[itemsep=1pt]
+\item \emph{Coverage} (Proposition~\ref{prop:total}): the item fragment of
+  Definition~\ref{def:meet}, with the independence predicates the tools apply. The set of relied-on
+  records follows the specification, which also counts a watched-fail record; the shipped validator
+  omits that record, so the model and the validator differ there. Not-applicable claims are
+  represented. The executable floor check is proved equal to the specification-level predicate,
+  and \emph{satisfied} is proved sound and complete for it.
+\item \emph{Tightening} (Proposition~\ref{prop:mono}): monotonicity under a restricted relation that
+  intersects the specification's order with coverage implication. The model also proves the
+  counterexample of Remark~\ref{rem:indep}: a step from \emph{author-not-producer} to
+  \emph{consumer-run}, under which a claim meets the new floor and not the old one. Its relation
+  \texttt{Stronger} assumes preservation for its abstract \texttt{extra} predicates and so does not
+  cover the control-and-coverage exception above.
+\item \emph{Stack bounds} (Proposition~\ref{prop:agg}), in an abstraction where labels carry no rate
+  information: every sound label-only bound is trivial, and identical labels admit stack failure
+  rates of 0 and 1.
+\item \emph{Chains} (Proposition~\ref{prop:chain}(a,b)), on an abstract dependency graph with a depth
+  budget. Cycles, self-edges and exhausted budget are indeterminate. This abstraction omits C0,
+  boundaries, permitted gaps and the evaluation budget, so it is not a model of the full chain
+  rule.
+\end{itemize}
+A gate builds the model and audits every declaration's axioms. Planted controls show that it
+rejects a hidden \texttt{sorry}, a used custom axiom and an unused one. An independent review
+accepted the model after three rounds. The other propositions rest on the written proofs above. A
+differential between the model and the shipped validator, run on the validation examples, is
+planned. The model and its gate are not yet public.
+
+\section{Acceptance as the core of work protocols}\label{sec:protocols}
+
+This section describes a proposed restructuring of the format, not version 0.4.0. Where 0.4.0
+differs, we say so.
+
+\paragraph{A small type basis.} Reading every format as a type gives six basic types for
+intellectual work:
+\begin{itemize}[itemsep=1pt]
+\item \emph{Ref}: an identity pinned by digest;
+\item \emph{Proposition}: a statement, possibly with a decision procedure;
+\item \emph{Evidence}: a witness with a way to reproduce it;
+\item \emph{Judgment}: $\vdash(\mathit{ref},\mathit{evidence}):\mathit{proposition}$ at a strength,
+  by an agent;
+\item \emph{Act}: an attributed, dated occurrence;
+\item \emph{Relation}: a typed edge.
+\end{itemize}
+They sit over value types for digests, time, outcome, scope, quantity, priority, agent kind and
+strength. Specification, claim, package, verdict, duty and mechanism derive from them by seven
+constructors: product, sum, collection, refinement, instantiation, arrow and interaction. Six is an
+engineering choice, not an irreducibility result; a four-type encoding exists. In the author's
+formats, a map of 577 fields needed no seventh basic type.
+
+\paragraph{Strength is a product.} Strength is a product of axes, not one ladder:
+\begin{itemize}[itemsep=1pt]
+\item soundness (the tier);
+\item family relation (same family, other family, reality-grounded);
+\item three independence facts (author is not the producer; author is not the consumer; the
+  consumer re-ran it and it passed);
+\item freshness;
+\item input pinning;
+\item control;
+\item reproducibility;
+\item tool qualification;
+\item coverage per metric.
+\end{itemize}
+Each axis has a bottom for ``not established''. A consumer selects a floor per axis per
+requirement; that is ``selecting verification strength''. Version 0.4.0 still carries
+independence as one ordinal level; Remark~\ref{rem:indep} shows why the three separate facts are
+needed. The meet is componentwise, and by
+Proposition~\ref{prop:agg} it is a label, not a bound.
+
+\paragraph{Decidability.} Membership in a format is decidable when its grammar is closed and
+finite (Table~\ref{tab:dec}). Running a check need not terminate, so every execution is bounded,
+and an exhausted budget yields \emph{unknown}, never a pass. Given materialized judgments, a
+program can decide well-formedness, binding, coverage, the verdict fold and message conformance.
+Only the link from a piece of evidence to the truth of a proposition may need a person or a model.
+That link is recorded as a strength, never hidden.
+
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+constructor & decidable membership is preserved if (sufficient conditions) \\
+\midrule
+product, sum, collection & always, for finite closed grammars over decidable components \\
+refinement & the refining predicate is in a decidable fragment \\
+instantiation & the registry of meanings is finite and closed \\
+arrow (mechanism) & always for the descriptor; its semantic properties are claims to be judged \\
+interaction (protocol) & message conformance always; protocol properties need a finite encoding \\
+\bottomrule
+\end{tabularx}
+\caption{Constructors and decidable membership: sufficient conditions, assuming decidable component checks.}\label{tab:dec}
+\end{table}
+
+\paragraph{One basic protocol.} Strip coordination (leases, budgets, routing) and authority
+(grants, delegation) from the channel between an orchestrator and a worker. What remains is
+acceptance:
+\begin{itemize}[itemsep=1pt]
+\item the assignment is a specification;
+\item a clarifying question and its answer are a refinement of the specification;
+\item the result is a package;
+\item the orchestrator's check is a decision.
+\end{itemize}
+Distilling a specification from a stated intent is a run of clarification moves. Promoting a
+mechanism is acceptance of that mechanism, for one closure axis and one input scope, against the
+hole's own specification. So acceptance is the one basic protocol of this kind of work, and the
+others are compositions. The proposed pure core has two roles, three documents and six moves:
+\begin{itemize}[itemsep=1pt]
+\item \emph{clarify}, \emph{expand} and \emph{select strength}, by the consumer;
+\item \emph{deliver}, by the producer;
+\item \emph{judge}, by the consumer;
+\item \emph{relax or drop}, by the consumer (the pure form of a waiver).
+\end{itemize}
+A worker's whole obligation is then to satisfy a specification. No incentive term is needed inside
+the protocol. Version 0.4.0 still keeps waivers, conditions with due dates and effect eligibility
+inside the protocol; the proposal moves them to composed layers.
+
+This is a design result, not a theorem. Its claim is a decomposition, and its evidence is that the
+author's other protocols reduce to it. A stronger claim would need a checked encoding. Acceptance
+already binds by hash: a package carries the specification's digest, and a decision carries the
+package's digest. This is the causal backbone of an information-protocol encoding in the style of
+BSPL~\cite{singh2011bspl}. Writing that encoding and checking it for enactability and safety is
+open (§\ref{sec:open}).
+
+\paragraph{Layering.} Payment, pricing, negotiation, legal standing, signing, transport, effect
+gating and calibrated trust numbers are composed layers. The dependency rule is one-way:
+\begin{itemize}[itemsep=1pt]
+\item no type of the core and no pure protocol depends on a field of a composed layer;
+\item a composed protocol may add roles, parameters and messages;
+\item a composed protocol never alters a message of the pure protocol.
+\end{itemize}
+An outer process cites an acceptance by its identifiers, hashes and verdicts, and nothing in it
+changes how an acceptance is computed. This is what lets acceptance stack with neighbouring
+record formats~\cite{acceptedwork}: duties, dependency relations, triggers and impact rules. Each
+of these is a derived type over the same core, not a new protocol.
+
+\paragraph{Dispatch.} A dispatcher needs two projections, and the public tools provide both:
+\begin{itemize}[itemsep=1pt]
+\item \emph{down}: specification $\to$ worker brief (goal, scope, done criteria, the check, the
+  writable paths). This drops floors, hashes and authority on purpose. In one measured case it
+  reduced 196 lines to 37.
+\item \emph{up}: worker report $\to$ package. This is mechanical, except for a small typed fill:
+  the statement, the grade and bounds, any deviation, and the narrative of the failure control.
+\end{itemize}
+Neither projection decides anything. The consumer's tools compute coverage, and the consumer
+decides.
+
+\section{Behaviour specifications across languages}\label{sec:behaviour}
+
+The 0.4.0 specification pins evidence strength. It does not pin behaviour. A requirement is a
+statement plus a floor, and its deciding check is a command in one implementation's toolchain.
+Real specifications drift into implementation vocabulary: an error type, a function name, a
+compiler attribute. So the question arises: can a specification fix behaviour well enough that
+implementations in different languages agree, without becoming code?
+
+\paragraph{What is reachable.} The same code in every language is not reachable, and not wanted.
+A specification that forces structure is a transliteration, which is code. The same
+\emph{observable behaviour at a declared boundary} is reachable, and it can be measured. Whether
+a specification is ``ready'' cannot be known in advance. It is a measured property of one version
+of the behaviour.
+
+\paragraph{Design.} A behaviour layer adds four things to a specification. All are optional, so a
+0.4.0 document keeps its meaning.
+\begin{itemize}[itemsep=1pt]
+\item A \emph{boundary}: an operation, an input kind (a canonical-JSON value), a closed set of
+  result classes, and a rule that abnormal termination is a failure. Two implementations agree on
+  an input when they return the same class. Messages and representations are not compared.
+\item \emph{Vectors}: immutable rows $(\mathit{input},\mathit{expect},\mathit{requirement})$. They
+  change only by replacement or retirement rows, which stay in the file. Two current rows with the
+  same input must carry the same class.
+\item \emph{Domain data}: pinned by digest, with its source. Data not yet checked against its
+  source is marked interim, and a final specification may not carry interim data.
+\item A \emph{behaviour digest}: the hash of a canonical projection that holds the boundaries,
+  the behaviour statements with their data digests, and the semantic fields of every vector row.
+  Floors are excluded, so tightening a floor does not change behaviour identity.
+\end{itemize}
+Readiness is a separate record that names one behaviour digest. It reports, for independent
+implementations built only from that digest:
+\begin{itemize}[itemsep=1pt]
+\item whether all pass all current vectors;
+\item whether every pair agrees on every generated input;
+\item whether any terminates abnormally;
+\item whether a mutated implementation produces at least one disagreement (an able-to-fail
+  control), while the unmutated pair produces none.
+\end{itemize}
+Its evidence kind is ordered, weakest first, as a policy of the proposal:
+\[
+\text{oracle agreement} < \text{same-family check} < \text{other-family check} < \text{grounded}.
+\]
+The ordering is a design choice, not a theorem. The companion paper~\cite{matijasevic2026psm} shows
+that same-family evidence inherits the family's indistinguishability under its own assumptions about
+representation and authored coverage. It does not show that a check by another family is
+automatically stronger; that needs evidence of actual discrimination.
+
+\paragraph{What agreement shows.} Let $C$ be the closed set of classes at a boundary. Let
+$A_S(x)\subseteq C$ be the set of classes that specification $S$ admits at input $x$. Implementation
+$I$ \emph{conforms} to $S$ if $I(x)\in A_S(x)$ for every $x$, and $S$ is \emph{determinate} at $x$
+if $|A_S(x)|=1$.
+
+\begin{lemma}[Disagreement and agreement]\label{lem:agree}
+\leavevmode
+\begin{enumerate}[label=(\alph*),itemsep=1pt]
+\item If $I_1$ and $I_2$ conform to $S$ and $I_1(x)\ne I_2(x)$, then $S$ is not determinate at $x$.
+\item If conformance is not known, a disagreement at $x$ shows that $S$ is not determinate at $x$
+  \emph{or} that some $I_i$ does not conform. Only a classification decides which.
+\item For any $n$, agreement of $n$ conforming implementations at $x$ does not imply that $S$ is
+  determinate at $x$.
+\item If a current vector carries $x$ with class $e$, vectors are normative for their inputs, and
+  the prose and the vectors are consistent at $x$, then $A_S(x)=\{e\}$, so $S$ is determinate at $x$.
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+(a) $I_1(x)$ and $I_2(x)$ are distinct elements of $A_S(x)$. (b) Case split on conformance.
+(c) Let $|A_S(x)|\ge2$ and let every $I_i$ pick the same element. (d) The consistency rule for
+current rows makes the vectors single-valued at $x$. Normativity gives $A_S(x)\subseteq\{e\}$, and
+consistency with the prose gives $e\in A_S(x)$.
+\end{proof}
+\noindent Without consistency, part (d) fails: a vector that expects $e$ and prose that forbids $e$
+give $A_S(x)=\varnothing$.
+
+So vectors make determinacy mechanically checkable, but only on the inputs they decide. Elsewhere,
+determinacy rests on prose. Whether the prose and the vectors are consistent is a human judgment,
+and the layer records it as one. Part (c) is the reason readiness evidence has a kind. Agreement
+among implementations that share their training or their authors can hide a common reading of an
+under-determined input. This is the familiar common-mode limit of N-version
+programming~\cite{knight1986}.
+
+\paragraph{One pilot.} We restated three requirements of a small IBAN validation library without
+implementation vocabulary: prose rules, a check order, a data table and vectors.
+\begin{itemize}[itemsep=1pt]
+\item \emph{First run.} The original Rust library and a blind Python implementation disagreed on
+  2{,}832 of 16{,}350 generated inputs. The disagreements fell into 19 groups, and they reduced to
+  four holes in the original requirements: which country codes exist; how spaces are handled;
+  which class a too-short input gets; what the check digits may hold. All four were at the
+  boundary, none in the algorithm. Separately, reading the library's source found one defect that
+  the generator had not exercised. This is Lemma~\ref{lem:agree}(b) in practice: a classification
+  is needed to tell holes from defects.
+\item \emph{Rulings.} The authority decided each hole. Each ruling added vectors.
+\item \emph{Second run.} Blind Python and blind Go implementations, written from the new version
+  only, agreed on all 18{,}383 generated inputs under each of two seeds. A Go copy with one rule disabled
+  produced 143 disagreements, so the harness could fail.
+\item \emph{Limit.} A deliberately planted hole went undetected: check digits 00 and 01 pass the
+  arithmetic rule but are forbidden by the standard. The author found it; the differential did
+  not. This is Lemma~\ref{lem:agree}(c).
+\end{itemize}
+The limits are stated exactly. There was one subject. All blind implementations came from one model
+family, so the evidence kind is \emph{same-family check}. Root causes were attributed by hand. The
+country table is still an interim slice, so the pilot's specification may not be final. The design
+is a proposal; it is not part of 0.4.0.
+
+\section{Why a new format}\label{sec:related}
+
+\paragraph{Why a new format at all.}
+A format of our own has no external constraint: no other standard's scope, schedule or compatibility
+obligations. That leaves us free to design the best format for every use case we care about, and that
+we think others care about too. It does not close off interoperability. Where an existing format is
+adequate, we can fall back to it, with extensions if needed, and map our records onto it. A second
+reason is the combination below, which no surveyed format requires. And, last of the reasons: because
+we can.
+
+Every component of acceptance has precedent:
+\begin{itemize}[itemsep=1pt]
+\item checks shown able to fail: mutation analysis~\cite{demillo1978}, mutation of proofs and
+  specifications, vacuity detection~\cite{beer2001,kupferman1999}, and mutation-gated test
+  generation;
+\item evidence that cannot discriminate counts for nothing: undercutting defeaters in Assurance
+  2.0~\cite{bloomfield2022,bloomfield2024};
+\item epistemic status per claim: SACM~\cite{sacm23};
+\item verdicts bound to artefacts across dependencies: SLSA verification summaries~\cite{slsa};
+\item answers that receive credit only after their witness is validated, in the categories of
+  SV-COMP that require witnesses~\cite{svcomp2026}.
+\end{itemize}
+We did not find the combination: a recorded failure witness, per claim, as a mandatory condition
+for weight inside the document; claims without one kept admitted and unweighted; a
+consumer-written specification, a producer package and a consumer decision bound by hash; floors
+that never loosen silently; and refusal of every aggregate across a stack. To our knowledge, no
+existing format makes an observed failure witness a mandatory per-claim condition for weight.
+Table~\ref{tab:rel} compares the closest formats on the axes that matter for that judgment. In
+every case acceptance is designed to sit beside the other format, not to replace it.
+
+\begin{table}[t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}XX@{}}
+\toprule
+format & what it records & how acceptance relates \\
+\midrule
+SARIF 2.1.0~\cite{sarif} & tool findings; result kinds include pass, fail, open and review & its unit is a finding, ours a claim about a requirement, including one no tool examined. Strength and a re-run recipe can ride in property bags, but nothing requires or grades them. A claim can cite SARIF output as evidence. \\
+Assurance cases (GSN, SACM, Assurance 2.0)~\cite{gsn3,sacm23,bloomfield2022} & arguments from claims to evidence; defeaters; confidence & the closest family. Tools check argument structure and evidence presence; merit is judged by people. Assurance 2.0 has priority on separating measured from useful claims. We refuse quantified confidence propagation, and we lack argument structure and defeaters. SACM's assertion declarations map onto weight. \\
+CycloneDX attestations (ECMA-424)~\cite{cyclonedx16} & claims, evidence, counter-evidence, a confidence in $[0,1]$ & similar in shape. Evidence is prose, not a command, no field of a claim is required, and confidence is asserted where we refuse weight. Counter-evidence is a gap in our format. \\
+VEX (OpenVEX, CSAF)~\cite{openvex,csaf} & exploitability status with a justification & the justification vocabulary is offered, not checked. In our format, a bare justification stays unweighted unless a deciding check accompanies it. \\
+SLSA, in-toto, SCITT~\cite{slsa,intoto,rfc9943} & provenance, signer, transparency & they establish who built and signed what; none checks behaviour. They supply the signing that acceptance lacks. \\
+cargo-vet, crev~\cite{cargovet,crev} & audited human judgment about dependencies & corresponds to our unweighted tier; no per-claim check that can fail. A planned output target. \\
+\bottomrule
+\end{tabularx}
+\caption{Acceptance and the closest formats.}\label{tab:rel}
+\end{table}
+
+Two recent preprints are closest in aim. One reuses evidence across repairs when a coding agent may
+have edited its own verifier~\cite{petel2026}. The other makes a machine-enforced protocol the
+durable artefact and admits generated code only with an evidence chain~\cite{he2026}. We have read
+only their abstracts so far; a full comparison is pending.
+
+\section{Practice}\label{sec:practice}
+
+We state the practical evidence exactly, because it is modest.
+\begin{itemize}[itemsep=1pt]
+\item \textbf{Public specification and tools.} Version 0.4.0 is public under Apache-2.0 or MIT,
+  with standard-library Python validators~\cite{acceptance040}. It is locked, not ratified. Its
+  examples were produced by one author with simulated parties. One example shows recursive
+  acceptance over a three-crate workspace with eleven failure controls, all observed red.
+\item \textbf{Requirement lists for public standards.} A public repository holds requirement
+  inventories for existing standards, for example 278 rows for JOSE/JWT, ready to be used as
+  specifications (\url{https://github.com/ivmat/acceptance-examples}).
+\item \textbf{A package on an open-source tool.} For a JSON export feature of an open-source Rust
+  model checker, a package on a public fork meets 12 of 15 mandatory requirements. It is therefore
+  \emph{not} acceptable, and the format says so.
+\item \textbf{Self-acceptance of a release.} The format's own release 0.3.2 was taken through the
+  full cycle on a real subject: a specification over 13 requirements, producer evidence, consumer
+  re-runs and two decisions. The same operator held both roles. Both decisions are
+  \emph{evidence-requested}: four requirements remain open as explicit gaps.
+\item \textbf{Dispatch in a private test bed.} A work dispatcher in the author's private test bed
+  issues an acceptance specification for each of its own units of work, 98 to date. Packages and
+  decisions are optional there, and none has been issued. A component that projects briefs and
+  assembles packages exists, but it is not yet wired in.
+\end{itemize}
+In short, the specification side of acceptance is in use, the package side is in partial use, and
+no decision on dispatched work exists yet.
+
+\section{Open problems}\label{sec:open}
+
+These are the problems we intend to work on next.
+\begin{enumerate}[itemsep=1pt]
+\item \textbf{A checked protocol encoding.} Write the pure core as an information protocol (keys,
+  immutable bindings, integrity of revision and redelivery) and check enactability and safety.
+\item \textbf{Richer behaviour.} Values with tolerances, state and sequences of calls,
+  concurrency, nondeterminism, and resource bounds at a boundary.
+\item \textbf{Readiness beyond one family.} Run implementations from different model families on
+  several subjects. Determine when agreement across families supports a stronger evidence kind.
+\item \textbf{Stacks of published packages.} Extend chains beyond one workspace to packages from
+  registries and source repositories, with output to in-toto, CycloneDX and cargo-vet.
+\item \textbf{Artefacts other than code.} Specify floors and failure controls for documents,
+  datasets, designs and reviews. What is a failure control for a document?
+\item \textbf{Comparator soundness.} Find a mechanically checkable condition under which a
+  profile's floor comparator is sound (Hypothesis~\ref{hyp:comp}).
+\item \textbf{Signing across organisations.} Reuse existing envelopes, so that separation of duties
+  rests on a stated mapping from keys to parties and authorizations instead of on role names.
+\item \textbf{Mechanization.} Run the Lean model differentially against the validator, and extend it
+  to cross-cutting requirements and the full chain rule.
+\end{enumerate}
+Questions about common-mode risk across implementation families, the exposure of many deliveries
+to one specification error, and changes of intent over time are left to separate work.
+
+\section{Limits}\label{sec:limits}
+
+The format checks records, not the world. It cannot see whether a perturbation was really run;
+anyone with the artefact can reproduce it. It does not prove a check right
+(Proposition~\ref{prop:control}). It does not write requirements, and it cannot find one that
+nobody wrote down. Its trust assumptions are stated, not discharged:
+\begin{itemize}[itemsep=1pt]
+\item tools report truthfully;
+\item inventories are complete as declared;
+\item clocks are honest;
+\item write access to a decision store is authority;
+\item nothing proves semantic preservation through a build;
+\item the toolchain and platform are a named trusted base.
+\end{itemize}
+The theory in this paper is small on purpose. Its job is to make those limits exact.
+
+\section*{Availability}
+The specification, validators and examples are at
+\url{https://github.com/ivmat/acceptance-format} (version 0.4.0). The neighbouring record formats
+are at \url{https://github.com/ivmat/accepted-work}.
+
+\begin{thebibliography}{99}
+\small
+\bibitem{acceptance040} I.~Matija\v{s}evi\'c. Acceptance format and protocol, version 0.4.0
+(locked, not ratified). \url{https://github.com/ivmat/acceptance-format}, 2026.
+\bibitem{acceptedwork} I.~Matija\v{s}evi\'c. accepted-work: record formats for work you did not
+watch being done, 0.1.0-draft. \url{https://github.com/ivmat/accepted-work}, 2026.
+\bibitem{matijasevic2026psm} I.~Matija\v{s}evi\'c. Progressive Semantic Mechanization: Compiling
+Intellectual Work into Deterministic Programs with Typed Semantic Holes. 2026. Zenodo,
+DOI:~10.5281/zenodo.23119225.
+\bibitem{demillo1978} R.~A.~DeMillo, R.~J.~Lipton, and F.~G.~Sayward. Hints on test data
+selection: help for the practicing programmer. \emph{IEEE Computer}, 11(4):34--41, 1978.
+\bibitem{beer2001} I.~Beer, S.~Ben-David, C.~Eisner, and Y.~Rodeh. Efficient detection of vacuity
+in temporal model checking. \emph{Formal Methods in System Design}, 18(2):141--163, 2001.
+\bibitem{kupferman1999} O.~Kupferman and M.~Y.~Vardi. Vacuity detection in temporal model checking.
+In \emph{CHARME}, 1999.
+\bibitem{bloomfield2022} R.~Bloomfield and J.~Rushby. Assessing confidence with Assurance 2.0.
+\emph{arXiv:2205.04522}, 2022.
+\bibitem{bloomfield2024} R.~Bloomfield and J.~Rushby. Confidence in Assurance 2.0 cases. In
+\emph{LNCS 14780}, 2024. arXiv:2409.10665.
+\bibitem{sacm23} Object Management Group. Structured Assurance Case Metamodel (SACM), version 2.3.
+formal/23-05-08, 2023.
+\bibitem{gsn3} Assurance Case Working Group. Goal Structuring Notation Community Standard, version
+3. SCSC-141C, 2021.
+\bibitem{cyclonedx16} Ecma International. ECMA-424: CycloneDX Bill of Materials specification
+(CycloneDX 1.6), 2024.
+\bibitem{sarif} OASIS. Static Analysis Results Interchange Format (SARIF) version 2.1.0, with
+errata 01.
+\bibitem{openvex} OpenVEX specification, version 0.2.0. \url{https://github.com/openvex/spec}.
+\bibitem{csaf} OASIS. Common Security Advisory Framework (CSAF) version 2.0, 2022.
+\bibitem{slsa} SLSA specification, version 1.2, including the verification summary attestation.
+\url{https://slsa.dev}.
+\bibitem{intoto} in-toto attestation framework, version 1. \url{https://github.com/in-toto/attestation}.
+\bibitem{rfc9943} H.~Birkholz, A.~Delignat-Lavaud, C.~Fournet, Y.~Deshpande, and S.~Lasker. An
+Architecture for Trustworthy and Transparent Digital Supply Chains. RFC~9943, IETF, June 2026.
+\bibitem{cargovet} cargo-vet. \url{https://mozilla.github.io/cargo-vet/}.
+\bibitem{crev} cargo-crev. \url{https://github.com/crev-dev/cargo-crev}.
+\bibitem{svcomp2026} D.~Beyer and J.~Strej\v{c}ek. Evaluating software verifiers for C, Java, and
+SV-LIB (Report on SV-COMP 2026). In \emph{TACAS}, LNCS 16506, pages 461--502, 2026.
+DOI:~10.1007/978-3-032-22749-2\_23.
+\bibitem{singh2011bspl} M.~P.~Singh. Information-driven interaction-oriented programming: BSPL, the
+Blindingly Simple Protocol Language. In \emph{AAMAS}, 2011.
+\bibitem{knight1986} J.~C.~Knight and N.~G.~Leveson. An experimental evaluation of the assumption of
+independence in multiversion programming. \emph{IEEE Trans.\ Software Engineering}, SE-12(1):96--109,
+1986.
+\bibitem{petel2026} M.~Petel. When the repair changes the verifier: evidence transport for coding
+agents. In \emph{NeurIPS}, 2026.
+\bibitem{he2026} J.~He and D.~Yu. Protocol-driven development: governing generated software through
+invariants and continuous evidence. \emph{arXiv:2605.12981}, 2026.
+\end{thebibliography}
+
+\end{document}
