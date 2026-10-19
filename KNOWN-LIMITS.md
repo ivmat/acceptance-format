@@ -35,6 +35,25 @@ is treated as a non-checkout; only the recorded digests are checked. Outside a c
 limit applies: the presented bytes are not proven to be the commit's bytes. Files without recorded
 digests are not covered.
 
+The independence levels are not nested. The order `none < author-not-producer < consumer-run <
+third-party` puts `consumer-run` above `author-not-producer`, but `consumer-run` demands only the
+consumer's own passing re-run (protocol.md §5.2), not an author outside the producer
+(§6.2 condition 8). So a successor specification may move a requirement from
+`author-not-producer` to `consumer-run` without a `relaxed` record, a requirement at
+`consumer-run` meets an assurance-class target of `author-not-producer`, and the shipped class
+table drops the author condition between `baseline/2` and `baseline/3`. Producer-authored or
+author-less evidence that the consumer re-ran then satisfies the requirement. A consumer that needs
+both demands should use `third-party`, which demands both and also an author outside the
+consumer. A later version will treat independence as separate,
+monotone facts.
+
+The per-requirement status list in protocol.md §6.3 is incomplete as written. A requirement whose
+only claims are `not-applicable`, with no deviation, matches none of its five cases. A below-floor
+`evidenced` claim together with a deviation matches two of them. The tools apply the cases in this
+order, and the first that holds decides: `missing`, `satisfied`, `partial`, `deviation-declared`,
+then `gap` for everything else, including the `not-applicable` case. Read §6.3 in that order. A
+later version will state it in the specification text; no result changes.
+
 There is no combined assurance for a stack. Each library is accepted under its own
 specification and evidence floor. Paint-stack's label covers runtime libraries only;
 toolchain and platform relations are trusted as the base and are not checked. A source
