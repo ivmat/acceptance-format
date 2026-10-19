@@ -23,7 +23,7 @@
       "sha256": "c440b2ebff30701ef2044c01837a23a5d88e2f0ad30a3fb9a53522baa3a5ae16"
     },
     "README.md": {
-      "sha256": "3ad3d3a43e53075485daf1e36c138d70028b988089cc3e7ab3e0aaff2e2549d7"
+      "sha256": "1cc7ee42155ab60cf0399100cdba710933830f736590a8216373a60a0688ce3e"
     },
     "REPO.md": {
       "sha256": "98b7d0d9e26d112813df90ac7422d0006e6ba59f7f8dce4db5aca047a26f0aac"
@@ -38,10 +38,10 @@
       "sha256": "492741513f6d911c8233f23f0cb28383341626e5e7506909e2e9c513acd0cac1"
     },
     "docs/papers/acceptance/README.md": {
-      "sha256": "73f288d08a3b4e5940a175bc9f0a2ca31aa86255c3a1d6aaa4203fb09803d904"
+      "sha256": "0e0b65b831adb55b54de2036f78c6288089407f3853c4fe701df71088da9670e"
     },
     "docs/papers/acceptance/paper_acceptance.tex": {
-      "sha256": "e5edc1a77c52804bbf8a501cf20a43c52c503862d5378d0c4dc0e6354f1b2fba"
+      "sha256": "07d69e9edac2a916060fbbd0964a167b3c8633e2c859661669ff1ba94bea9680"
     },
     "examples/weighted-toy/README.md": {
       "sha256": "93ab0feb53dc4d1c691ae26759855c13e04989200d326f4cae80c0d2029a53b0"
@@ -707,6 +707,6 @@
       "sha256": "3d7a45b6cd2a9416dc3974728f938d68fc19484f0acd6fe063b5f2de1fba8847"
     }
   },
-  "source_commit": "c2462f1ae45d846e9f62f90e416e6df3fd888a13",
+  "source_commit": "fd2117d8af523e6171ec4c0b29d6046d8da8213b",
   "source_dirty": false
 }

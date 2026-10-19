@@ -35,8 +35,7 @@
 \title{\vspace{-2em}Acceptance as a Protocol for Delegated Work:\\
 \large Claims, Failure Witnesses and Refusal}
 \author{Ivo Matija\v{s}evi\'c\\ \small Independent Researcher \\ \small ivomatijasevic@gmail.com}
-\date{October 2026 \\ \small Draft. Protocols and formats, paper 1. Not peer reviewed. \\
-\small Version 1, 19 October 2026. Specification 0.4.0 (commit 3dbd403).}
+\date{October 2026}
 
 \begin{document}
 \maketitle
@@ -740,8 +739,7 @@ A format of our own has no external constraint: no other standard's scope, sched
 obligations. That leaves us free to design the best format for every use case we care about, and that
 we think others care about too. It does not close off interoperability. Where an existing format is
 adequate, we can fall back to it, with extensions if needed, and map our records onto it. A second
-reason is the combination below, which no surveyed format requires. And, last of the reasons: because
-we can.
+reason is the combination below, which no surveyed format requires.
 
 Every component of acceptance has precedent:
 \begin{itemize}[itemsep=1pt]
@@ -765,7 +763,7 @@ every case acceptance is designed to sit beside the other format, not to replace
 
 \begin{table}[t]
 \centering\small
-\begin{tabularx}{\linewidth}{@{}p{2.6cm}XX@{}}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
 \toprule
 format & what it records & how acceptance relates \\
 \midrule
@@ -849,11 +847,12 @@ nobody wrote down. Its trust assumptions are stated, not discharged:
 \item nothing proves semantic preservation through a build;
 \item the toolchain and platform are a named trusted base.
 \end{itemize}
-The theory in this paper is small on purpose. Its job is to make those limits exact.
+The theory in this paper is small on purpose. Its job is to make those limits exact. This preprint
+has not been peer reviewed.
 
 \section*{Availability}
 The specification, validators and examples are at
-\url{https://github.com/ivmat/acceptance-format} (version 0.4.0). The neighbouring record formats
+\url{https://github.com/ivmat/acceptance-format} (version 0.4.0, commit 3dbd403). The neighbouring record formats
 are at \url{https://github.com/ivmat/accepted-work}.
 
 \begin{thebibliography}{99}

@@ -6,7 +6,7 @@ type: reference
 
 *Claims, Failure Witnesses and Refusal.* Ivo Matijašević, October 2026.
 
-**Version 1, 19 October 2026. Draft, not peer reviewed.** The paper describes specification 0.4.0 (commit `3dbd403`),
+**Version 1, 19 October 2026. Preprint, not peer reviewed.** The paper describes specification 0.4.0 (commit `3dbd403`),
 which is locked, not ratified.
 
 ## What it is
@@ -30,7 +30,7 @@ A format of our own has no external constraint: no other standard's scope, sched
 obligations. That leaves us free to design the best format for every use case we care about, and that we think
 others care about too. It does not close off interoperability. Where an existing format is adequate, we can fall
 back to it, with extensions if needed, and map our records onto it. A second reason is the combination the paper
-describes, which no surveyed format requires. And, last of the reasons: because we can. See also [WHY.md](../../../WHY.md).
+describes, which no surveyed format requires. See also [WHY.md](../../../WHY.md).
 
 ## Files
 

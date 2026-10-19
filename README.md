@@ -13,7 +13,7 @@ For a longer overview, with one example walked through end to end, every use cas
 format does and does not cover, see [OVERVIEW.md](OVERVIEW.md).
 
 For the theory behind it, see the paper [Acceptance as a Protocol for Delegated Work](docs/papers/acceptance/README.md)
-(draft, not peer reviewed).
+(preprint, not peer reviewed).
 
 ## What is this? (start here)
 
