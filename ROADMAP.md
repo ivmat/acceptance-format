@@ -61,6 +61,15 @@ Two kinds of mention are **not** outer concerns, and they stay:
 
 ## Next (planned, not final)
 
+### Any artefact, not only code (0.5, in development)
+
+The core rules will be separated from the mechanisms a binding supplies to identify, inspect and
+traverse a delivered subject. Those mechanisms cover identity, a check of the presented content,
+members and inputs, inventories, freshness, changes of state and chain locations. Every 0.4.0 rule
+is being classified as already stated, a proposed extension or not yet supported by the current
+tool. An unchanged 0.4.0 tool already accepts a non-code artefact end to end when it is identified
+by a content digest.
+
 ### The pure acceptance core
 
 - **The verdict without conditions.** Mandatory requirements decide the verdict: rejected if
@@ -142,7 +151,9 @@ dependency and freshness checks still assume source code identified by a git com
 - datasets, machine-learning models and configuration: evaluation claims and policy checks, each with a
   control showing the check can fail.
 
-These are not planned work. They will be developed if the format is taken up by people who need them.
+The artefact-neutral core is planned for 0.5; see Next. The specific bindings listed above — built
+artefacts and tools, documents, and datasets, models and configuration — remain unplanned and will
+be developed if people who need them take the format up.
 
 ## Also planned
 
