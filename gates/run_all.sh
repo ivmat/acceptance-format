@@ -11,17 +11,20 @@ run() {
   if [ "$rc" -ne 0 ]; then echo "GATE FAIL (exit $rc): $*"; fail=1; fi
 }
 negative() {
-  local expected="$1"; shift
+  local expected_status="$1" expected="$2"; shift 2
   local output rc
   output=$("$@" 2>&1); rc=$?
   echo "$output"
-  if [ "$rc" -ne 1 ] || [[ "$output" != *"$expected"* ]]; then
-    echo "GATE FAIL: expected exit 1 and diagnostic $expected: $*"; fail=1
+  if [ "$rc" -ne "$expected_status" ] || [[ "$output" != *"$expected"* ]]; then
+    echo "GATE FAIL: expected exit $expected_status and diagnostic $expected: $*"; fail=1
   else echo "PASS negative control: $expected"; fi
 }
-for tool in check_acceptance check_core hashdomains check_ledger check_execute spec_inventory; do
+# check_acceptance --selftest delegates to the same core battery. Exercise its
+# actual CLI below with verification examples and a conflicting-meaning control.
+for tool in check_core hashdomains check_ledger check_execute spec_inventory; do
   run python3 "format_acceptance/tools/$tool.py" --selftest
 done
+run python3 gates/check_acceptance_entry.py
 run python3 format_acceptance/tools/check_parity_selftest.py --quiet
 for tool in profiles/conformance profiles/troubleshooting bindings/code bindings/code_rust; do
   run python3 "format_acceptance/tools/$tool.py" --selftest
@@ -29,6 +32,7 @@ done
 run python3 protocol_acceptance/tools/m11.py --selftest
 run python3 protocol_acceptance/tools/acceptance_protocol.py --selftest
 run python3 protocol_acceptance/tools/acceptance_protocol.py check-states
+run python3 gates/check_amendment_lock.py
 rd=protocol_acceptance/examples/rust-delivery
 run python3 format_acceptance/tools/check_acceptance.py --root . --strict --strict-weight "$rd/acceptance.toml"
 run python3 protocol_acceptance/tools/acceptance_protocol.py check-spec "$rd/acceptance-specification.toml"
@@ -49,10 +53,11 @@ run python3 protocol_acceptance/tools/acceptance_protocol.py check-package examp
 conf=format_acceptance/profiles/conformance/examples
 run python3 format_acceptance/tools/check_core.py --root . --strict "$conf/valid/acceptance.toml"
 run python3 format_acceptance/tools/profiles/conformance.py --root . "$conf/valid/acceptance.toml"
-negative 'C3:' python3 format_acceptance/tools/profiles/conformance.py --root . "$conf/invalid/acceptance.toml"
+negative 1 'C3:' python3 format_acceptance/tools/profiles/conformance.py --root . "$conf/invalid/acceptance.toml"
+negative 2 "B13: declared meaning 'conformance' differs from the meaning 'verification'" python3 format_acceptance/tools/check_acceptance.py --root . "$conf/valid/acceptance.toml"
 ts=format_acceptance/profiles/troubleshooting/examples
 run python3 format_acceptance/tools/check_core.py --root . --strict "$ts/valid.acceptance.toml"
-negative 'C-T' python3 format_acceptance/tools/check_core.py --root . --strict "$ts/invalid.acceptance.toml"
+negative 1 'C-T' python3 format_acceptance/tools/check_core.py --root . --strict "$ts/invalid.acceptance.toml"
 run python3 gates/check_class_lock.py
 run python3 gates/check_class_lock.py --selftest
 run python3 gates/check_assumptions.py

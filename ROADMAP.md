@@ -1,65 +1,11 @@
 # Roadmap
 
-*Planned, not final. The next steps below state direction, not a commitment to exact scope
-or dates.*
+Planned direction, not a commitment to scope or dates. For shipped changes, see
+[CHANGELOG.md](CHANGELOG.md); for current limitations, see
+[KNOWN-LIMITS.md](KNOWN-LIMITS.md). Acceptance concerns an artefact and its evidence;
+transaction, payment and legal processes remain outside the core.
 
-## Scope: what the acceptance protocol is, and what it is not
-
-The acceptance protocol is an **artefact-acceptance protocol between two roles**:
-- the **producer** delivers an artefact together with evidence;
-- the **consumer** judges it against the consumer's own specification, at a verification strength
-  the consumer chooses.
-
-Its moves are:
-- clarify a specification;
-- expand a specification;
-- select the verification strength per requirement;
-- deliver;
-- judge;
-- relax or drop a requirement.
-
-**Out of scope, by design:** transactions, payment, pricing, legal standing, negotiation of terms and
-business contracts. The protocol has to work with no monetary incentive at all, where the only goal
-is to satisfy the specification.
-
-**Designed to fit into those layers.** A contract, payment or legal process can cite an acceptance
-by stable identifiers, content hashes and verdicts. The acceptance documents carry none of that
-process's fields. Such layers can be built as separate protocols composed on top of this one, and
-they never change the acceptance core.
-
-The 0.4.0 release removed these outer concerns: commercial role wording, conditions framed
-as debts (the verdict stays; conditions are now due-dated items), the work-contract and
-transaction notes, `legal_ref`, the `legal` domain, money examples, and `pay` among effects.
-Authority, delegation and effect gating remain in this release and are planned to move to
-optional companion layers.
-
-Two kinds of mention are **not** outer concerns, and they stay:
-- **Requirements about the artefact itself**, such as the licence it must carry, are ordinary
-  specification content.
-- **This repository's own terms**: its licence files and contributor notes, and the copyright of
-  the standards a conformance profile checks against. These concern the repository and its inputs,
-  not the protocol.
-
-## 0.4.0 — this release
-
-- Removed the outer concerns listed above.
-- Renamed the first acceptance document from contract to specification.
-- Introduced `acceptance-protocol/1`. The
-  [migration tool](protocol_acceptance/tools/acceptance_migrate.py) updates specifications
-  and packages. Decisions are never rewritten; the consumer re-issues them. The current
-  checker refuses 0.3 protocol documents; use tag v0.3.2 to check those unchanged.
-- Added checked stacking for workspace libraries. A package declares its dependencies from
-  `Cargo.lock`, and the checker verifies that the declaration matches. A chain requirement
-  can require dependencies to be disclosed (C0) or accepted by a named acceptor (C2).
-  The consumer configures a directory of trusted decisions. Checks recurse through child
-  acceptances and check them again when a decision is used to authorize an effect.
-- Added the [paint-stack example](protocol_acceptance/examples/paint-stack/README.md).
-  Its stack label covers runtime libraries. Toolchain and platform relations are trusted as
-  the base and are not checked. Acceptance adds no combined assurance across the stack;
-  if any dependency in the closure comes from crates.io or git, the whole stack check is
-  undecided (indeterminate), never accepted.
-
-## Next (planned, not final)
+## Next
 
 ### Any artefact, not only code (0.5, in development)
 

@@ -1196,14 +1196,63 @@ def probe_classification(e):
     sp, pp = e.paths["paint-app"]
     rep, _ = AP.check_package(e.packages["paint-app"], e.specs["paint-app"], pp, sp, False, chain_context=e.context())
     assert rep.ok() and "NOTE tree is not a git checkout; recorded digests checked" in rep.warnings, detail(rep)
-    for stderr in ("fatal: detected dubious ownership\nsecond line", "fatal: permission denied\nsecond line", "fatal: corrupt repository\nsecond line"):
+    archives = (
+        "fatal: not a git repository (or any of the parent directories): .git\n",
+        "fatal: not a git repository (or any parent up to mount point /)\n"
+        "Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).\n",
+        "fatal: not a git repository (or any parent up to mount point /mounted data)\n"
+        "Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).\n",
+    )
+    for stderr in archives:
         with patch.object(C.subprocess, "run", return_value=subprocess.CompletedProcess([], 128, "", stderr)):
+            context = e.context()
+            context.checkout(e.packages["paint-app"], pp)
+            assert context.checkout_notes == ["NOTE tree is not a git checkout; recorded digests checked"]
+
+    def refuses_probe(code, stderr, stdout="", context=None):
+        with patch.object(C.subprocess, "run", return_value=subprocess.CompletedProcess([], code, stdout, stderr)):
             try:
-                e.context().checkout(e.packages["paint-app"], pp)
+                (context or e.context()).checkout(e.packages["paint-app"], pp)
             except C.Failure as exc:
-                assert exc.status == "error" and exc.reason == "tree checkout: probe failed: " + stderr.splitlines()[0], str(exc)
+                first = stderr.splitlines()[0] if stderr else "no diagnostic"
+                assert exc.status == "error" and exc.reason == "tree checkout: probe failed: " + first, str(exc)
             else:
-                return False, "probe failure silently skipped"
+                raise AssertionError("probe failure silently skipped")
+
+    for stderr in ("fatal: detected dubious ownership\nsecond line", "fatal: permission denied\nsecond line", "fatal: corrupt repository\nsecond line", ""):
+        refuses_probe(128, stderr)
+    for stderr in archives:
+        refuses_probe(1, stderr)
+        refuses_probe(128, stderr, "unexpected output")
+        refuses_probe(128, stderr + "error: corrupt repository\n")
+        refuses_probe(128, "error: permission denied\n" + stderr)
+    refuses_probe(128, archives[1].splitlines()[0])
+
+    # The same archive diagnostic must not mask a corrupt .git marker in the
+    # supplied root or an ancestor. Include a dangling gitfile-like symlink.
+    for ancestor in (False, True):
+        parent = e.root / "probe-marker"
+        parent.mkdir()
+        presented = parent / "child" if ancestor else parent
+        presented.mkdir(exist_ok=True)
+        marker = parent / ".git"
+        try:
+            for kind in ("directory", "file", "symlink"):
+                if kind == "directory":
+                    marker.mkdir()
+                elif kind == "file":
+                    marker.write_text("gitdir: missing\n")
+                else:
+                    marker.symlink_to("missing")
+                try:
+                    for stderr in archives:
+                        context = e.context()
+                        context.trees[e.commit] = presented
+                        refuses_probe(128, stderr, context=context)
+                finally:
+                    marker.rmdir() if kind == "directory" else marker.unlink()
+        finally:
+            shutil.rmtree(parent)
     missing = f"fatal: Not a valid object name {e.commit}^{{commit}}"
     for code, stderr in ((128, "fatal: corrupt repository\n" + missing),
                          (128, "fatal: permission denied"), (1, missing), (128, ""),

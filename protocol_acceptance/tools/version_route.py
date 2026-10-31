@@ -168,7 +168,7 @@ def classify(verb: str, args) -> str | None:
 def run_legacy(argv: list[str], *, quiet: bool = False, entrypoint: Path | None = None,
                audit_path: Path | None = None) -> int:
     """Maps `argv` (verb + flags) to 0.3.2 spelling and runs the frozen checker as a subprocess
-    with the SAME argv (mapped), `python3 -I`, cwd inside the frozen tree. Prints the one required
+    with the SAME argv (mapped), `python3 -I -S`, cwd inside the frozen tree. Prints the one required
     NOTE line to stderr first, unless `quiet` (a gate's own internal compatibility probe, which
     checks only the exit code and would otherwise flood a gate run with the frozen checker's real
     PASS/WARN/FAIL lines). Returns the frozen checker's own exit code."""
@@ -211,7 +211,9 @@ def run_legacy(argv: list[str], *, quiet: bool = False, entrypoint: Path | None 
     # a real child process, since a subprocess's inherited stdio is an OS file descriptor, not
     # Python's `sys.stdout` object. Re-emitting through `sys.stdout`/`sys.stderr` here keeps the
     # frozen checker's output visible to both a real terminal AND any such redirect.
-    command = [sys.executable, "-I", str(entrypoint), *mapped]
+    # -I ignores user/PYTHONPATH injection; -S also excludes system site hooks
+    # and .pth imports. The frozen checker has a standard-library-only closure.
+    command = [sys.executable, "-I", "-S", str(entrypoint), *mapped]
     if audit_path is not None:
         # Gate-only observation of the real dispatch, without editing frozen sources.
         probe = """import sys, runpy, json
@@ -225,7 +227,7 @@ finally:
     Path(audit).write_text(json.dumps({n: m.__file__ for n, m in sys.modules.items()
                                      if getattr(m, '__file__', None)}))
 """
-        command = [sys.executable, "-I", "-c", probe, str(entrypoint), str(audit_path), *mapped]
+        command = [sys.executable, "-I", "-S", "-c", probe, str(entrypoint), str(audit_path), *mapped]
     result = subprocess.run(
         command,
         cwd=str(entrypoint.parent),

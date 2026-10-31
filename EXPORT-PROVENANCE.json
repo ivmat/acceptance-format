@@ -20,22 +20,25 @@
       "sha256": "f7d4f2ec29c8f445a53056193880f5534cee6c23624c91637ab06fe08dc6dabc"
     },
     "OVERVIEW.md": {
-      "sha256": "c440b2ebff30701ef2044c01837a23a5d88e2f0ad30a3fb9a53522baa3a5ae16"
+      "sha256": "030a0c8ab13cba8d86af888d956a4b9c05ca088d79d919c101b36b3294d589b8"
     },
     "README.md": {
-      "sha256": "1cc7ee42155ab60cf0399100cdba710933830f736590a8216373a60a0688ce3e"
+      "sha256": "505541bfbfa8b2a65741aa6c80c2ef452b5d90812bbda4949f6606ccc0eb8bbf"
     },
     "REPO.md": {
       "sha256": "98b7d0d9e26d112813df90ac7422d0006e6ba59f7f8dce4db5aca047a26f0aac"
     },
     "ROADMAP.md": {
-      "sha256": "99c758033b8ab037976f84f7f238a49374a559068b048bcad58c9e74a340fae5"
+      "sha256": "933b5ba9bcb733803aefe54b3b856b38b0ef1cef710b604ab437ad36c888a38c"
     },
     "WHY.md": {
       "sha256": "09086b6ff3f0b694fd29b2500e41a63ec54ec98b11fa4eb4eef3a9d5ca79fbe7"
     },
     "docs/CASE-STUDY.md": {
       "sha256": "492741513f6d911c8233f23f0cb28383341626e5e7506909e2e9c513acd0cac1"
+    },
+    "docs/README.md": {
+      "sha256": "24206003f9db95a9228585f489e8bd72214daf45336ee2ff094f8e7766e27278"
     },
     "docs/papers/acceptance/README.md": {
       "sha256": "0e0b65b831adb55b54de2036f78c6288089407f3853c4fe701df71088da9670e"
@@ -245,7 +248,7 @@
       "sha256": "8ff4a9aff200508eed687e648d3cec481c81c86fa8b7ebd04019ce4eb2af3f18"
     },
     "format_acceptance/tools/fixtures/core_cases.py": {
-      "sha256": "452d8dfd7a506fbb6a7a8c459b82580ca7209ad8a06b27a29dc4b2971da28df6"
+      "sha256": "c109ac580a92f1cd44bc40f0b970073ad41034fe8a0abb230a110cd1cfb5a1cb"
     },
     "format_acceptance/tools/fixtures/legacy.py": {
       "sha256": "a0ebbe738f951c808ce489c7589441ef67df7217b506d9229bebbc80bb1a579c"
@@ -283,6 +286,9 @@
     "format_acceptance/tools/spec_inventory.py": {
       "sha256": "ffa2c5f1f96890c9caa8656890c1d41e71c37b7d1364cf8c26c9ddb95a2d53ba"
     },
+    "gates/check_acceptance_entry.py": {
+      "sha256": "57fa4852babf1516c3d40621f7b30d2d3df2132f884b7c7b3b79ab1b454e546c"
+    },
     "gates/check_adoption_templates.py": {
       "sha256": "9554bf361296a4f3e05fed999e990d1768b02f9d2d7c18abc3d7d509cb9032ab"
     },
@@ -308,7 +314,7 @@
       "sha256": "52559caf73306e2222e804df81fa1cfe232221fd986d665c1a11f9bea52aeef2"
     },
     "gates/run_all.sh": {
-      "sha256": "8a5e4f06a5f0dd41b0c25986225669aa0055ec176b0a383992020671cfa56d1b"
+      "sha256": "f22f13994efc6b9d1de61d70ab0fd09de2ae849d7aa3c94b5a39a079bf1f93c9"
     },
     "protocol_acceptance/adoption/KANI-FV-ADOPTION.md": {
       "sha256": "f024645ee4274914220060b4d734b969444e30e08ee9dafcb62a3f26dd6f365b"
@@ -641,7 +647,7 @@
       "sha256": "953066a82f616b832d73ebd16224b5f080f0e306dad4f0b05231e4e75654f64f"
     },
     "protocol_acceptance/tools/chain.py": {
-      "sha256": "50dd213e880a59ccde587d3945e07c609ca08ffcb9d75849dc8b778bdf5306d8"
+      "sha256": "62b2dffc799dd72cc565e4140e856ce0d2a874b01d71077acaecddcad905e205"
     },
     "protocol_acceptance/tools/export_closure.py": {
       "sha256": "5f12f067e366460aa82eed766eb67e5854d80ba659b06681f9a3b645fb75d105"
@@ -656,7 +662,7 @@
       "sha256": "81aef965c75b296b350608bb6e3ebde7bea4bf3b97723d456efca0a2807df2ab"
     },
     "protocol_acceptance/tools/fixtures/chain_cases.py": {
-      "sha256": "56cead261b0db9e79b8a77e9beb238fbf56b0af74b78cc3104aa1b263c1febf4"
+      "sha256": "5752cc9cb9c68c9cbaf84b05e897e56fbd8d03c7497ccd32f73637f921fa9f0f"
     },
     "protocol_acceptance/tools/fixtures/chain_tree/Cargo.lock": {
       "sha256": "f7aec7ccf4fca36f40b1c19931f1f1c481f22438272841318cf159224f383f82"
@@ -704,9 +710,9 @@
       "sha256": "07c2c923bcc1de9761e00367be6706e948d6bf312b4acd6dbfd67a3e6ffd70cc"
     },
     "protocol_acceptance/tools/version_route.py": {
-      "sha256": "3d7a45b6cd2a9416dc3974728f938d68fc19484f0acd6fe063b5f2de1fba8847"
+      "sha256": "dfdcd36838ccf192ee3cf0267e512e17f66a403893bb6b5fdc38bdc57ea436fa"
     }
   },
-  "source_commit": "93ec18bbd08e986a0088e3dd7add1e6d1d7fc46c",
+  "source_commit": "23061d7a1449f8cd3dee3dbc43a40657aa9ba66e",
   "source_dirty": false
 }

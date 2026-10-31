@@ -591,7 +591,18 @@ class Invocation:
         probe = git("rev-parse", "--show-toplevel")
         if probe.returncode:
             first_line = probe.stderr.splitlines()[0] if probe.stderr else "no diagnostic"
-            outside = first_line.startswith("fatal: not a git repository (or any of the parent directories):")
+            # Git has two C-locale archive diagnostics: reaching the filesystem
+            # root, or stopping at a mount boundary. Accept the complete known
+            # diagnostic, not a prefix that could hide an additional error.
+            diagnostic = probe.stderr.strip()
+            outside = probe.returncode == 128 and not probe.stdout and (
+                diagnostic == "fatal: not a git repository (or any of the parent directories): .git"
+                or re.fullmatch(
+                    r"fatal: not a git repository \(or any parent up to mount point [^\r\n]+\)\n"
+                    r"Stopping at filesystem boundary \(GIT_DISCOVERY_ACROSS_FILESYSTEM not set\)\.",
+                    diagnostic,
+                ) is not None
+            )
             # Git can report 'not a repository' for a corrupt .git directory too.
             for parent in (root, *root.parents):
                 try:

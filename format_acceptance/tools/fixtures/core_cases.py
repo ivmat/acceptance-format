@@ -6,6 +6,7 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 import check_core as C
 import hashdomains as H
 
@@ -587,7 +588,23 @@ def missing_prerequisite(mode):
         if mode=='unreadable':d['spec']['path']='missing.toml'
         if mode=='unparsable':d['spec']['path']='bad.toml';(root/'bad.toml').write_text('a = [oops')
         path=root/'acceptance.toml';path.write_bytes(encode(d))
-        rep=C.validate(path,False,root=None if mode=='no-root' else root)
+        if mode == 'no-root':
+            # A host may put its temp directory inside a checkout. Simulate only
+            # the .git-marker observations; keep document reads and B6 resolution
+            # real, and check inference separately before the missing-root case.
+            exists = Path.exists
+            def markers(*present):
+                return lambda p: p in present if p.name == '.git' else exists(p)
+            with patch.object(Path, 'exists', markers(root / '.git', root.parent / '.git')):
+                inferred = C.validate(path, False)
+                assert inferred.context.root == root and C.verdict(inferred)[0] == 'PASS', diagnostic(inferred)
+            with patch.object(Path, 'exists', markers()):
+                assert C._repository_root(path) is None
+                explicit = C.validate(path, False, root=root)
+                assert explicit.context.root == root and C.verdict(explicit)[0] == 'PASS', diagnostic(explicit)
+                rep = C.validate(path, False)
+        else:
+            rep=C.validate(path,False,root=root)
         return C.verdict(rep)[0],diagnostic(rep)
 for mode in ('no-root','unreadable','unparsable'):
     synthetic('b11-'+mode,'INDETERMINATE','B6:',lambda m=mode:missing_prerequisite(m))

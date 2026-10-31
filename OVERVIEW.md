@@ -1,19 +1,13 @@
-# Overview: what acceptance covers, and what it does not
+# Overview: from requirements to acceptance
 
-The [README](README.md) explains the idea in a few minutes. This page goes one level deeper. It walks
-through one complete example, lists the other uses with the example to look at for each, and states
-plainly what the format and protocol do and do not cover.
+Acceptance joins a consumer's specification, a producer's claims and evidence,
+and a consumer's decision. Content hashes bind the documents to each other and
+to the declared subject. A weighted claim needs an honest grade and a rerunnable
+check with a recorded failure witness; missing evidence remains an explicit gap.
 
-## The idea in one paragraph
-
-For each thing the code must do, you keep one **claim** with its evidence, and you rate how strong that
-evidence is. A claim only counts (it gets **weight**) if a recorded witness shows its check can fail, and
-if the check can be re-run by anyone who has the code. Anything not checked stays in the file as an open
-**gap**. On top of that
-record, a **consumer** writes what it needs before the code exists (the **specification**), a
-**producer** delivers the code with its record (the **package**), and the consumer records one
-**decision**. The decision is bound by content hashes to the specification, the package and the declared
-identity of the code, so changing any of them makes it stale.
+This is the general walkthrough. Start with [weighted-toy](examples/weighted-toy/README.md)
+to write a first manifest, or use the [documentation index](docs/README.md) to find
+a rule or another example.
 
 ## A walk through one example: paint-stack
 
@@ -26,7 +20,7 @@ crates, connected by package dependencies:
   both libraries as dependencies.
 
 The parties are simulated and one author wrote everything; the example says so. It is small on purpose:
-every step below is real and can be re-checked.
+every step below is real and can be re-checked. The [example README](protocol_acceptance/examples/paint-stack/README.md) owns the commands, file layout and reproduction instructions.
 
 ### 1. The consumer writes the specification first
 
@@ -123,82 +117,14 @@ not covered (trusted as the base, not checked): build-tool, language, platform, 
 - Each library was accepted at its own strength. "Stack accepted" does **not** add those up into one
   guarantee for the whole app.
 
-## Other uses, and where to look
+## Where to go next
 
-| use | what you get | where to look |
-|---|---|---|
-| Checking your own code | each declared requirement is backed by a check with a recorded failure witness, or listed as an open gap; a claim without the witness gets no weight | [`examples/weighted-toy/`](examples/weighted-toy/README.md) |
-| Accepting code written by an AI agent or a tool | you write the specification first; the agent fills the package; you re-run and decide | [`rust-delivery`](protocol_acceptance/examples/rust-delivery/README.md), paint-stack |
-| Reporting formal verification honestly | proofs mapped to the requirements they support, with their bounds and the rules nothing checked | [`docs/CASE-STUDY.md`](docs/CASE-STUDY.md), paint-stack |
-| Handing code to another team or organisation | a hash-bound specification, package and decision; a mandatory requirement not yet met is listed, not hidden | [`rust-delivery`](protocol_acceptance/examples/rust-delivery/README.md) (verdict: accepted with a condition) |
-| Noticing when evidence goes stale | a change to the specification, the package or a digested source file makes the old decision stop applying, and lists what must be re-checked | `rust-delivery` (`impact-events.jsonl`) |
-| Following a named standard | each clause in the declared inventory or slice of a standard is evidenced, marked not applicable or excluded with a reason, or left as an open gap | [conformance profile](format_acceptance/profiles/conformance/PROFILE.md) and its examples |
-| Making failures diagnosable | classes of fault paired with the diagnostic outcome each must produce, with evidence for the scenarios exercised; the supplied examples use synthetic records | [troubleshooting profile](format_acceptance/profiles/troubleshooting/PROFILE.md) and its examples |
-| Scaling evidence to how critical the code is | the consumer declares an assurance class; higher classes demand stronger evidence | [`assurance-classes.toml`](protocol_acceptance/spec/assurance-classes.toml) |
-| Tightening requirements over time | start with loose floors, tighten them as the product matures; floors never loosen silently | [protocol](protocol_acceptance/spec/protocol.md) §3.5–§3.6 |
-| Moving from an earlier release | specifications and packages are migrated; decisions are never rewritten | [`acceptance_migrate.py`](protocol_acceptance/tools/acceptance_migrate.py) |
+The [documentation index](docs/README.md) routes by task, including standards
+conformance, troubleshooting, migration and the normative specifications.
+[WHY.md](WHY.md) compares this approach with existing formats.
 
-The verification profile, which covers the cases above about code doing what it should, is the most
-developed. The conformance and troubleshooting profiles are newer.
-
-## What it covers
-
-- What the code must do, written down before the code, by the party that needs it.
-- One claim per requirement, with its evidence, its strength on a fixed scale from T1 (a machine-checked
-  proof) down to T5 (a human or AI review), and its stated bounds.
-- A witness for each weighted claim that its check can fail, and a command that anyone who has the code
-  can re-run.
-- Declared gaps, kept visible: the file cannot look stronger than its evidence.
-- A consumer's decision, bound by hash to the specification, the package and the declared identity of the
-  code, so it goes stale when they change. The recorded digests of the source files the claims rely on are
-  re-checked; files without a recorded digest are not covered.
-- Acceptance of the libraries a project is built with, checked recursively, for libraries inside one
-  Cargo workspace.
-
-## What it does not cover
-
-- **It does not prove the software correct.** It records what was checked and how strongly. A check that
-  verifies the wrong property passes like one that verifies the right one; choosing the right check is
-  still a reviewer's job.
-- **The tools check the records, not the world.** They cannot see whether the code was really broken for
-  a failure witness. Anyone who has the code can reproduce the documented break and check that the
-  command then fails; that does not authenticate the original run.
-- **It does not write your requirements.** Listing what the code must do is still the hard part. Declared
-  gaps stay visible, but the tools cannot discover a requirement nobody wrote down.
-- **No payment, pricing, legal terms or business contracts.** Acceptance is between a producer and a
-  consumer about an artefact. Those processes can cite an acceptance by its identifiers and hashes, from
-  outside.
-- **Not a replacement for SBOMs, build provenance or signing.** It records what was verified, and is
-  designed to sit alongside those formats.
-- **Stacking, today, has limits.** It covers libraries inside one Cargo workspace. If any dependency comes
-  from crates.io or git, the whole stack check is undecided, never accepted. The toolchain and platform
-  are trusted, not checked. The trusted directory of decisions is unsigned: write access to it is
-  authority.
-- **Not yet:** choosing which verification tools and reviewers a consumer accepts; tracing which accepted
-  claims back one specific function call across several libraries; signing for exchanges between
-  organisations. See [ROADMAP.md](ROADMAP.md).
-
-## How it relates to other formats
-
-Test reports, coverage, CI badges, SARIF, assurance cases, CycloneDX attestations, VEX, SBOMs, SLSA,
-in-toto and cargo-vet each cover part of this ground. The ideas underneath are established: mutation
-testing, claims backed by evidence, audited dependencies. What this format adds is the combination,
-across checkable specification, package and decision documents, with one combined rendered view:
-
-- weight only for a check with a recorded witness that it can fail;
-- gaps that stay visible;
-- requirements set by the consumer, before the code exists;
-- a decision that goes stale when what it was bound to changes.
-
-A format of our own also leaves us free to design it for every use case we care about, with no
-external constraint. Where an existing format is adequate, we can still fall back to it, with
-extensions if needed. [WHY.md](WHY.md) compares it with each of these formats in
-turn.
-
-## Status
-
-Acceptance 0.4.0 is locked, not ratified. The tools are Python 3.11+, standard library only. The code
-binding today is Rust; C, Python and Go are planned, and the core permits other kinds of artefact
-(see [ROADMAP.md](ROADMAP.md)). Every example in this repository was produced by one author with simulated
-parties. Ratification is a separate, later act. See [KNOWN-LIMITS.md](KNOWN-LIMITS.md) for the
-current limits.
+The tools check the records, not the world: they cannot establish that a recorded
+failure happened or that the chosen requirements cover the real need. Declared
+gaps are visible, but omitted requirements remain a review problem. The
+[known limits](KNOWN-LIMITS.md) and [assumptions](ASSUMPTIONS.md) state the remaining
+boundaries. The [roadmap](ROADMAP.md) describes planned work.
